@@ -1,10 +1,14 @@
 // Auth Guard + Creator lock
-firebase.auth().onAuthStateChanged(user=>{
-  if(!user || user.email !== "jarahul989@gmail.com"){
-    window.location.href="index.html";
+import { auth } from "./firebase.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
+onAuthStateChanged(auth, (creator) => {
+  if (!creator) {
+    window.location.href = "index.html";
+  } else {
+    console.log("Creator logged in:", creator.email);
   }
 });
-
 // Dummy stats (backend phase me real)
 document.getElementById("totalUsers").innerText = 128;
 document.getElementById("activeTournaments").innerText = 4;
