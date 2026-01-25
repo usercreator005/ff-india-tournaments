@@ -2,8 +2,8 @@
 import { auth } from "./firebase.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-onAuthStateChanged(auth, (creator) => {
-  if (!creator) {
+onAuthStateChanged(auth, (user) => {
+  if (!user) {
     window.location.href = "index.html";
   } else {
     console.log("Creator logged in:", creator.email);
