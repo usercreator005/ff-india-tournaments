@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Creator Dashboard | FF INDIA TOURNAMENTS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="css/creator.css">
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">FF INDIA TOURNAMENTS</div>
+
+  <div class="icons">
+    <button class="switch" id="loginUser">User</button>
+    <button class="switch" id="loginAdmin">Admin</button>
+    <img src="assets/default-avatar.png" id="avatar">
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- STATS -->
+  <section class="stats">
+    <div class="card">👥 Total Users<br><span id="totalUsers">0</span></div>
+    <div class="card">🏆 Active Tournaments<br><span id="activeTournaments">0</span></div>
+    <div class="card">🛡️ Admins<br><span id="totalAdmins">0</span></div>
+  </section>
+
+  <!-- ADMIN MANAGEMENT -->
+  <section class="card full">
+    <h3>Admin Management</h3>
+
+    <input type="text" id="adminName" placeholder="Admin Username">
+    <input type="email" id="adminEmail" placeholder="Admin Gmail">
+    <button id="addAdmin">➕ Create Admin</button>
+
+    <ul class="admin-list" id="adminList">
+      <li>admin1@gmail.com ❌</li>
+      <li>admin2@gmail.com ❌</li>
+    </ul>
+  </section>
+
+  <!-- HOST SLOT -->
+  <section class="card full">
+    <h3>🔥 Host Slot Post</h3>
+
+    <input type="text" placeholder="Tournament Name">
+    <input type="text" placeholder="Prize Pool">
+    <input type="text" placeholder="Stage">
+    <textarea placeholder="Slot List"></textarea>
+    <input type="tel" id="contactNumber" placeholder="Contact Number (India)">
+
+    <button id="postSlot">Post Hot Slot</button>
+
+    <p class="dm-text">
+      DM ME FOR DETAILS -
+      <span id="dmNumber">----------</span>
+    </p>
+  </section>
+
+</main>
+
+<footer class="footer">
+  Creator Terms & Policy
+</footer>
+
+<script src="js/firebase.js"></script>
+<script src="js/creator.js"></script>
+</body>
+</html>

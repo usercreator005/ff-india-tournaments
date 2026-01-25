@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard | FF INDIA TOURNAMENTS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="css/admin.css">
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">FF INDIA TOURNAMENTS</div>
+  <div class="icons">
+    <span id="bell">🔔</span>
+    <img src="assets/default-avatar.png" id="avatar">
+  </div>
+</header>
+
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="side-item" data-section="info">Admin Info</div>
+  <div class="side-item" data-section="history">Tournament History</div>
+  <div class="side-item logout" id="logout">Logout</div>
+</aside>
+
+<!-- NOTIFICATIONS -->
+<div id="notificationPanel">
+  <h3>Notifications</h3>
+  <ul>
+    <li>No new notifications</li>
+  </ul>
+</div>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="actions">
+    <button id="btnCreate">➕ Create Tournament</button>
+    <button id="btnManage">🛠 Manage Tournaments</button>
+  </div>
+
+  <!-- CREATE FORM -->
+  <section id="createForm" class="card hidden">
+    <h3>Create Tournament</h3>
+
+    <input type="text" placeholder="Tournament Name">
+    <input type="number" placeholder="Slots">
+    <input type="text" placeholder="Prize Pool">
+
+    <select id="entryType">
+      <option value="">Entry Type</option>
+      <option value="free">Free</option>
+      <option value="paid">Paid</option>
+    </select>
+
+    <input type="number" id="entryFee" placeholder="Entry Fee per Slot" class="hidden">
+
+    <label>Registration Start</label>
+    <input type="datetime-local">
+
+    <label>Registration Close</label>
+    <input type="datetime-local">
+
+    <label>Match Start</label>
+    <input type="datetime-local">
+
+    <input type="file">
+
+    <button class="submit">Create Tournament</button>
+  </section>
+
+  <!-- MANAGE -->
+  <section id="manageSection" class="card hidden">
+    <h3>Manage Tournaments</h3>
+    <p>Created tournaments will appear here</p>
+  </section>
+</main>
+
+<footer class="footer">
+  Admin Terms & Policy
+</footer>
+
+<script src="js/firebase.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

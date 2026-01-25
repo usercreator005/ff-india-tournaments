@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>User Dashboard | FF INDIA TOURNAMENTS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="css/user.css">
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="logo">FF INDIA TOURNAMENTS</div>
+
+  <div class="header-icons">
+    <span id="notificationBell">🔔</span>
+    <img src="assets/default-avatar.png" id="avatar">
+  </div>
+</header>
+
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="sidebar-section" data-tab="userinfo">User Info</div>
+  <div class="sidebar-section" data-tab="team">Team</div>
+  <div class="sidebar-section" data-tab="mytournaments">My Tournaments</div>
+  <div class="sidebar-section" data-tab="support">Contact Support</div>
+  <div class="sidebar-section logout" id="logout">Logout</div>
+</aside>
+
+<!-- NOTIFICATION PANEL -->
+<div id="notificationPanel">
+  <h3>Notifications</h3>
+  <ul>
+    <li>No new notifications</li>
+  </ul>
+</div>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+
+  <!-- NAV TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="ongoing">Ongoing</button>
+    <button class="tab-btn" data-tab="upcoming">Upcoming</button>
+    <button class="tab-btn" data-tab="past">Past</button>
+    <button class="tab-btn hot" data-tab="hot">
+      Hot Slots <span class="badge">1</span>
+    </button>
+  </div>
+
+  <!-- TAB CONTENT -->
+  <section id="tabContent">
+    <div class="tab active" id="ongoing">No ongoing tournaments</div>
+    <div class="tab" id="upcoming">Upcoming tournaments will appear here</div>
+    <div class="tab" id="past">Past tournaments history</div>
+    <div class="tab" id="hot">🔥 New promo slot available</div>
+  </section>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  User Terms & Conditions
+</footer>
+
+<script src="js/firebase.js"></script>
+<script src="js/user.js"></script>
+</body>
+</html>

@@ -1,0 +1,126 @@
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Segoe UI, sans-serif;
+}
+
+body{
+  background:#0b0b0b;
+  color:#fff;
+}
+
+.header{
+  height:55px;
+  background:#000;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:0 15px;
+  border-bottom:1px solid #222;
+}
+
+.logo{font-weight:700}
+
+.icons{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.switch{
+  background:#222;
+  color:#fff;
+  border:none;
+  padding:6px 10px;
+  border-radius:6px;
+  font-size:12px;
+}
+
+#avatar{
+  width:34px;
+  height:34px;
+  border-radius:50%;
+}
+
+/* MAIN */
+.main{padding:15px}
+
+/* STATS */
+.stats{
+  display:flex;
+  gap:10px;
+  margin-bottom:15px;
+}
+
+.card{
+  background:#111;
+  padding:15px;
+  border-radius:10px;
+  flex:1;
+  text-align:center;
+}
+
+.card span{
+  font-size:20px;
+  font-weight:700;
+}
+
+.full{
+  margin-bottom:15px;
+  text-align:left;
+}
+
+.card h3{margin-bottom:10px}
+
+.card input,
+.card textarea{
+  width:100%;
+  margin:6px 0;
+  padding:8px;
+  background:#000;
+  border:1px solid #222;
+  color:#fff;
+  border-radius:6px;
+}
+
+textarea{min-height:80px}
+
+.card button{
+  width:100%;
+  padding:10px;
+  background:#ffb300;
+  border:none;
+  border-radius:6px;
+  font-weight:700;
+  margin-top:8px;
+}
+
+.admin-list{
+  list-style:none;
+  margin-top:10px;
+}
+
+.admin-list li{
+  padding:6px;
+  border-bottom:1px solid #222;
+  font-size:13px;
+}
+
+.dm-text{
+  margin-top:10px;
+  font-size:13px;
+  color:#aaa;
+}
+
+.dm-text span{
+  color:#00e676;
+  cursor:pointer;
+}
+
+.footer{
+  text-align:center;
+  font-size:12px;
+  color:#aaa;
+  padding:10px;
+}

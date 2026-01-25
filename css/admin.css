@@ -1,0 +1,134 @@
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Segoe UI, sans-serif;
+}
+
+body{
+  background:#0b0b0b;
+  color:#fff;
+}
+
+.header{
+  height:55px;
+  background:#000;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:0 15px;
+  border-bottom:1px solid #222;
+}
+
+.logo{font-weight:700}
+
+.icons{
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+
+#avatar{
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  cursor:pointer;
+}
+
+/* Sidebar */
+#sidebar{
+  position:fixed;
+  top:55px;
+  left:-240px;
+  width:220px;
+  height:calc(100% - 55px);
+  background:#111;
+  transition:.3s;
+  z-index:10;
+}
+
+#sidebar.active{left:0}
+
+.side-item{
+  padding:14px;
+  border-bottom:1px solid #222;
+  cursor:pointer;
+}
+
+.side-item.logout{color:red}
+
+/* Notification */
+#notificationPanel{
+  position:fixed;
+  top:55px;
+  right:-260px;
+  width:240px;
+  height:calc(100% - 55px);
+  background:#111;
+  padding:15px;
+  transition:.3s;
+}
+
+#notificationPanel.active{right:0}
+
+/* Main */
+.main{padding:15px}
+
+.actions{
+  display:flex;
+  gap:10px;
+  margin-bottom:15px;
+}
+
+.actions button{
+  flex:1;
+  padding:10px;
+  background:#ffb300;
+  border:none;
+  border-radius:6px;
+  font-weight:600;
+}
+
+/* Cards */
+.card{
+  background:#111;
+  padding:15px;
+  border-radius:10px;
+}
+
+.card h3{margin-bottom:10px}
+
+.card input,
+.card select{
+  width:100%;
+  margin:6px 0;
+  padding:8px;
+  background:#000;
+  border:1px solid #222;
+  color:#fff;
+  border-radius:6px;
+}
+
+.card label{
+  font-size:12px;
+  color:#aaa;
+}
+
+.submit{
+  width:100%;
+  padding:10px;
+  margin-top:10px;
+  background:#00e676;
+  border:none;
+  border-radius:6px;
+  font-weight:700;
+}
+
+.hidden{display:none}
+
+.footer{
+  text-align:center;
+  font-size:12px;
+  color:#aaa;
+  padding:10px;
+}

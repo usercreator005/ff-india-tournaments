@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "ff-india-tournaments-dfdde",
+  "private_key_id": "9f6a764f14d3be79f09fc7859d39aaa19db26712",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCyuZ215DJZ+cMq\nrTBzQKPOJ9ofU0h5ozPH1T3lSOO20g1kiOpfYQCmXIO9kXYNJf9gFv9PikATFnUw\ntiUXVp2OVKaEUBRKZQ4XtiVT6XsND1EH6HVV4yBis0KZA2qJhZeXnA7Ii6GciU3R\nnyi1a2IO6bBf4997ObQWksTdut8NxJ42s50/0MxYIPqNjCLrnqOLTcBObvGO/R1K\nqK0VJRok1FARN7CuBw00e5irxXBz0lob/mF3buR78PhcBHOxXNY64oAi/TUZjiFY\n31ucoKgvSUlvIy7+iWlj47iqoN36aUOehQYtGTcyW0DbgmRS9wNFpuXrC4pgWGLP\nT8lHhegNAgMBAAECggEAFxUB2UvvdM9c9VYIu9nNTgK3mPQYmB0LwvM3WzVes23N\nbP6Bxm+wtcuc+A6hQHF32eEeeBdSzyRHXlMn1yvIjWlBWDU/aZxDhaxwhbXRvo4L\n2QmcncsHk7ezEi/uwnQOb/Ynsp7V8HGLK1dy2ntT3rkvnjK/2hpJt+CcrEZGKHDU\n3sLMsC6p00uayYi45UdJRZCpb1AWZJ0C3VtD4XiTGIAKYKFbpm3wMEibrkz3EbPZ\n3tHPRJMIuALEORuHafK/8qjCzNQzDi9kyOKE1W7MismEQ9lMz9XONWEjn4Q82Dfl\nOZuE3Uv5qi0IpbzLMFoCf20zsbeagfHu/IGT0Mr/wQKBgQDkkz3vPaG6AM2KyInP\nCmrHSSpq7W3JwU6JkiBKDIvPMWWYqzyej8ECZGT6uCXzuJSn4OFSeyL3HOVBnQAa\nwzYV131w5wkc+pR6sKAJlIYLtC9ui/6R8FvMEDyvGSnuuE0v5In9s56rtpqXLfnf\n3/1l/lI4M3F4n01yfeWbiGaJawKBgQDIKzZsGoVkjODNfzd8lyfOUc6s+KvPle1D\nExWoVaa0amKH8+bbrq3jLygpHXasrlQXSrrg0aQVr/+6vg5+guUfE0hXp6iateNM\n4SFiupChg6DmlNHXVbiP7BxcTP4PyfOBDLXghoT7FeydfulGl5i95o2wK2de5PYZ\n+73joh9aZwKBgClAucjX4rxjMLV/g/+t7Z+SAOnTeCEVlksV6GX05ba7P47SONqV\nL0xzOhZV7eOSyKGT4Ja2SpU2zdmNsFskKDrA7Y7W47orL2kFP5z7BUZPetAEzCki\nrC6kL4+ahwrikGu4X38+T8DF8Big35wcHOuvfr9N6YjPl3a2ah4r+/WJAoGAE1uq\nfbXq5JiDPRxqf1AW92sN88hwxTiYo337ADaYUqZfNQqvbttr0abD2YYR7g1F8KK3\ng/qCRd6peqPavv1lryWsP13lfmDMxKiZE/U6+4PBUctep9aQbMrGy15ey6QaOobC\nKB6aSbYLFggqAzux99uOJFVuP80gx86CxLrvEU0CgYBGv6FpU5qg0RXTuHL2M8I5\nyx3L6q1BX1lZhffksVQ9SItnac+Iyov4Fv0h0wWTFs/N61nzRnvENAtDbUKOaHUg\nGC4U1seDIWYYKDmsxkuekiRLkvVegY9Xz308Prk4U3OM1g9yPpDMCDtA1RGgxjLH\nfMiDOWwyceOZ3MbmbXNbpw==\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-fbsvc@ff-india-tournaments-dfdde.iam.gserviceaccount.com",
+  "client_id": "111106220285812726305",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40ff-india-tournaments-dfdde.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
