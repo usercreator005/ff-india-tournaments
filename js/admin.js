@@ -1,56 +1,86 @@
-// Auth Guard
-import { auth } from "./firebase.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+// js/admin.js
 
+// Firebase Auth (Modular)
+import { auth } from "./firebase.js";
+import {
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
+/* =========================
+   AUTH GUARD
+========================= */
 onAuthStateChanged(auth, (user) => {
   if (!user) {
     window.location.href = "index.html";
   } else {
-    console.log("Admin logged in:", admin.email);
+    console.log("Admin logged in:", user.email);
   }
 });
 
-// Sidebar
-const avatar=document.getElementById("avatar");
-const sidebar=document.getElementById("sidebar");
-avatar.onclick=()=>sidebar.classList.toggle("active");
+/* =========================
+   SIDEBAR TOGGLE
+========================= */
+const avatar = document.getElementById("avatar");
+const sidebar = document.getElementById("sidebar");
 
-// Notifications
-const bell=document.getElementById("bell");
-const panel=document.getElementById("notificationPanel");
-bell.onclick=()=>panel.classList.toggle("active");
+avatar.addEventListener("click", () => {
+  sidebar.classList.toggle("active");
+});
 
-// Logout
-document.getElementById("logout").onclick=()=>{
-  firebase.auth().signOut().then(()=>{
-    window.location.href="index.html";
-  });
-};
+/* =========================
+   NOTIFICATIONS
+========================= */
+const bell = document.getElementById("bell");
+const panel = document.getElementById("notificationPanel");
 
-// Toggle forms
-const btnCreate=document.getElementById("btnCreate");
-const btnManage=document.getElementById("btnManage");
-const createForm=document.getElementById("createForm");
-const manageSection=document.getElementById("manageSection");
+bell.addEventListener("click", () => {
+  panel.classList.toggle("active");
+});
 
-btnCreate.onclick=()=>{
+/* =========================
+   LOGOUT (FIXED)
+========================= */
+const logoutBtn = document.getElementById("logout");
+
+logoutBtn.addEventListener("click", async () => {
+  try {
+    await signOut(auth);
+    window.location.href = "index.html";
+  } catch (err) {
+    console.error("Logout error:", err);
+    alert("Logout failed");
+  }
+});
+
+/* =========================
+   TOGGLE CREATE / MANAGE
+========================= */
+const btnCreate = document.getElementById("btnCreate");
+const btnManage = document.getElementById("btnManage");
+const createForm = document.getElementById("createForm");
+const manageSection = document.getElementById("manageSection");
+
+btnCreate.addEventListener("click", () => {
   createForm.classList.remove("hidden");
   manageSection.classList.add("hidden");
-};
+});
 
-btnManage.onclick=()=>{
+btnManage.addEventListener("click", () => {
   manageSection.classList.remove("hidden");
   createForm.classList.add("hidden");
-};
+});
 
-// Entry fee conditional
-const entryType=document.getElementById("entryType");
-const entryFee=document.getElementById("entryFee");
+/* =========================
+   ENTRY FEE CONDITION
+========================= */
+const entryType = document.getElementById("entryType");
+const entryFee = document.getElementById("entryFee");
 
-entryType.onchange=()=>{
-  if(entryType.value==="paid"){
+entryType.addEventListener("change", () => {
+  if (entryType.value === "paid") {
     entryFee.classList.remove("hidden");
-  }else{
+  } else {
     entryFee.classList.add("hidden");
   }
-};
+});
