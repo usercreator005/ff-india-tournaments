@@ -1,7 +1,12 @@
 // Auth Guard
-firebase.auth().onAuthStateChanged(user=>{
-  if(!user){
-    window.location.href="index.html";
+import { auth } from "./firebase.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
+onAuthStateChanged(auth, (user) => {
+  if (!user) {
+    window.location.href = "index.html";
+  } else {
+    console.log("Admin logged in:", admin.email);
   }
 });
 
