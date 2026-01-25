@@ -1,5 +1,8 @@
+// js/firebase.js
 
-// Your web app's Firebase configuration
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
 const firebaseConfig = {
   apiKey: "AIzaSyBqr60ogeNe3jVXEDsLK-LlwWNk-AOuKfo",
   authDomain: "ff-india-tournaments-dfdde.firebaseapp.com",
@@ -11,3 +14,9 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+
+// Auth instance
+const auth = getAuth(app);
+
+// ⬇️ export mandatory
+export { auth };
