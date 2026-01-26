@@ -1,20 +1,50 @@
 // js/admin.js
 
-// Firebase Auth (Modular)
 import { auth } from "./firebase.js";
 import {
   onAuthStateChanged,
-  signOut
+  signOut,
+  getIdToken
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
 /* =========================
-   AUTH GUARD
+   AUTH GUARD + BACKEND ROLE CHECK
 ========================= */
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
   if (!user) {
     window.location.href = "index.html";
-  } else {
-    console.log("Admin logged in:", user.email);
+    return;
+  }
+
+  console.log("Logged in:", user.email);
+
+  try {
+    const token = await getIdToken(user, true); // Firebase ID token
+    const res = await fetch("https://ff-india-tournaments.onrender.com/auth/role", {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    if (!res.ok) throw new Error("Role verification failed");
+
+    const data = await res.json();
+
+    if (data.role !== "admin") {
+      alert("Access denied! You are not an admin.");
+      await signOut(auth);
+      window.location.href = "index.html";
+      return;
+    }
+
+    console.log("Role verified:", data.role);
+
+  } catch (err) {
+    console.error(err);
+    alert("Authentication failed, redirecting...");
+    await signOut(auth);
+    window.location.href = "index.html";
   }
 });
 
@@ -39,7 +69,7 @@ bell.addEventListener("click", () => {
 });
 
 /* =========================
-   LOGOUT (FIXED)
+   LOGOUT
 ========================= */
 const logoutBtn = document.getElementById("logout");
 
