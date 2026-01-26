@@ -1,11 +1,11 @@
 const mongoose = require("mongoose");
 
 const hotSlotSchema = new mongoose.Schema({
-  tournamentName: String,
+  tournament: String,
   prizePool: String,
   stage: String,
-  slotList: String,
+  slots: String,
   contact: String
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model("HotSlot", hotSlotSchema);
