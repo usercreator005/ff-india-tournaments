@@ -42,9 +42,9 @@
   <section id="createForm" class="card hidden">
     <h3>Create Tournament</h3>
 
-    <input type="text" placeholder="Tournament Name">
-    <input type="number" placeholder="Slots">
-    <input type="text" placeholder="Prize Pool">
+    <input type="text" id="tournamentName" placeholder="Tournament Name">
+    <input type="number" id="slots" placeholder="Slots">
+    <input type="text" id="prizePool" placeholder="Prize Pool">
 
     <select id="entryType">
       <option value="">Entry Type</option>
@@ -55,15 +55,15 @@
     <input type="number" id="entryFee" placeholder="Entry Fee per Slot" class="hidden">
 
     <label>Registration Start</label>
-    <input type="datetime-local">
+    <input type="datetime-local" id="regStart">
 
     <label>Registration Close</label>
-    <input type="datetime-local">
+    <input type="datetime-local" id="regClose">
 
     <label>Match Start</label>
-    <input type="datetime-local">
+    <input type="datetime-local" id="matchStart">
 
-    <input type="file">
+    <input type="file" id="tournamentFile">
 
     <button class="submit">Create Tournament</button>
   </section>
@@ -71,7 +71,9 @@
   <!-- MANAGE -->
   <section id="manageSection" class="card hidden">
     <h3>Manage Tournaments</h3>
-    <p>Created tournaments will appear here</p>
+    <div id="tournamentList">
+      <p>Loading tournaments...</p>
+    </div>
   </section>
 </main>
 
@@ -83,4 +85,4 @@
 <script type="module" src="js/firebase.js"></script>
 <script type="module" src="js/admin.js"></script>
 </body>
-  </html>
+</html>
