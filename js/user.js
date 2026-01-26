@@ -1,4 +1,4 @@
-// js/user.js (Backend Integrated)
+// js/user.js (Backend Integrated - FINAL)
 
 // Firebase Auth (Modular)
 import { auth } from "./firebase.js";
@@ -20,10 +20,8 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   try {
-    // Firebase token
     const token = await getIdToken(user);
 
-    // Backend role check
     const res = await fetch(`${BACKEND_URL}/auth/role`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -39,14 +37,15 @@ onAuthStateChanged(auth, async (user) => {
       return;
     }
 
-    console.log("User logged in:", user.email, "Role:", data.role);
+    console.log("User verified:", user.email);
 
-    // TODO: Fetch user-specific data like My Tournaments / notifications here
-    // fetchTournaments(token);
+    // ✅ LOAD DATA AFTER LOGIN
+    fetchTournaments();
+    fetchHotSlots();
 
   } catch (err) {
     console.error("Auth error:", err);
-    alert("Session expired or unauthorized. Please login again.");
+    alert("Session expired. Please login again.");
     await signOut(auth);
     window.location.href = "index.html";
   }
@@ -72,7 +71,7 @@ logoutBtn.addEventListener("click", async () => {
     window.location.href = "index.html";
   } catch (err) {
     console.error("Logout error:", err);
-    alert("Logout failed. Try again.");
+    alert("Logout failed");
   }
 });
 
@@ -101,3 +100,73 @@ const panel = document.getElementById("notificationPanel");
 bell.addEventListener("click", () => {
   panel.classList.toggle("active");
 });
+
+/* =========================
+   FETCH TOURNAMENTS (USER VIEW)
+========================= */
+async function fetchTournaments() {
+  try {
+    const [ongoing, upcoming, past] = await Promise.all([
+      fetch(`${BACKEND_URL}/tournaments/public/ongoing`),
+      fetch(`${BACKEND_URL}/tournaments/public/upcoming`),
+      fetch(`${BACKEND_URL}/tournaments/public/past`)
+    ]);
+
+    renderTournaments("ongoing", await ongoing.json());
+    renderTournaments("upcoming", await upcoming.json());
+    renderTournaments("past", await past.json());
+
+  } catch (err) {
+    console.error("Tournament fetch error:", err);
+  }
+}
+
+function renderTournaments(tabId, tournaments) {
+  const div = document.getElementById(tabId);
+
+  if (!tournaments || tournaments.length === 0) {
+    div.innerHTML = "No tournaments found";
+    return;
+  }
+
+  div.innerHTML = tournaments.map(t => `
+    <div class="card">
+      <h4>${t.name}</h4>
+      <p>Slots: ${t.slots}</p>
+      <p>Prize: ${t.prizePool}</p>
+      <p>Entry: ${t.entryType} ${t.entryFee ? "₹" + t.entryFee : ""}</p>
+    </div>
+  `).join("");
+}
+
+/* =========================
+   FETCH HOT SLOTS
+========================= */
+async function fetchHotSlots() {
+  try {
+    const res = await fetch(`${BACKEND_URL}/hot-slots`);
+    const slots = await res.json();
+
+    const hotDiv = document.getElementById("hot");
+
+    if (!slots || slots.length === 0) {
+      hotDiv.innerHTML = "No hot slots available";
+      return;
+    }
+
+    hotDiv.innerHTML = slots.map(s => `
+      <div class="card hot-slot">
+        <h4>${s.tournament}</h4>
+        <p>Prize: ${s.prizePool}</p>
+        <p>Stage: ${s.stage}</p>
+        <p>Slots: ${s.slots}</p>
+        <a href="https://wa.me/91${s.contact}" target="_blank">
+          Contact Host
+        </a>
+      </div>
+    `).join("");
+
+  } catch (err) {
+    console.error("Hot slot fetch error:", err);
+  }
+}
