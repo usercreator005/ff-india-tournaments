@@ -1,14 +1,14 @@
 // js/creator.js
 
-// Firebase Auth (Modular)
 import { auth } from "./firebase.js";
 import {
   onAuthStateChanged,
-  signOut
+  signOut,
+  getIdToken
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
 /* =========================
-   CREATOR AUTH GUARD (LOCKED)
+   CREATOR AUTH GUARD + BACKEND ROLE CHECK
 ========================= */
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
@@ -16,19 +16,42 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
-  // HARD CREATOR LOCK
-  if (user.email !== "jarahul989@gmail.com") {
-    alert("Unauthorized access!");
+  try {
+    const token = await getIdToken(user, true); // Firebase ID token
+    const res = await fetch("https://ff-india-tournaments.onrender.com/auth/role", {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    if (!res.ok) throw new Error("Role verification failed");
+
+    const data = await res.json();
+
+    if (data.role !== "creator") {
+      alert("Unauthorized access! You are not a creator.");
+      await signOut(auth);
+      window.location.href = "index.html";
+      return;
+    }
+
+    console.log("Creator verified:", data.email, data.role);
+
+    // ✅ Update stats dynamically from backend if you want
+    // Example: fetch("/creator/stats") -> update totalUsers, activeTournaments, totalAdmins
+
+  } catch (err) {
+    console.error(err);
+    alert("Authentication failed. Redirecting...");
     await signOut(auth);
     window.location.href = "index.html";
     return;
   }
-
-  console.log("Creator logged in:", user.email);
 });
 
 /* =========================
-   DUMMY STATS (Backend Phase)
+   DUMMY STATS (Frontend placeholders)
 ========================= */
 document.getElementById("totalUsers").innerText = 128;
 document.getElementById("activeTournaments").innerText = 4;
