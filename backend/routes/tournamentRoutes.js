@@ -17,8 +17,12 @@ router.post("/create", auth, async (req, res) => {
 });
 
 // Fetch tournaments
-router.get("/:status", auth, async (req, res) => {
-  const tournaments = await Tournament.find({ status: req.params.status });
+// Public tournaments (USER VIEW)
+router.get("/public/:status", async (req, res) => {
+  const tournaments = await Tournament.find({
+    status: req.params.status
+  }).sort({ createdAt: -1 });
+
   res.json(tournaments);
 });
 
