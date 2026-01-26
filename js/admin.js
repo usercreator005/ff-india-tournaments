@@ -7,6 +7,8 @@ import {
   getIdToken
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
+const BACKEND_URL = "https://ff-india-tournaments.onrender.com";
+
 /* =========================
    AUTH GUARD + BACKEND ROLE CHECK
 ========================= */
@@ -20,7 +22,7 @@ onAuthStateChanged(auth, async (user) => {
 
   try {
     const token = await getIdToken(user, true); // Firebase ID token
-    const res = await fetch("https://ff-india-tournaments.onrender.com/auth/role", {
+    const res = await fetch(`${BACKEND_URL}/auth/role`, {
       method: "GET",
       headers: {
         "Authorization": `Bearer ${token}`
@@ -99,6 +101,7 @@ btnCreate.addEventListener("click", () => {
 btnManage.addEventListener("click", () => {
   manageSection.classList.remove("hidden");
   createForm.classList.add("hidden");
+  fetchTournaments();
 });
 
 /* =========================
@@ -114,3 +117,83 @@ entryType.addEventListener("change", () => {
     entryFee.classList.add("hidden");
   }
 });
+
+/* =========================
+   CREATE TOURNAMENT (BACKEND)
+========================= */
+const submitBtn = createForm.querySelector(".submit");
+
+submitBtn.addEventListener("click", async () => {
+  const user = auth.currentUser;
+  if (!user) return alert("User not logged in");
+
+  const token = await getIdToken(user);
+
+  const body = {
+    name: document.getElementById("tournamentName").value,
+    slots: parseInt(document.getElementById("slots").value),
+    prizePool: document.getElementById("prizePool").value,
+    entryType: document.getElementById("entryType").value,
+    entryFee: parseInt(document.getElementById("entryFee").value) || 0,
+    status: "upcoming"
+  };
+
+  try {
+    const res = await fetch(`${BACKEND_URL}/tournaments/create`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify(body)
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      alert("Tournament created successfully!");
+      createForm.reset();
+    } else {
+      alert("Error: " + (data.msg || data.message));
+    }
+
+  } catch (err) {
+    console.error("Create tournament error:", err);
+    alert("Failed to create tournament. Check console.");
+  }
+});
+
+/* =========================
+   FETCH TOURNAMENTS (MANAGE)
+========================= */
+async function fetchTournaments() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const token = await getIdToken(user);
+
+  try {
+    const res = await fetch(`${BACKEND_URL}/tournaments/upcoming`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+
+    const tournaments = await res.json();
+
+    const listDiv = document.getElementById("tournamentList");
+    if (!tournaments || tournaments.length === 0) {
+      listDiv.innerHTML = "<p>No tournaments found</p>";
+      return;
+    }
+
+    listDiv.innerHTML = tournaments.map(t => `
+      <div class="tournament-card">
+        <h4>${t.name}</h4>
+        <p>Slots: ${t.slots} | Prize: ${t.prizePool}</p>
+        <p>Entry: ${t.entryType} ${t.entryFee ? "- ₹" + t.entryFee : ""}</p>
+        <p>Status: ${t.status}</p>
+      </div>
+    `).join("");
+
+  } catch (err) {
+    console.error("Fetch tournaments error:", err);
+  }
+}
