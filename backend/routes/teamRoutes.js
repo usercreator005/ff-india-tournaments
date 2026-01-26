@@ -1,45 +1,84 @@
 const express = require("express");
 const router = express.Router();
+
 const Team = require("../models/Team");
 const User = require("../models/User");
 const auth = require("../middleware/authMiddleware");
 
-// Create Team
+/* =========================
+   CREATE TEAM (USER ONLY)
+========================= */
 router.post("/create", auth, async (req, res) => {
-  if (req.role !== "user") return res.status(403).json({ msg: "Only users" });
+  try {
+    if (req.role !== "user") {
+      return res.status(403).json({ msg: "Only users can create team" });
+    }
 
-  const existingUser = await User.findOne({ email: req.user.email });
-  if (existingUser.teamId) {
-    return res.status(400).json({ msg: "Already in a team" });
+    const user = await User.findOne({ email: req.user.email });
+    if (!user) return res.status(404).json({ msg: "User not found" });
+
+    if (user.teamId) {
+      return res.status(400).json({ msg: "Already in a team" });
+    }
+
+    if (!req.body.name) {
+      return res.status(400).json({ msg: "Team name required" });
+    }
+
+    const team = await Team.create({
+      name: req.body.name,
+      leaderEmail: user.email,
+      members: [user.email]
+    });
+
+    user.teamId = team._id;
+    await user.save();
+
+    res.json({ msg: "Team created", team });
+
+  } catch (err) {
+    console.error("Create team error:", err);
+    res.status(500).json({ msg: "Server error" });
   }
-
-  const team = await Team.create({
-    name: req.body.name,
-    leaderEmail: req.user.email,
-    members: [req.user.email]
-  });
-
-  existingUser.teamId = team._id;
-  await existingUser.save();
-
-  res.json({ msg: "Team created", team });
 });
 
-// Join Team
+/* =========================
+   JOIN TEAM (USER ONLY)
+========================= */
 router.post("/join/:id", auth, async (req, res) => {
-  const user = await User.findOne({ email: req.user.email });
-  if (user.teamId) return res.status(400).json({ msg: "Already in team" });
+  try {
+    if (req.role !== "user") {
+      return res.status(403).json({ msg: "Only users can join teams" });
+    }
 
-  const team = await Team.findById(req.params.id);
-  if (!team) return res.status(404).json({ msg: "Team not found" });
+    const user = await User.findOne({ email: req.user.email });
+    if (!user) return res.status(404).json({ msg: "User not found" });
 
-  team.members.push(req.user.email);
-  await team.save();
+    if (user.teamId) {
+      return res.status(400).json({ msg: "Already in a team" });
+    }
 
-  user.teamId = team._id;
-  await user.save();
+    const team = await Team.findById(req.params.id);
+    if (!team) {
+      return res.status(404).json({ msg: "Team not found" });
+    }
 
-  res.json({ msg: "Joined team" });
+    if (team.members.includes(user.email)) {
+      return res.status(400).json({ msg: "Already a member" });
+    }
+
+    team.members.push(user.email);
+    await team.save();
+
+    user.teamId = team._id;
+    await user.save();
+
+    res.json({ msg: "Joined team", team });
+
+  } catch (err) {
+    console.error("Join team error:", err);
+    res.status(500).json({ msg: "Server error" });
+  }
 });
 
 module.exports = router;
