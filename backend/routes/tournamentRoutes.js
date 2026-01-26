@@ -18,9 +18,9 @@ router.post("/create", auth, async (req, res) => {
       prizePool: req.body.prizePool,
       entryType: req.body.entryType,
       entryFee: req.body.entryFee || 0,
-      registrationStart: req.body.registrationStart,
-      registrationEnd: req.body.registrationEnd,
-      matchStart: req.body.matchStart,
+      registrationStart: req.body.registrationStart || null,
+      registrationEnd: req.body.registrationEnd || null,
+      matchStart: req.body.matchStart || null,
       status: "upcoming",
       createdBy: req.user.email
     });
@@ -37,7 +37,6 @@ router.post("/create", auth, async (req, res) => {
 
 /* =========================
    UPDATE TOURNAMENT STATUS (ADMIN)
-   upcoming → ongoing → past
 ========================= */
 router.patch("/status/:id", auth, async (req, res) => {
   try {
@@ -70,7 +69,7 @@ router.patch("/status/:id", auth, async (req, res) => {
 });
 
 /* =========================
-   FETCH TOURNAMENTS (PUBLIC – USER VIEW)
+   FETCH TOURNAMENTS (PUBLIC – USER)
 ========================= */
 router.get("/public/:status", async (req, res) => {
   try {
@@ -80,7 +79,7 @@ router.get("/public/:status", async (req, res) => {
 
     res.json(tournaments);
   } catch (err) {
-    console.error("Fetch tournaments error:", err);
+    console.error("Public fetch error:", err);
     res.status(500).json({ msg: "Server error" });
   }
 });
