@@ -5,7 +5,7 @@ const Admin = require("../models/Admin");
 const User = require("../models/User");
 const auth = require("../middleware/authMiddleware");
 
-// Dashboard
+// Dashboard stats
 router.get("/stats", auth, async (req, res) => {
   if (req.role !== "creator") return res.sendStatus(403);
 
@@ -18,16 +18,23 @@ router.get("/stats", auth, async (req, res) => {
   });
 });
 
-// Create Admin
+// Create Admin (CREATOR ONLY)
 router.post("/create-admin", auth, async (req, res) => {
   if (req.role !== "creator") return res.sendStatus(403);
+
+  const exists = await Admin.findOne({ email: req.body.email });
+  if (exists) {
+    return res.status(400).json({ msg: "Admin already exists" });
+  }
 
   const admin = await Admin.create(req.body);
   res.json({ msg: "Admin created", admin });
 });
 
-// Remove Admin
+// ❗ FIXED: Remove Admin (CREATOR ONLY)
 router.delete("/remove-admin/:email", auth, async (req, res) => {
+  if (req.role !== "creator") return res.sendStatus(403);
+
   await Admin.deleteOne({ email: req.params.email });
   res.json({ msg: "Admin removed" });
 });
