@@ -1,5 +1,3 @@
-// js/admin.js
-
 import { auth } from "./firebase.js";
 import {
   onAuthStateChanged,
@@ -18,25 +16,16 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
-  try {
-    const token = await getIdToken(user, true);
+  const token = await getIdToken(user);
 
-    const res = await fetch(`${BACKEND_URL}/auth/role`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+  const res = await fetch(`${BACKEND_URL}/auth/role`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
 
-    const data = await res.json();
+  const data = await res.json();
 
-    if (data.role !== "admin") {
-      alert("Access denied!");
-      await signOut(auth);
-      window.location.href = "index.html";
-      return;
-    }
-
-    console.log("Admin verified:", user.email);
-  } catch (err) {
-    console.error("Auth error:", err);
+  if (data.role !== "admin") {
+    alert("Access denied");
     await signOut(auth);
     window.location.href = "index.html";
   }
@@ -49,57 +38,57 @@ const avatar = document.getElementById("avatar");
 const sidebar = document.getElementById("sidebar");
 const logoutBtn = document.getElementById("logout");
 
-avatar.addEventListener("click", () => {
-  sidebar.classList.toggle("active");
-});
-
-logoutBtn.addEventListener("click", async () => {
+avatar.onclick = () => sidebar.classList.toggle("active");
+logoutBtn.onclick = async () => {
   await signOut(auth);
   window.location.href = "index.html";
-});
+};
 
 /* =========================
-   TOGGLE CREATE / MANAGE
+   FORM TOGGLE
 ========================= */
 const btnCreate = document.getElementById("btnCreate");
 const btnManage = document.getElementById("btnManage");
 const createForm = document.getElementById("createForm");
 const manageSection = document.getElementById("manageSection");
 
-btnCreate.addEventListener("click", () => {
+btnCreate.onclick = () => {
   createForm.classList.remove("hidden");
   manageSection.classList.add("hidden");
-});
+};
 
-btnManage.addEventListener("click", () => {
+btnManage.onclick = () => {
   manageSection.classList.remove("hidden");
   createForm.classList.add("hidden");
   fetchTournaments();
-});
+};
 
 /* =========================
-   ENTRY FEE TOGGLE
+   PAID TOGGLE
 ========================= */
 const entryType = document.getElementById("entryType");
 const entryFee = document.getElementById("entryFee");
+const upiId = document.getElementById("upiId");
 
-entryType.addEventListener("change", () => {
-  entryFee.classList.toggle("hidden", entryType.value !== "paid");
-});
+entryType.onchange = () => {
+  const paid = entryType.value === "paid";
+  entryFee.classList.toggle("hidden", !paid);
+  upiId.classList.toggle("hidden", !paid);
+};
 
 /* =========================
    CREATE TOURNAMENT
 ========================= */
-createForm.querySelector(".submit").addEventListener("click", async () => {
-  const user = auth.currentUser;
-  const token = await getIdToken(user);
+createForm.querySelector(".submit").onclick = async () => {
+  const token = await getIdToken(auth.currentUser);
 
   const body = {
-    name: document.getElementById("tournamentName").value,
-    slots: Number(document.getElementById("slots").value),
-    prizePool: document.getElementById("prizePool").value,
+    name: tournamentName.value,
+    slots: Number(slots.value),
+    prizePool: prizePool.value,
     entryType: entryType.value,
-    entryFee: Number(entryFee.value) || 0
+    entryFee: Number(entryFee.value) || 0,
+    upiId: upiId.value
   };
 
   const res = await fetch(`${BACKEND_URL}/tournaments/create`, {
@@ -112,17 +101,11 @@ createForm.querySelector(".submit").addEventListener("click", async () => {
   });
 
   const data = await res.json();
-
-  if (res.ok) {
-    alert("Tournament created");
-    createForm.reset();
-  } else {
-    alert(data.msg || "Error");
-  }
-});
+  alert(data.msg);
+};
 
 /* =========================
-   FETCH TOURNAMENTS (ADMIN)
+   FETCH ADMIN TOURNAMENTS
 ========================= */
 async function fetchTournaments() {
   const token = await getIdToken(auth.currentUser);
@@ -131,21 +114,14 @@ async function fetchTournaments() {
     headers: { Authorization: `Bearer ${token}` }
   });
 
-  const tournaments = await res.json();
   const list = document.getElementById("tournamentList");
-
-  if (!tournaments.length) {
-    list.innerHTML = "<p>No tournaments found</p>";
-    return;
-  }
+  const tournaments = await res.json();
 
   list.innerHTML = tournaments.map(t => `
     <div class="tournament-card">
       <h4>${t.name}</h4>
-      <p>Slots: ${t.slots}</p>
-      <p>Prize: ${t.prizePool}</p>
-      <p>Entry: ${t.entryType} ${t.entryFee ? "₹" + t.entryFee : ""}</p>
-      <p>Status: ${t.status}</p>
+      <p>${t.entryType} ${t.entryFee ? "₹" + t.entryFee : ""}</p>
+      <p>UPI: ${t.payment?.upiId || "-"}</p>
     </div>
   `).join("");
-}
+  }
