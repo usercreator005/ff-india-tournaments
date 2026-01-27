@@ -2,20 +2,9 @@ const mongoose = require("mongoose");
 
 const tournamentSchema = new mongoose.Schema(
   {
-    name: {
-      type: String,
-      required: true
-    },
-
-    slots: {
-      type: Number,
-      required: true
-    },
-
-    prizePool: {
-      type: String,
-      required: true
-    },
+    name: { type: String, required: true },
+    slots: { type: Number, required: true },
+    prizePool: { type: String, required: true },
 
     entryType: {
       type: String,
@@ -23,39 +12,24 @@ const tournamentSchema = new mongoose.Schema(
       default: "free"
     },
 
-    entryFee: {
-      type: Number,
-      default: 0
+    entryFee: { type: Number, default: 0 },
+
+    payment: {
+      upiId: { type: String },
+      qrImage: { type: String }
     },
 
-    // 🔐 Tournament lifecycle
     status: {
       type: String,
       enum: ["upcoming", "ongoing", "past"],
       default: "upcoming"
     },
 
-    // 🕒 NEW: Registration & Match Timing
-    registrationStart: {
-      type: Date,
-      required: false
-    },
+    registrationStart: Date,
+    registrationEnd: Date,
+    matchStart: Date,
 
-    registrationEnd: {
-      type: Date,
-      required: false
-    },
-
-    matchStart: {
-      type: Date,
-      required: false
-    },
-
-    // 👤 Admin email
-    createdBy: {
-      type: String,
-      required: true
-    }
+    createdBy: { type: String, required: true }
   },
   { timestamps: true }
 );
