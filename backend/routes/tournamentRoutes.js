@@ -9,7 +9,11 @@ const auth = require("../middleware/authMiddleware");
 router.post("/create", auth, async (req, res) => {
   try {
     if (req.role !== "admin") {
-      return res.status(403).json({ msg: "Only admin can create tournaments" });
+      return res.status(403).json({ msg: "Only admin" });
+    }
+
+    if (req.body.entryType === "paid" && !req.body.upiId) {
+      return res.status(400).json({ msg: "UPI required for paid tournament" });
     }
 
     const tournament = await Tournament.create({
@@ -18,19 +22,21 @@ router.post("/create", auth, async (req, res) => {
       prizePool: req.body.prizePool,
       entryType: req.body.entryType,
       entryFee: req.body.entryFee || 0,
-      registrationStart: req.body.registrationStart || null,
-      registrationEnd: req.body.registrationEnd || null,
-      matchStart: req.body.matchStart || null,
+
+      payment:
+        req.body.entryType === "paid"
+          ? {
+              upiId: req.body.upiId,
+              qrImage: req.body.qrImage
+            }
+          : undefined,
+
       status: "upcoming",
       createdBy: req.user.email
     });
 
-    res.json({
-      msg: "Tournament created successfully",
-      tournament
-    });
+    res.json({ msg: "Tournament created", tournament });
   } catch (err) {
-    console.error("Create tournament error:", err);
     res.status(500).json({ msg: "Server error" });
   }
 });
