@@ -13,6 +13,7 @@ app.use("/teams", require("./routes/teamRoutes"));
 app.use("/tournaments", require("./routes/tournamentRoutes"));
 app.use("/creator", require("./routes/creatorRoutes"));
 app.use("/auth", require("./routes/authRoutes"));
+app.use("/payments", require("./routes/paymentRoutes"));
 app.use("/hot-slots", require("./routes/hotSlotRoutes"));
 app.get("/", (req, res) => {
   res.send("FF INDIA TOURNAMENTS BACKEND RUNNING");
