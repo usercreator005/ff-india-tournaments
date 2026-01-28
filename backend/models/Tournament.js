@@ -14,10 +14,9 @@ const tournamentSchema = new mongoose.Schema(
 
     entryFee: { type: Number, default: 0 },
 
-    payment: {
-      upiId: { type: String },
-      qrImage: { type: String }
-    },
+    // 🔐 Payment info (ONLY FOR PAID)
+    upiId: { type: String, default: null },
+    qrImage: { type: String, default: null },
 
     status: {
       type: String,
