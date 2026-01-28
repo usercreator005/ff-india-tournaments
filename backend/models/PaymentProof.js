@@ -2,27 +2,18 @@ const mongoose = require("mongoose");
 
 const paymentProofSchema = new mongoose.Schema(
   {
-    tournamentId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Tournament",
-      required: true
-    },
+    userEmail: String,
+    tournamentId: mongoose.Schema.Types.ObjectId,
 
-    userEmail: {
-      type: String,
-      required: true
-    },
-
-    screenshotUrl: {
-      type: String,
-      required: true
-    },
+    screenshot: String,
 
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],
       default: "pending"
-    }
+    },
+
+    reviewedBy: String
   },
   { timestamps: true }
 );
