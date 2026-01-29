@@ -3,8 +3,7 @@ const router = express.Router();
 const Tournament = require("../models/Tournament");
 const auth = require("../middleware/authMiddleware");
 const apiLimiter = require("../middleware/rateLimiter");
-const { body, param } = require("express-validator");
-const { validationResult } = require("express-validator");
+const { body, param, validationResult } = require("express-validator");
 
 /* =========================
    VALIDATION HELPERS
@@ -12,10 +11,10 @@ const { validationResult } = require("express-validator");
 const validateCreateTournament = [
   body("name").trim().isLength({ min: 3 }),
   body("slots").isInt({ min: 1 }),
-  body("prizePool").isInt({ min: 0 }),
+  body("prizePool").trim().notEmpty(),
   body("entryType").isIn(["free", "paid"]),
   body("entryFee").optional().isInt({ min: 0 }),
-  body("upiId").optional().isString(),
+  body("upiId").optional().isString().trim(),
 ];
 
 const validateStatusParam = [
@@ -59,9 +58,9 @@ router.post(
       } = req.body;
 
       if (entryType === "paid" && !upiId) {
-        return res
-          .status(400)
-          .json({ msg: "UPI ID required for paid tournament" });
+        return res.status(400).json({
+          msg: "UPI ID required for paid tournament",
+        });
       }
 
       const tournament = await Tournament.create({
@@ -72,10 +71,7 @@ router.post(
         entryFee: entryType === "paid" ? entryFee : 0,
         payment:
           entryType === "paid"
-            ? {
-                upiId,
-                qrImage,
-              }
+            ? { upiId, qrImage }
             : undefined,
         status: "upcoming",
         createdBy: req.user.email,
@@ -93,7 +89,7 @@ router.post(
 );
 
 /* =========================
-   UPDATE TOURNAMENT STATUS (ADMIN)
+   UPDATE TOURNAMENT STATUS
 ========================= */
 router.patch(
   "/status/:id",
@@ -108,20 +104,15 @@ router.patch(
 
       if (validateErrors(req, res)) return;
 
-      const { status } = req.body;
-
       const tournament = await Tournament.findById(req.params.id);
       if (!tournament) {
         return res.status(404).json({ msg: "Tournament not found" });
       }
 
-      tournament.status = status;
+      tournament.status = req.body.status;
       await tournament.save();
 
-      res.json({
-        msg: "Tournament status updated",
-        tournament,
-      });
+      res.json({ msg: "Status updated", tournament });
     } catch (err) {
       console.error("Update status error:", err);
       res.status(500).json({ msg: "Server error" });
@@ -134,8 +125,8 @@ router.patch(
 ========================= */
 router.get("/public/:status", apiLimiter, async (req, res) => {
   try {
-    const allowedStatus = ["upcoming", "ongoing", "past"];
-    if (!allowedStatus.includes(req.params.status)) {
+    const allowed = ["upcoming", "ongoing", "past"];
+    if (!allowed.includes(req.params.status)) {
       return res.status(400).json({ msg: "Invalid status" });
     }
 
@@ -159,8 +150,8 @@ router.get("/admin/:status", apiLimiter, auth, async (req, res) => {
       return res.status(403).json({ msg: "Only admin access" });
     }
 
-    const allowedStatus = ["upcoming", "ongoing", "past"];
-    if (!allowedStatus.includes(req.params.status)) {
+    const allowed = ["upcoming", "ongoing", "past"];
+    if (!allowed.includes(req.params.status)) {
       return res.status(400).json({ msg: "Invalid status" });
     }
 
