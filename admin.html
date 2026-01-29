@@ -18,18 +18,10 @@
 
 <!-- SIDEBAR -->
 <aside id="sidebar">
-  <div class="side-item" data-section="info">Admin Info</div>
-  <div class="side-item" data-section="history">Tournament History</div>
+  <div class="side-item">Admin Info</div>
+  <div class="side-item">Tournament History</div>
   <div class="side-item logout" id="logout">Logout</div>
 </aside>
-
-<!-- NOTIFICATIONS -->
-<div id="notificationPanel">
-  <h3>Notifications</h3>
-  <ul>
-    <li>No new notifications</li>
-  </ul>
-</div>
 
 <!-- MAIN -->
 <main class="main">
@@ -42,28 +34,21 @@
   <section id="createForm" class="card hidden">
     <h3>Create Tournament</h3>
 
-    <input type="text" id="tournamentName" placeholder="Tournament Name">
-    <input type="number" id="slots" placeholder="Slots">
-    <input type="text" id="prizePool" placeholder="Prize Pool">
+    <input type="text" id="tournamentName" placeholder="Tournament Name" required>
+    <input type="number" id="slots" placeholder="Slots" required>
+    <input type="text" id="prizePool" placeholder="Prize Pool" required>
 
-    <select id="entryType">
-      <option value="">Entry Type</option>
+    <select id="entryType" required>
+      <option value="">Select Entry Type</option>
       <option value="free">Free</option>
       <option value="paid">Paid</option>
     </select>
 
-    <input type="number" id="entryFee" placeholder="Entry Fee per Slot" class="hidden">
-
-    <label>Registration Start</label>
-    <input type="datetime-local" id="regStart">
-
-    <label>Registration Close</label>
-    <input type="datetime-local" id="regClose">
-
-    <label>Match Start</label>
-    <input type="datetime-local" id="matchStart">
-
-    <input type="file" id="tournamentFile">
+    <!-- PAID ONLY -->
+    <div id="paidBox" class="hidden">
+      <input type="number" id="entryFee" placeholder="Entry Fee (₹)">
+      <input type="text" id="upiId" placeholder="UPI ID (for payments)">
+    </div>
 
     <button class="submit">Create Tournament</button>
   </section>
@@ -71,9 +56,7 @@
   <!-- MANAGE -->
   <section id="manageSection" class="card hidden">
     <h3>Manage Tournaments</h3>
-    <div id="tournamentList">
-      <p>Loading tournaments...</p>
-    </div>
+    <div id="tournamentList">Loading...</div>
   </section>
 </main>
 
@@ -81,7 +64,6 @@
   Admin Terms & Policy
 </footer>
 
-<!-- Modular Firebase JS -->
 <script type="module" src="js/firebase.js"></script>
 <script type="module" src="js/admin.js"></script>
 </body>
