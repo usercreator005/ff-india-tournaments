@@ -3,45 +3,77 @@ const User = require("../models/User");
 const Admin = require("../models/Admin");
 
 const authMiddleware = async (req, res, next) => {
-  const token = req.headers.authorization?.split(" ")[1];
-  if (!token) return res.status(401).json({ message: "No token" });
-
   try {
-    const decoded = await admin.auth().verifyIdToken(token);
-    req.user = decoded;
+    const authHeader = req.headers.authorization;
 
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ message: "Authorization token missing" });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    // Verify Firebase token
+    const decoded = await admin.auth().verifyIdToken(token);
+
+    if (!decoded || !decoded.email) {
+      return res.status(401).json({ message: "Invalid Firebase token" });
+    }
+
+    const email = decoded.email.toLowerCase();
     let role = "user";
 
-    // Creator check
-    if (decoded.email === process.env.CREATOR_EMAIL) {
+    /* =========================
+       ROLE DETECTION
+    ========================= */
+
+    // Creator (highest priority)
+    if (
+      process.env.CREATOR_EMAIL &&
+      email === process.env.CREATOR_EMAIL.toLowerCase()
+    ) {
       role = "creator";
     }
-    // Admin check
-    else if (await Admin.findOne({ email: decoded.email })) {
-      role = "admin";
+    // Admin
+    else {
+      const isAdmin = await Admin.findOne({ email });
+      if (isAdmin) role = "admin";
     }
 
-    let user = await User.findOne({ email: decoded.email });
+    /* =========================
+       USER SYNC (AUTO)
+    ========================= */
+
+    let user = await User.findOne({ email });
 
     if (!user) {
       user = await User.create({
         uid: decoded.uid,
-        name: decoded.name,
-        email: decoded.email,
+        name: decoded.name || "Player",
+        email,
         role
       });
     } else if (user.role !== role) {
-      // 🔥 AUTO SYNC ROLE
+      // Auto role sync
       user.role = role;
       await user.save();
     }
 
-    req.role = role;
-    next();
+    /* =========================
+       REQUEST ATTACH
+    ========================= */
+    req.user = {
+      uid: decoded.uid,
+      email,
+      name: decoded.name || user.name
+    };
 
-  } catch (err) {
-    console.error(err);
-    res.status(403).json({ message: "Invalid token" });
+    req.role = role;
+    req.userId = user._id;
+
+    next();
+  } catch (error) {
+    console.error("Auth Middleware Error:", error.message);
+    return res.status(403).json({ message: "Authentication failed" });
   }
 };
 
