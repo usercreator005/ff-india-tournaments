@@ -5,153 +5,192 @@ const HotSlot = require("../models/HotSlot");
 const Admin = require("../models/Admin");
 const User = require("../models/User");
 const Tournament = require("../models/Tournament");
+
 const auth = require("../middleware/authMiddleware");
 const apiLimiter = require("../middleware/rateLimiter");
-const { body, param } = require("express-validator");
-const { validationResult } = require("express-validator");
+
+const { body, param, validationResult } = require("express-validator");
 
 /* =========================
-   VALIDATION HELPERS
+   COMMON HELPERS
 ========================= */
-const validateCreateAdmin = [
-  body("name").trim().isLength({ min: 2 }),
-  body("email").isEmail(),
-];
+const creatorOnly = (req, res, next) => {
+  if (req.role !== "creator") {
+    return res.status(403).json({ success: false, msg: "Creator access only" });
+  }
+  next();
+};
 
-const validateRemoveAdmin = [
-  param("email").isEmail(),
-];
-
-const validateHotSlot = [
-  body("tournament").isMongoId(),
-  body("prizePool").isInt({ min: 0 }),
-  body("stage").trim().isLength({ min: 2 }),
-  body("slots").isInt({ min: 1 }),
-  body("contact").trim().isLength({ min: 3 }),
-];
-
-const validateErrors = (req, res) => {
+const validate = (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    res.status(400).json({ success: false, errors: errors.array() });
+    res.status(400).json({
+      success: false,
+      errors: errors.array(),
+    });
     return true;
   }
   return false;
 };
 
 /* =========================
-   CREATOR DASHBOARD STATS
+   VALIDATIONS
 ========================= */
-router.get("/stats", apiLimiter, auth, async (req, res) => {
-  try {
-    if (req.role !== "creator") {
-      return res.sendStatus(403);
-    }
+const validateCreateAdmin = [
+  body("name").trim().isLength({ min: 2 }).withMessage("Name too short"),
+  body("email").isEmail().withMessage("Invalid email"),
+];
 
-    const totalUsers = await User.countDocuments();
-    const admins = await Admin.find().select("-__v");
-    const activeTournaments = await Tournament.countDocuments({
-      status: "upcoming",
-    });
+const validateRemoveAdmin = [
+  param("email").isEmail().withMessage("Invalid email"),
+];
 
-    res.json({
-      totalUsers,
-      activeTournaments,
-      admins,
-    });
-  } catch (err) {
-    console.error("Creator stats error:", err);
-    res.status(500).json({ msg: "Server error" });
-  }
-});
+const validateHotSlot = [
+  body("tournament").isMongoId().withMessage("Invalid tournament ID"),
+  body("prizePool").isInt({ min: 0 }),
+  body("stage").trim().isLength({ min: 2 }),
+  body("slots").isInt({ min: 1 }),
+  body("contact").trim().isLength({ min: 3 }),
+];
 
 /* =========================
-   CREATE ADMIN (CREATOR ONLY)
+   CREATOR DASHBOARD STATS
+========================= */
+router.get(
+  "/stats",
+  apiLimiter,
+  auth,
+  creatorOnly,
+  async (req, res) => {
+    try {
+      const [totalUsers, admins, activeTournaments] = await Promise.all([
+        User.countDocuments(),
+        Admin.find().select("-__v"),
+        Tournament.countDocuments({ status: "upcoming" }),
+      ]);
+
+      res.json({
+        success: true,
+        totalUsers,
+        activeTournaments,
+        admins,
+      });
+    } catch (err) {
+      console.error("Creator stats error:", err);
+      res.status(500).json({ success: false, msg: "Server error" });
+    }
+  }
+);
+
+/* =========================
+   CREATE ADMIN (CREATOR)
 ========================= */
 router.post(
   "/create-admin",
   apiLimiter,
   auth,
+  creatorOnly,
   validateCreateAdmin,
   async (req, res) => {
     try {
-      if (req.role !== "creator") {
-        return res.sendStatus(403);
+      if (validate(req, res)) return;
+
+      const name = req.body.name.trim();
+      const email = req.body.email.toLowerCase();
+
+      if (email === process.env.CREATOR_EMAIL?.toLowerCase()) {
+        return res.status(400).json({
+          success: false,
+          msg: "Creator cannot be added as admin",
+        });
       }
-
-      if (validateErrors(req, res)) return;
-
-      const { name, email } = req.body;
 
       const exists = await Admin.findOne({ email });
       if (exists) {
-        return res.status(400).json({ msg: "Admin already exists" });
+        return res.status(400).json({
+          success: false,
+          msg: "Admin already exists",
+        });
       }
 
       const admin = await Admin.create({ name, email });
 
       res.status(201).json({
+        success: true,
         msg: "Admin created successfully",
         admin,
       });
     } catch (err) {
       console.error("Create admin error:", err);
-      res.status(500).json({ msg: "Server error" });
+      res.status(500).json({ success: false, msg: "Server error" });
     }
   }
 );
 
 /* =========================
-   REMOVE ADMIN (CREATOR ONLY)
+   REMOVE ADMIN (CREATOR)
 ========================= */
 router.delete(
   "/remove-admin/:email",
   apiLimiter,
   auth,
+  creatorOnly,
   validateRemoveAdmin,
   async (req, res) => {
     try {
-      if (req.role !== "creator") {
-        return res.sendStatus(403);
+      if (validate(req, res)) return;
+
+      const email = req.params.email.toLowerCase();
+
+      if (email === process.env.CREATOR_EMAIL?.toLowerCase()) {
+        return res.status(400).json({
+          success: false,
+          msg: "Creator cannot be removed",
+        });
       }
 
-      if (validateErrors(req, res)) return;
-
-      if (req.params.email === req.user.email) {
-        return res.status(400).json({ msg: "Cannot remove yourself" });
-      }
-
-      const result = await Admin.deleteOne({ email: req.params.email });
+      const result = await Admin.deleteOne({ email });
 
       if (result.deletedCount === 0) {
-        return res.status(404).json({ msg: "Admin not found" });
+        return res.status(404).json({
+          success: false,
+          msg: "Admin not found",
+        });
       }
 
-      res.json({ msg: "Admin removed successfully" });
+      res.json({
+        success: true,
+        msg: "Admin removed successfully",
+      });
     } catch (err) {
       console.error("Remove admin error:", err);
-      res.status(500).json({ msg: "Server error" });
+      res.status(500).json({ success: false, msg: "Server error" });
     }
   }
 );
 
 /* =========================
-   POST HOT SLOT (CREATOR ONLY)
+   POST HOT SLOT (CREATOR)
 ========================= */
 router.post(
   "/hot-slot",
   apiLimiter,
   auth,
+  creatorOnly,
   validateHotSlot,
   async (req, res) => {
     try {
-      if (req.role !== "creator") {
-        return res.sendStatus(403);
-      }
-
-      if (validateErrors(req, res)) return;
+      if (validate(req, res)) return;
 
       const { tournament, prizePool, stage, slots, contact } = req.body;
+
+      const tournamentExists = await Tournament.findById(tournament);
+      if (!tournamentExists) {
+        return res.status(404).json({
+          success: false,
+          msg: "Tournament not found",
+        });
+      }
 
       const slot = await HotSlot.create({
         tournament,
@@ -162,12 +201,13 @@ router.post(
       });
 
       res.status(201).json({
+        success: true,
         msg: "Hot slot posted successfully",
         slot,
       });
     } catch (err) {
       console.error("Hot slot error:", err);
-      res.status(500).json({ msg: "Server error" });
+      res.status(500).json({ success: false, msg: "Server error" });
     }
   }
 );
