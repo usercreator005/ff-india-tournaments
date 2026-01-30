@@ -2,41 +2,63 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+
+  <!-- Mobile & SEO -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FF INDIA TOURNAMENTS</title>
+  <meta name="description" content="FF India Tournaments – Join competitive Free Fire squad tournaments in India." />
+  <meta name="theme-color" content="#000000" />
+
+  <title>Login | FF INDIA TOURNAMENTS</title>
 
   <!-- CSS -->
   <link rel="stylesheet" href="css/index.css" />
+
+  <!-- Prevent cache issues after logout -->
+  <meta http-equiv="Cache-Control" content="no-store" />
 </head>
 <body>
 
-  <!-- Header -->
+  <!-- HEADER -->
   <header class="top-header">
-    FF INDIA TOURNAMENTS
+    <span class="brand">FF INDIA TOURNAMENTS</span>
   </header>
 
-  <!-- Login Card -->
+  <!-- LOGIN SECTION -->
   <main class="login-container">
     <div class="login-card">
-      <h2>Login to continue</h2>
 
-      <button id="googleLoginBtn">
+      <h2>Welcome Back 👋</h2>
+      <p class="sub-text">
+        Login with Google to continue to your dashboard
+      </p>
+
+      <button id="googleLoginBtn" aria-label="Login with Google">
         <img
           src="https://developers.google.com/identity/images/g-logo.png"
-          alt="Google"
+          alt="Google Logo"
         />
-        Continue with Google
+        <span>Continue with Google</span>
       </button>
 
+      <div class="info-text">
+        <p>✔ Squad-based tournaments</p>
+        <p>✔ Secure Firebase login</p>
+        <p>✔ Fast & mobile friendly</p>
+      </div>
+
       <p class="disclaimer">
-        Not associated with Garena or Free Fire
+        ⚠ This website is not associated with Garena or Free Fire.
       </p>
+
     </div>
   </main>
 
-  <!-- Footer -->
+  <!-- FOOTER -->
   <footer>
-    <p>© 2026 FF INDIA TOURNAMENTS</p>
+    <p class="copyright">
+      © 2026 FF INDIA TOURNAMENTS. All rights reserved.
+    </p>
+
     <div class="footer-links">
       <a href="legal/terms.html">Terms</a>
       <a href="legal/privacy.html">Privacy</a>
@@ -48,5 +70,6 @@
   <!-- JS (Firebase Modular v9) -->
   <script type="module" src="js/firebase.js"></script>
   <script type="module" src="js/auth.js"></script>
+
 </body>
 </html>
