@@ -7,52 +7,68 @@
 
 body {
   min-height: 100vh;
-  background: radial-gradient(circle at top, #111 0%, #000 60%);
+  background: radial-gradient(circle at top, #121212 0%, #000 65%);
   color: #fff;
   display: flex;
   flex-direction: column;
 }
 
-/* Header */
+/* =====================
+   HEADER
+===================== */
 .top-header {
   text-align: center;
-  padding: 18px;
+  padding: 16px;
   font-size: 22px;
-  font-weight: 700;
-  letter-spacing: 1px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
   background: #000;
   border-bottom: 1px solid #222;
 }
 
-/* Login */
+/* =====================
+   LOGIN SECTION
+===================== */
 .login-container {
   flex: 1;
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 20px;
 }
 
 .login-card {
-  width: 90%;
+  width: 100%;
   max-width: 380px;
-  background: rgba(255,255,255,0.06);
-  backdrop-filter: blur(10px);
-  padding: 30px;
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(12px);
+  padding: 30px 25px;
+  border-radius: 18px;
   text-align: center;
-  box-shadow: 0 0 40px rgba(0,0,0,0.8);
+  box-shadow: 0 0 45px rgba(0, 0, 0, 0.85);
+  border: 1px solid rgba(255,255,255,0.08);
 }
 
 .login-card h2 {
-  margin-bottom: 20px;
+  font-size: 22px;
+  margin-bottom: 8px;
 }
 
+.login-card .sub-text {
+  font-size: 13px;
+  color: #bbb;
+  margin-bottom: 22px;
+}
+
+/* =====================
+   GOOGLE LOGIN BUTTON
+===================== */
 #googleLoginBtn {
   width: 100%;
-  padding: 12px;
-  border-radius: 8px;
+  padding: 12px 14px;
+  border-radius: 10px;
   border: none;
-  background: #fff;
+  background: #ffffff;
   color: #000;
   font-size: 15px;
   font-weight: 600;
@@ -61,6 +77,7 @@ body {
   justify-content: center;
   gap: 10px;
   cursor: pointer;
+  transition: all 0.25s ease;
 }
 
 #googleLoginBtn img {
@@ -68,32 +85,53 @@ body {
 }
 
 #googleLoginBtn:hover {
-  background: #f1f1f1;
+  background: #f2f2f2;
+  transform: scale(1.02);
 }
 
-.disclaimer {
+#googleLoginBtn:active {
+  transform: scale(0.98);
+}
+
+/* =====================
+   INFO TEXT
+===================== */
+.info-text {
+  margin-top: 18px;
   font-size: 12px;
-  margin-top: 15px;
+  color: #ccc;
+  line-height: 1.6;
+}
+
+/* =====================
+   DISCLAIMER
+===================== */
+.disclaimer {
+  font-size: 11px;
+  margin-top: 16px;
   color: #aaa;
 }
 
-/* Footer */
+/* =====================
+   FOOTER
+===================== */
 footer {
   text-align: center;
-  padding: 15px;
+  padding: 14px 10px;
   font-size: 12px;
   background: #000;
   border-top: 1px solid #222;
 }
 
 .footer-links {
-  margin-top: 5px;
+  margin-top: 6px;
 }
 
 .footer-links a {
   color: #aaa;
   margin: 0 6px;
   text-decoration: none;
+  transition: color 0.2s ease;
 }
 
 .footer-links a:hover {
