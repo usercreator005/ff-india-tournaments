@@ -1,6 +1,3 @@
-// js/user.js (Backend Integrated - FINAL)
-
-// Firebase Auth (Modular)
 import { auth } from "./firebase.js";
 import {
   onAuthStateChanged,
@@ -10,163 +7,84 @@ import {
 
 const BACKEND_URL = "https://ff-india-tournaments.onrender.com";
 
-/* =========================
-   AUTH GUARD + BACKEND ROLE CHECK
-========================= */
-onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    window.location.href = "index.html";
-    return;
-  }
-
-  try {
-    const token = await getIdToken(user);
-
-    const res = await fetch(`${BACKEND_URL}/auth/role`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-
-    if (!res.ok) throw new Error("Unauthorized");
-
-    const data = await res.json();
-
-    if (data.role !== "user") {
-      alert("Access denied! You are not a user.");
-      await signOut(auth);
-      window.location.href = "index.html";
-      return;
-    }
-
-    console.log("User verified:", user.email);
-
-    // ✅ LOAD DATA AFTER LOGIN
-    fetchTournaments();
-    fetchHotSlots();
-
-  } catch (err) {
-    console.error("Auth error:", err);
-    alert("Session expired. Please login again.");
-    await signOut(auth);
-    window.location.href = "index.html";
-  }
-});
-
-/* =========================
-   SIDEBAR TOGGLE
-========================= */
 const avatar = document.getElementById("avatar");
 const sidebar = document.getElementById("sidebar");
+const hotBadge = document.getElementById("hotBadge");
 
-avatar.addEventListener("click", () => {
-  sidebar.classList.toggle("active");
-});
+avatar.onclick = () => sidebar.classList.toggle("active");
 
-/* =========================
-   LOGOUT
-========================= */
-const logoutBtn = document.getElementById("logout");
-logoutBtn.addEventListener("click", async () => {
-  try {
-    await signOut(auth);
-    window.location.href = "index.html";
-  } catch (err) {
-    console.error("Logout error:", err);
-    alert("Logout failed");
-  }
-});
-
-/* =========================
-   TABS SWITCHING
-========================= */
-const tabBtns = document.querySelectorAll(".tab-btn");
-const tabs = document.querySelectorAll(".tab");
-
-tabBtns.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    tabBtns.forEach((b) => b.classList.remove("active"));
-    tabs.forEach((t) => t.classList.remove("active"));
-
-    btn.classList.add("active");
-    document.getElementById(btn.dataset.tab).classList.add("active");
+document.querySelectorAll(".sidebar-section").forEach(item => {
+  item.addEventListener("click", () => {
+    const tab = item.dataset.tab;
+    if (!tab) return;
+    activateTab(tab);
+    sidebar.classList.remove("active");
   });
 });
 
-/* =========================
-   NOTIFICATION PANEL
-========================= */
-const bell = document.getElementById("notificationBell");
-const panel = document.getElementById("notificationPanel");
+document.getElementById("logout").onclick = async () => {
+  await signOut(auth);
+  location.href = "index.html";
+};
 
-bell.addEventListener("click", () => {
-  panel.classList.toggle("active");
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.onclick = () => activateTab(btn.dataset.tab);
 });
 
-/* =========================
-   FETCH TOURNAMENTS (USER VIEW)
-========================= */
-async function fetchTournaments() {
-  try {
-    const [ongoing, upcoming, past] = await Promise.all([
-      fetch(`${BACKEND_URL}/tournaments/public/ongoing`),
-      fetch(`${BACKEND_URL}/tournaments/public/upcoming`),
-      fetch(`${BACKEND_URL}/tournaments/public/past`)
-    ]);
+function activateTab(tabId) {
+  document.querySelectorAll(".tab-btn,.tab")
+    .forEach(el => el.classList.remove("active"));
 
-    renderTournaments("ongoing", await ongoing.json());
-    renderTournaments("upcoming", await upcoming.json());
-    renderTournaments("past", await past.json());
+  document.querySelector(`[data-tab="${tabId}"]`)?.classList.add("active");
+  document.getElementById(tabId)?.classList.add("active");
 
-  } catch (err) {
-    console.error("Tournament fetch error:", err);
+  if (tabId === "hot") {
+    localStorage.setItem("lastHotSeen", Date.now());
+    hotBadge.style.display = "none";
   }
 }
 
-function renderTournaments(tabId, tournaments) {
-  const div = document.getElementById(tabId);
+/* ================= AUTH ================= */
+onAuthStateChanged(auth, async (user) => {
+  if (!user) return location.href = "index.html";
+  await fetchTournaments();
+  await fetchHotSlots();
+});
 
-  if (!tournaments || tournaments.length === 0) {
-    div.innerHTML = "No tournaments found";
-    return;
-  }
+/* ================= TOURNAMENTS ================= */
+async function fetchTournaments() {
+  ["ongoing","upcoming","past"].forEach(async status => {
+    const res = await fetch(`${BACKEND_URL}/tournaments/public/${status}`);
+    const data = await res.json();
+    document.getElementById(status).innerHTML =
+      data.length ? data.map(t => `
+        <div class="card">
+          <h4>${t.name}</h4>
+          <p>Prize: ${t.prizePool}</p>
+          <p>Slots: ${t.slots}</p>
+        </div>`).join("") : "No tournaments";
+  });
+}
 
-  div.innerHTML = tournaments.map(t => `
-    <div class="card">
-      <h4>${t.name}</h4>
-      <p>Slots: ${t.slots}</p>
-      <p>Prize: ${t.prizePool}</p>
-      <p>Entry: ${t.entryType} ${t.entryFee ? "₹" + t.entryFee : ""}</p>
+/* ================= HOT SLOTS + NOTIFICATION ================= */
+async function fetchHotSlots() {
+  const res = await fetch(`${BACKEND_URL}/hot-slots`);
+  const slots = await res.json();
+
+  const hotDiv = document.getElementById("hot");
+  hotDiv.innerHTML = slots.map(s => `
+    <div class="card hot-slot">
+      <h4>${s.tournament}</h4>
+      <p>${s.prizePool}</p>
+      <a href="https://wa.me/91${s.contact}" target="_blank">WhatsApp</a>
     </div>
   `).join("");
-}
 
-/* =========================
-   FETCH HOT SLOTS
-========================= */
-async function fetchHotSlots() {
-  try {
-    const res = await fetch(`${BACKEND_URL}/hot-slots`);
-    const slots = await res.json();
+  const lastSeen = Number(localStorage.getItem("lastHotSeen") || 0);
+  const newCount = slots.filter(s => new Date(s.createdAt).getTime() > lastSeen).length;
 
-    const hotDiv = document.getElementById("hot");
-
-    if (!slots || slots.length === 0) {
-      hotDiv.innerHTML = "No hot slots available";
-      return;
-    }
-
-    hotDiv.innerHTML = slots.map(s => `
-      <div class="card hot-slot">
-        <h4>${s.tournament}</h4>
-        <p>Prize: ${s.prizePool}</p>
-        <p>Stage: ${s.stage}</p>
-        <p>Slots: ${s.slots}</p>
-        <a href="https://wa.me/91${s.contact}" target="_blank">
-          Contact Host
-        </a>
-      </div>
-    `).join("");
-
-  } catch (err) {
-    console.error("Hot slot fetch error:", err);
+  if (newCount > 0) {
+    hotBadge.innerText = newCount;
+    hotBadge.style.display = "inline-block";
   }
 }
