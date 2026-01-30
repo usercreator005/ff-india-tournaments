@@ -1,34 +1,56 @@
+/* =========================
+GLOBAL RESET
+========================= */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: "Segoe UI", sans-serif;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
 body {
-  background: #0b0b0b;
+  background: radial-gradient(circle at top, #121212, #070707);
   color: #fff;
+  min-height: 100vh;
 }
 
-/* HEADER */
+/* =========================
+HEADER
+========================= */
 .header {
   height: 56px;
-  background: linear-gradient(90deg, #000, #111);
+  background: linear-gradient(90deg, #000, #0c0c0c);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 15px;
-  border-bottom: 1px solid #222;
+  padding: 0 16px;
+  border-bottom: 1px solid #1f1f1f;
+  position: sticky;
+  top: 0;
+  z-index: 20;
 }
 
 .logo {
-  font-weight: 700;
-  letter-spacing: 0.5px;
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.6px;
+  color: #ffb300;
 }
 
 .header-icons {
   display: flex;
-  gap: 12px;
+  align-items: center;
+  gap: 14px;
+}
+
+#notificationBell {
+  cursor: pointer;
+  font-size: 18px;
+  transition: transform 0.2s ease;
+}
+
+#notificationBell:hover {
+  transform: scale(1.1);
 }
 
 #avatar {
@@ -36,19 +58,23 @@ body {
   height: 34px;
   border-radius: 50%;
   cursor: pointer;
+  border: 2px solid #ffb300;
 }
 
-/* SIDEBAR */
+/* =========================
+SIDEBAR
+========================= */
 #sidebar {
   position: fixed;
   top: 56px;
   left: -260px;
   width: 240px;
   height: calc(100% - 56px);
-  background: #111;
-  padding: 10px;
+  background: linear-gradient(180deg, #0e0e0e, #050505);
+  padding: 10px 0;
   transition: 0.3s ease;
-  z-index: 100;
+  z-index: 15;
+  border-right: 1px solid #1d1d1d;
 }
 
 #sidebar.active {
@@ -56,81 +82,178 @@ body {
 }
 
 .sidebar-section {
-  padding: 14px;
-  border-bottom: 1px solid #222;
+  padding: 14px 18px;
+  font-size: 14px;
+  border-bottom: 1px solid #1a1a1a;
   cursor: pointer;
+  transition: background 0.2s, padding-left 0.2s;
 }
 
 .sidebar-section:hover {
-  background: #1a1a1a;
+  background: #151515;
+  padding-left: 24px;
 }
 
-.logout {
+.sidebar-section.logout {
   color: #ff4d4d;
+  font-weight: 600;
 }
 
-/* MAIN */
+/* =========================
+NOTIFICATION PANEL
+========================= */
+#notificationPanel {
+  position: fixed;
+  top: 56px;
+  right: -280px;
+  width: 260px;
+  height: calc(100% - 56px);
+  background: linear-gradient(180deg, #101010, #050505);
+  padding: 16px;
+  transition: 0.3s ease;
+  z-index: 14;
+  border-left: 1px solid #1c1c1c;
+}
+
+#notificationPanel.active {
+  right: 0;
+}
+
+#notificationPanel h3 {
+  font-size: 15px;
+  margin-bottom: 10px;
+  color: #ffb300;
+}
+
+#notificationPanel ul {
+  list-style: none;
+}
+
+#notificationPanel li {
+  font-size: 13px;
+  padding: 8px 0;
+  border-bottom: 1px solid #1a1a1a;
+  color: #ccc;
+}
+
+/* =========================
+MAIN
+========================= */
 .main {
-  padding: 15px;
+  padding: 16px;
 }
 
-/* TABS */
+/* =========================
+TABS
+========================= */
 .tabs {
   display: flex;
   gap: 6px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .tab-btn {
   flex: 1;
-  padding: 9px;
-  background: #111;
-  border: none;
+  padding: 9px 6px;
+  background: linear-gradient(180deg, #141414, #0a0a0a);
+  color: #ccc;
+  border: 1px solid #1f1f1f;
   border-radius: 8px;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+}
+
+.tab-btn:hover {
   color: #fff;
-  font-size: 13px;
+  border-color: #ffb300;
 }
 
 .tab-btn.active {
-  background: linear-gradient(45deg, #ffb300, #ff9100);
+  background: linear-gradient(180deg, #ffb300, #ff9f00);
   color: #000;
+  font-weight: 700;
+  border-color: #ffb300;
 }
 
-/* BADGE */
+/* HOT SLOT BADGE */
 .badge {
-  background: linear-gradient(45deg, red, orange);
+  background: #ff2e2e;
+  color: #fff;
+  font-size: 10px;
   padding: 2px 6px;
   border-radius: 12px;
-  font-size: 10px;
   margin-left: 4px;
+  font-weight: 700;
 }
 
-/* CONTENT */
+/* =========================
+TAB CONTENT
+========================= */
 .tab {
   display: none;
+  background: linear-gradient(180deg, #121212, #0b0b0b);
+  padding: 18px;
+  border-radius: 12px;
+  border: 1px solid #1f1f1f;
 }
 
 .tab.active {
   display: block;
 }
 
-/* CARD */
+/* =========================
+CARDS (TOURNAMENT + HOT SLOT)
+========================= */
 .card {
-  background: linear-gradient(145deg, #111, #1b1b1b);
+  background: linear-gradient(180deg, #141414, #0c0c0c);
+  border: 1px solid #222;
   border-radius: 12px;
-  padding: 15px;
+  padding: 14px;
   margin-bottom: 12px;
-  box-shadow: 0 0 14px rgba(255,179,0,0.12);
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.hot-slot {
-  border-left: 4px solid #ffb300;
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
 }
 
-/* FOOTER */
+.card h4 {
+  font-size: 14px;
+  color: #ffb300;
+  margin-bottom: 6px;
+}
+
+.card p {
+  font-size: 12.5px;
+  color: #ccc;
+  margin-bottom: 4px;
+}
+
+.hot-slot a {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #000;
+  background: #25d366;
+  padding: 6px 10px;
+  border-radius: 20px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.hot-slot a:hover {
+  background: #1ebe5d;
+}
+
+/* =========================
+FOOTER
+========================= */
 .footer {
   text-align: center;
-  font-size: 12px;
-  color: #aaa;
-  padding: 10px;
-}
+  font-size: 11.5px;
+  color: #888;
+  padding: 14px 0;
+  }
