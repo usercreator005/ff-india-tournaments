@@ -10,6 +10,11 @@ const errorHandler = require("./middleware/errorHandler");
 const app = express();
 
 /* =======================
+   TRUST PROXY (Render)
+======================= */
+app.set("trust proxy", 1);
+
+/* =======================
    Database Connection
 ======================= */
 connectDB();
@@ -17,11 +22,26 @@ connectDB();
 /* =======================
    Global Middlewares
 ======================= */
-app.use(helmet()); // Security headers
-app.use(cors());
-app.use(express.json({ limit: "10kb" })); // Prevent payload abuse
+app.use(helmet());
 
-// Rate limiting (applies to all APIs)
+// CORS – allow only frontend
+app.use(
+  cors({
+    origin: [
+      "https://ff-india-tournaments.vercel.app",
+      "http://localhost:3000"
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
+  })
+);
+
+// Body parsers
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true }));
+
+// Rate limiting (global)
 app.use(apiLimiter);
 
 /* =======================
@@ -35,10 +55,17 @@ app.use("/payments", require("./routes/paymentRoutes"));
 app.use("/hot-slots", require("./routes/hotSlotRoutes"));
 
 /* =======================
-   Health Check
+   Health & Root
 ======================= */
 app.get("/", (req, res) => {
-  res.status(200).send("FF INDIA TOURNAMENTS BACKEND RUNNING");
+  res.status(200).json({
+    status: "OK",
+    message: "FF India Tournaments Backend Running"
+  });
+});
+
+app.get("/health", (req, res) => {
+  res.status(200).json({ success: true });
 });
 
 /* =======================
