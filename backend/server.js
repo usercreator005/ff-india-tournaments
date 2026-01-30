@@ -12,6 +12,7 @@ const app = express();
 /* =======================
    TRUST PROXY (Render)
 ======================= */
+app.use("/notifications", require("./routes/notificationRoutes"));
 app.set("trust proxy", 1);
 
 /* =======================
