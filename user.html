@@ -6,33 +6,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="css/user.css" />
 </head>
+
 <body>
 
+<!-- HEADER -->
 <header class="header">
   <div class="logo">FF INDIA TOURNAMENTS</div>
+
   <div class="header-icons">
     <span id="notificationBell">🔔</span>
-    <img src="assets/default-avatar.png" id="avatar" />
+    <img src="assets/default-avatar.png" id="avatar" alt="Avatar" />
   </div>
 </header>
 
+<!-- SIDEBAR -->
 <aside id="sidebar">
-  <div class="sidebar-section" data-tab="ongoing">User Info</div>
-  <div class="sidebar-section" data-tab="team">Team</div>
-  <div class="sidebar-section" data-tab="mytournaments">My Tournaments</div>
-  <div class="sidebar-section" data-tab="support">Contact Support</div>
+  <div class="sidebar-section" data-tab="ongoing">Ongoing</div>
+  <div class="sidebar-section" data-tab="upcoming">Upcoming</div>
+  <div class="sidebar-section" data-tab="past">Past</div>
+  <div class="sidebar-section" data-tab="hot">Hot Slots</div>
   <div class="sidebar-section logout" id="logout">Logout</div>
 </aside>
 
+<!-- NOTIFICATION PANEL -->
 <div id="notificationPanel">
   <h3>Notifications</h3>
-  <ul id="notifyList">
+  <ul>
     <li>No new notifications</li>
   </ul>
 </div>
 
+<!-- MAIN -->
 <main class="main">
 
+  <!-- TOP TABS -->
   <div class="tabs">
     <button class="tab-btn active" data-tab="ongoing">Ongoing</button>
     <button class="tab-btn" data-tab="upcoming">Upcoming</button>
@@ -42,6 +49,7 @@
     </button>
   </div>
 
+  <!-- CONTENT -->
   <section id="tabContent">
     <div class="tab active" id="ongoing"></div>
     <div class="tab" id="upcoming"></div>
@@ -57,5 +65,6 @@
 
 <script type="module" src="js/firebase.js"></script>
 <script type="module" src="js/user.js"></script>
+
 </body>
 </html>
