@@ -1,97 +1,103 @@
 // js/auth.js
-// Firebase Google Login – Modular v9 + Backend Role Verification
+// Google Login + Backend Role Verification (FINAL & STABLE)
 
 import { auth } from "./firebase.js";
 import {
   GoogleAuthProvider,
   signInWithPopup,
-  onAuthStateChanged
+  onAuthStateChanged,
+  signOut
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-import { BACKEND_URL } from "./config.js"; // Make sure js/config.js exists
+/* =========================
+   CONFIG
+========================= */
+const BACKEND_URL = "https://ff-india-tournaments.onrender.com";
 
-// Button safety check
+/* =========================
+   GOOGLE LOGIN BUTTON
+========================= */
 const googleBtn = document.getElementById("googleLoginBtn");
 
 if (googleBtn) {
   googleBtn.addEventListener("click", async () => {
+    googleBtn.disabled = true;
+
     const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
 
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      console.log("Logged in:", user.email);
+      const token = await user.getIdToken(true);
+      const role = await fetchUserRole(token);
 
-      // ✅ Get Firebase ID Token
-      const idToken = await user.getIdToken();
-
-      // ✅ Call backend to get role
-      const role = await fetchRoleFromBackend(idToken);
-
-      // ✅ Redirect based on role
       redirectUser(role);
 
     } catch (err) {
-      alert(err.message);
-      console.error("Login error:", err);
+      console.error("Google login failed:", err);
+      alert("Google login failed. Please try again.");
+      googleBtn.disabled = false;
     }
   });
 }
 
-// 🔁 Handle already logged-in user (refresh / back button safe)
+/* =========================
+   AUTO LOGIN (REFRESH SAFE)
+========================= */
 onAuthStateChanged(auth, async (user) => {
-  if (!user) return; // Not logged in
+  if (!user) return;
 
   try {
-    const idToken = await user.getIdToken();
-    const role = await fetchRoleFromBackend(idToken);
+    const token = await user.getIdToken();
+    const role = await fetchUserRole(token);
     redirectUser(role);
   } catch (err) {
-    console.error("Role verification failed:", err);
-    await auth.signOut();
+    console.error("Session verification failed:", err);
+    await signOut(auth);
     window.location.href = "index.html";
   }
 });
 
-// ========================
-// Fetch role from backend
-// ========================
-async function fetchRoleFromBackend(idToken) {
-  try {
-    const res = await fetch(`${BACKEND_URL}/auth/role`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${idToken}`,
-      },
-    });
+/* =========================
+   BACKEND ROLE FETCH
+========================= */
+async function fetchUserRole(idToken) {
+  const res = await fetch(`${BACKEND_URL}/auth/role`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${idToken}`
+    }
+  });
 
-    if (!res.ok) throw new Error("Failed to fetch role");
-
-    const data = await res.json();
-    console.log("Backend role:", data.role);
-    return data.role;
-
-  } catch (err) {
-    console.error("Backend auth error:", err);
-    throw err;
+  if (!res.ok) {
+    throw new Error("Role fetch failed");
   }
+
+  const data = await res.json();
+
+  if (!data.role) {
+    throw new Error("Invalid role response");
+  }
+
+  return data.role;
 }
 
-// ========================
-// Central redirect logic
-// ========================
+/* =========================
+   REDIRECT HANDLER
+========================= */
 function redirectUser(role) {
   switch (role) {
     case "creator":
-      window.location.href = "creator.html";
+      window.location.replace("creator.html");
       break;
     case "admin":
-      window.location.href = "admin.html";
+      window.location.replace("admin.html");
       break;
     case "user":
     default:
-      window.location.href = "user.html";
+      window.location.replace("user.html");
       break;
   }
 }
