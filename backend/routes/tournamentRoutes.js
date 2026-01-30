@@ -6,12 +6,31 @@ const apiLimiter = require("../middleware/rateLimiter");
 const { body, param, validationResult } = require("express-validator");
 
 /* =========================
-   VALIDATION HELPERS
+   HELPERS
+========================= */
+const adminOnly = (req, res, next) => {
+  if (req.role !== "admin") {
+    return res.status(403).json({ success: false, msg: "Admin only" });
+  }
+  next();
+};
+
+const validate = (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    res.status(400).json({ success: false, errors: errors.array() });
+    return true;
+  }
+  return false;
+};
+
+/* =========================
+   VALIDATIONS
 ========================= */
 const validateCreateTournament = [
   body("name").trim().isLength({ min: 3 }),
   body("slots").isInt({ min: 1 }),
-  body("prizePool").trim().notEmpty(),
+  body("prizePool").notEmpty(),
   body("entryType").isIn(["free", "paid"]),
   body("entryFee").optional().isInt({ min: 0 }),
   body("upiId").optional().isString().trim(),
@@ -22,45 +41,36 @@ const validateStatusParam = [
   body("status").isIn(["upcoming", "ongoing", "past"]),
 ];
 
-const validateErrors = (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    res.status(400).json({ success: false, errors: errors.array() });
-    return true;
-  }
-  return false;
-};
-
 /* =========================
-   CREATE TOURNAMENT (ADMIN)
+   CREATE TOURNAMENT
 ========================= */
 router.post(
   "/create",
   apiLimiter,
   auth,
+  adminOnly,
   validateCreateTournament,
   async (req, res) => {
     try {
-      if (req.role !== "admin") {
-        return res.status(403).json({ msg: "Only admin allowed" });
-      }
-
-      if (validateErrors(req, res)) return;
+      if (validate(req, res)) return;
 
       const {
         name,
         slots,
         prizePool,
         entryType,
-        entryFee,
+        entryFee = 0,
         upiId,
         qrImage,
       } = req.body;
 
-      if (entryType === "paid" && !upiId) {
-        return res.status(400).json({
-          msg: "UPI ID required for paid tournament",
-        });
+      if (entryType === "paid") {
+        if (!upiId || entryFee <= 0) {
+          return res.status(400).json({
+            success: false,
+            msg: "Paid tournament requires UPI ID and entry fee",
+          });
+        }
       }
 
       const tournament = await Tournament.create({
@@ -78,92 +88,90 @@ router.post(
       });
 
       res.status(201).json({
-        msg: "Tournament created successfully",
+        success: true,
+        msg: "Tournament created",
         tournament,
       });
     } catch (err) {
       console.error("Create tournament error:", err);
-      res.status(500).json({ msg: "Server error" });
+      res.status(500).json({ success: false, msg: "Server error" });
     }
   }
 );
 
 /* =========================
-   UPDATE TOURNAMENT STATUS
+   UPDATE STATUS
 ========================= */
 router.patch(
   "/status/:id",
   apiLimiter,
   auth,
+  adminOnly,
   validateStatusParam,
   async (req, res) => {
     try {
-      if (req.role !== "admin") {
-        return res.status(403).json({ msg: "Only admin allowed" });
-      }
-
-      if (validateErrors(req, res)) return;
+      if (validate(req, res)) return;
 
       const tournament = await Tournament.findById(req.params.id);
       if (!tournament) {
-        return res.status(404).json({ msg: "Tournament not found" });
+        return res.status(404).json({ success: false, msg: "Not found" });
       }
 
       tournament.status = req.body.status;
       await tournament.save();
 
-      res.json({ msg: "Status updated", tournament });
+      res.json({ success: true, msg: "Status updated", tournament });
     } catch (err) {
-      console.error("Update status error:", err);
-      res.status(500).json({ msg: "Server error" });
+      console.error("Status update error:", err);
+      res.status(500).json({ success: false, msg: "Server error" });
     }
   }
 );
 
 /* =========================
-   FETCH TOURNAMENTS (PUBLIC)
+   FETCH (PUBLIC)
 ========================= */
 router.get("/public/:status", apiLimiter, async (req, res) => {
   try {
     const allowed = ["upcoming", "ongoing", "past"];
     if (!allowed.includes(req.params.status)) {
-      return res.status(400).json({ msg: "Invalid status" });
+      return res.status(400).json({ success: false, msg: "Invalid status" });
     }
 
     const tournaments = await Tournament.find({
       status: req.params.status,
     }).sort({ createdAt: -1 });
 
-    res.json(tournaments);
+    res.json({ success: true, tournaments });
   } catch (err) {
-    console.error("Public fetch error:", err);
-    res.status(500).json({ msg: "Server error" });
+    res.status(500).json({ success: false, msg: "Server error" });
   }
 });
 
 /* =========================
-   FETCH TOURNAMENTS (ADMIN)
+   FETCH (ADMIN)
 ========================= */
-router.get("/admin/:status", apiLimiter, auth, async (req, res) => {
-  try {
-    if (req.role !== "admin") {
-      return res.status(403).json({ msg: "Only admin access" });
+router.get(
+  "/admin/:status",
+  apiLimiter,
+  auth,
+  adminOnly,
+  async (req, res) => {
+    try {
+      const allowed = ["upcoming", "ongoing", "past"];
+      if (!allowed.includes(req.params.status)) {
+        return res.status(400).json({ success: false, msg: "Invalid status" });
+      }
+
+      const tournaments = await Tournament.find({
+        status: req.params.status,
+      }).sort({ createdAt: -1 });
+
+      res.json({ success: true, tournaments });
+    } catch (err) {
+      res.status(500).json({ success: false, msg: "Server error" });
     }
-
-    const allowed = ["upcoming", "ongoing", "past"];
-    if (!allowed.includes(req.params.status)) {
-      return res.status(400).json({ msg: "Invalid status" });
-    }
-
-    const tournaments = await Tournament.find({
-      status: req.params.status,
-    }).sort({ createdAt: -1 });
-
-    res.json(tournaments);
-  } catch (err) {
-    console.error("Admin fetch error:", err);
-    res.status(500).json({ msg: "Server error" });
   }
-});
+);
 
 module.exports = router;
