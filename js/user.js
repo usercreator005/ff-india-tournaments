@@ -1,4 +1,4 @@
-// js/user.js (FINAL – SIDEBAR + NOTIFICATION 100% WORKING)
+// js/user.js (FINAL – CLEAN ARCHITECTURE)
 
 // Firebase Auth
 import { auth } from "./firebase.js";
@@ -28,8 +28,6 @@ onAuthStateChanged(auth, async (user) => {
     const data = await res.json();
     if (data.role !== "user") throw new Error("Not user");
 
-    window.currentUser = user;
-
     fetchTournaments();
     fetchHotSlots();
 
@@ -49,7 +47,7 @@ const bell = document.getElementById("notificationBell");
 const panel = document.getElementById("notificationPanel");
 
 /* =========================
-SIDEBAR / NOTIFICATION TOGGLE ✅
+SIDEBAR & NOTIFICATION TOGGLE ✅
 ========================= */
 avatar.addEventListener("click", (e) => {
   e.stopPropagation();
@@ -72,51 +70,22 @@ document.addEventListener("click", () => {
 });
 
 /* =========================
-TAB UTILITY
-========================= */
-function openTab(tabName) {
-  document.querySelectorAll(".tab-btn").forEach(b =>
-    b.classList.toggle("active", b.dataset.tab === tabName)
-  );
-
-  document.querySelectorAll(".tab").forEach(t =>
-    t.classList.toggle("active", t.id === tabName)
-  );
-
-  sidebar.classList.remove("active");
-}
-
-/* =========================
-SIDEBAR SECTIONS
+SIDEBAR NAVIGATION (PAGES ONLY) 🔥
 ========================= */
 document.getElementById("userInfoBtn").onclick = () => {
-  document.getElementById("ongoing").innerHTML = `
-    <div class="card">
-      <h4>User Information</h4>
-      <p>Email: ${window.currentUser.email}</p>
-      <p>User ID: ${window.currentUser.uid}</p>
-    </div>
-  `;
-  openTab("ongoing");
+  window.location.href = "user-info.html";
 };
 
 document.getElementById("teamBtn").onclick = () => {
-  document.getElementById("upcoming").innerHTML = `
-    <div class="card">
-      <h4>Team</h4>
-      <p>Team feature coming soon.</p>
-    </div>
-  `;
-  openTab("upcoming");
+  window.location.href = "team.html";
 };
 
 document.getElementById("myTournamentsBtn").onclick = () => {
-  openTab("upcoming");
+  window.location.href = "my-tournaments.html";
 };
 
 document.getElementById("supportBtn").onclick = () => {
   window.open("https://wa.me/91XXXXXXXXXX", "_blank");
-  sidebar.classList.remove("active");
 };
 
 /* =========================
@@ -128,17 +97,26 @@ document.getElementById("logout").onclick = async () => {
 };
 
 /* =========================
-TAB BUTTONS
+DASHBOARD TABS (UNCHANGED)
 ========================= */
 document.querySelectorAll(".tab-btn").forEach(btn => {
   btn.onclick = () => {
-    openTab(btn.dataset.tab);
+    document.querySelectorAll(".tab-btn").forEach(b =>
+      b.classList.remove("active")
+    );
+    document.querySelectorAll(".tab").forEach(t =>
+      t.classList.remove("active")
+    );
+
+    btn.classList.add("active");
+    document.getElementById(btn.dataset.tab).classList.add("active");
+
     if (btn.dataset.tab === "hot") clearHotBadge();
   };
 });
 
 /* =========================
-FETCH TOURNAMENTS (SAFE)
+FETCH TOURNAMENTS
 ========================= */
 async function fetchTournaments() {
   try {
@@ -151,13 +129,16 @@ async function fetchTournaments() {
     renderTournaments("ongoing", normalize(o));
     renderTournaments("upcoming", normalize(u));
     renderTournaments("past", normalize(p));
-  } catch (e) {
-    console.error("Tournament fetch error:", e);
+  } catch (err) {
+    console.error("Tournament fetch error:", err);
   }
 }
 
-const normalize = d =>
-  Array.isArray(d) ? d : Array.isArray(d?.data) ? d.data : [];
+function normalize(d) {
+  if (Array.isArray(d)) return d;
+  if (Array.isArray(d?.data)) return d.data;
+  return [];
+}
 
 function renderTournaments(id, list) {
   const div = document.getElementById(id);
@@ -178,13 +159,14 @@ HOT SLOTS
 async function fetchHotSlots() {
   try {
     const res = await fetch(`${BACKEND_URL}/hot-slots`);
-    const slots = Array.isArray(await res.json()) ? await res.json() : [];
+    const data = await res.json();
+    const slots = Array.isArray(data) ? data : [];
 
     const div = document.getElementById("hot");
     const badge = document.getElementById("hotBadge");
 
     if (!slots.length) {
-      div.innerHTML = "No hot slots";
+      div.innerHTML = "No hot slots available";
       badge.style.display = "none";
       return;
     }
@@ -203,8 +185,8 @@ async function fetchHotSlots() {
       </div>
     `).join("");
 
-  } catch (e) {
-    console.error("Hot slot error:", e);
+  } catch (err) {
+    console.error("Hot slot error:", err);
   }
 }
 
@@ -212,5 +194,7 @@ function clearHotBadge() {
   document.getElementById("hotBadge").style.display = "none";
   fetch(`${BACKEND_URL}/hot-slots`)
     .then(r => r.json())
-    .then(d => localStorage.setItem("hotSlotCount", Array.isArray(d) ? d.length : 0));
-                          }
+    .then(d =>
+      localStorage.setItem("hotSlotCount", Array.isArray(d) ? d.length : 0)
+    );
+      }
