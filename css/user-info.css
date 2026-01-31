@@ -1,0 +1,109 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", sans-serif;
+}
+
+body {
+  background: radial-gradient(circle at top, #121212, #000);
+  color: #fff;
+  min-height: 100vh;
+}
+
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background: #0b0b0b;
+  border-bottom: 1px solid #222;
+}
+
+.back-btn {
+  color: #00ffd5;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.profile-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+.profile-card {
+  background: linear-gradient(145deg, #111, #0a0a0a);
+  width: 90%;
+  max-width: 380px;
+  padding: 25px;
+  border-radius: 14px;
+  box-shadow: 0 0 25px rgba(0, 255, 213, 0.15);
+  text-align: center;
+}
+
+.avatar-circle {
+  width: 80px;
+  height: 80px;
+  background: #00ffd5;
+  color: #000;
+  font-size: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  margin: 0 auto 15px;
+}
+
+.profile-card h3 {
+  font-size: 20px;
+  margin-bottom: 5px;
+}
+
+.profile-card p {
+  font-size: 13px;
+  color: #aaa;
+}
+
+.info-box {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  background: #0d0d0d;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #222;
+}
+
+.info-box div {
+  width: 48%;
+}
+
+.info-box span {
+  font-size: 11px;
+  color: #777;
+}
+
+.stats {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.stat {
+  width: 48%;
+  background: #0f0f0f;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #222;
+}
+
+.stat h4 {
+  font-size: 18px;
+  color: #00ffd5;
+}
+
+.stat span {
+  font-size: 11px;
+  color: #888;
+}
