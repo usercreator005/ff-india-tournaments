@@ -1,4 +1,4 @@
-// js/team.js (UPDATED – PRODUCTION SAFE)
+// js/team.js (FINAL – BACKEND ALIGNED & PRODUCTION SAFE)
 
 import { auth } from "./firebase.js";
 import {
@@ -10,7 +10,7 @@ const BACKEND_URL = "https://ff-india-tournaments.onrender.com";
 const box = document.getElementById("teamBox");
 
 /* =========================
-AUTH GUARD
+   AUTH GUARD
 ========================= */
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
@@ -27,22 +27,27 @@ onAuthStateChanged(auth, async (user) => {
       }
     });
 
-    // ❌ If backend sends HTML / error page
     if (!res.ok) {
       throw new Error("Team fetch failed");
     }
 
     const data = await res.json();
 
-    // Backend may return { success, team } OR direct team
-    const team = data.team || data;
+    /*
+      Expected backend response:
+      {
+        success: true,
+        hasTeam: true/false,
+        team: { name, captain, players }
+      }
+    */
 
-    if (!team || !team.name) {
+    if (!data.success || !data.hasTeam || !data.team) {
       showEmpty();
       return;
     }
 
-    renderTeam(team);
+    renderTeam(data.team);
 
   } catch (err) {
     console.error("Team error:", err);
@@ -56,7 +61,7 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 /* =========================
-UI HELPERS
+   UI HELPERS
 ========================= */
 function showEmpty() {
   box.innerHTML = `
@@ -78,9 +83,11 @@ function renderTeam(team) {
       <div class="label">Players</div>
       ${
         Array.isArray(team.players) && team.players.length
-          ? team.players.map(p => `
-              <div class="player">${p}</div>
-            `).join("")
+          ? team.players
+              .map(
+                (p) => `<div class="player">${p}</div>`
+              )
+              .join("")
           : "<p class='muted'>No players added</p>"
       }
     </div>
