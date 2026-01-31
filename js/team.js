@@ -6,7 +6,7 @@ import {
   getIdToken
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-const BACKEND_URL = "https://ff-india-tournaments.onrender.com";
+const BACKEND_URL = "https://ff-india-backend.onrender.com";
 const box = document.getElementById("teamBox");
 
 /* =========================
