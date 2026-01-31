@@ -17,21 +17,52 @@ body {
 }
 
 /* =====================
-   HEADER
+   HEADER (PREMIUM GAMING)
 ===================== */
 .top-header {
+  position: relative;
   text-align: center;
-  padding: 18px;
-  font-size: 22px;
-  font-weight: 900;
-  letter-spacing: 1.5px;
-  background: #000;
+  padding: 20px 12px;
+  background: linear-gradient(180deg, #000, #050505);
   border-bottom: 1px solid #222;
-  text-shadow: 0 0 12px rgba(255, 179, 0, 0.35);
+}
+
+.top-header .brand {
+  font-size: 23px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background: linear-gradient(
+    90deg,
+    #ffb300,
+    #ffd86b,
+    #ffb300
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow:
+    0 0 12px rgba(255, 179, 0, 0.35),
+    0 0 25px rgba(255, 179, 0, 0.15);
+}
+
+/* Glow strip under header */
+.top-header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255,179,0,0.7),
+    transparent
+  );
 }
 
 /* =====================
-   LOGIN SECTION
+   LOGIN SECTION (BATTLEFIELD FEEL)
 ===================== */
 .login-container {
   flex: 1;
@@ -39,6 +70,9 @@ body {
   justify-content: center;
   align-items: center;
   padding: 24px;
+  background:
+    radial-gradient(circle at center, rgba(255,179,0,0.05), transparent 60%),
+    linear-gradient(180deg, #050505, #000);
 }
 
 /* =====================
@@ -58,8 +92,7 @@ body {
   text-align: center;
   position: relative;
   box-shadow:
-    0 0 50px rgba(0, 0, 0, 0.9),
-    inset 0 0 0 rgba(255,255,255,0);
+    0 0 50px rgba(0, 0, 0, 0.9);
   border: 1px solid rgba(255,255,255,0.12);
 }
 
@@ -129,7 +162,6 @@ body {
   box-shadow: 0 4px 15px rgba(0,0,0,0.6);
 }
 
-/* Disabled state (JS will use this later) */
 #googleLoginBtn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -180,4 +212,4 @@ footer {
 
 .footer-links a:hover {
   color: #ffb300;
-  }
+}
