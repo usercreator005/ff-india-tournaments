@@ -42,7 +42,7 @@ const validateStatusParam = [
 ];
 
 /* =========================
-   CREATE TOURNAMENT
+   CREATE TOURNAMENT (ADMIN)
 ========================= */
 router.post(
   "/create",
@@ -100,7 +100,7 @@ router.post(
 );
 
 /* =========================
-   UPDATE STATUS
+   UPDATE STATUS (ADMIN)
 ========================= */
 router.patch(
   "/status/:id",
@@ -129,7 +129,35 @@ router.patch(
 );
 
 /* =========================
-   FETCH (PUBLIC)
+   MY TOURNAMENTS (USER ONLY)
+   🔥 FIX FOR USER DASHBOARD
+========================= */
+router.get("/my", apiLimiter, auth, async (req, res) => {
+  try {
+    if (req.role !== "user") {
+      return res.status(403).json({
+        success: false,
+        msg: "Only users can access their tournaments",
+      });
+    }
+
+    const tournaments = await Tournament.find({
+      players: req.user.email,
+    }).sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      count: tournaments.length,
+      tournaments,
+    });
+  } catch (err) {
+    console.error("My tournaments error:", err);
+    res.status(500).json({ success: false, msg: "Server error" });
+  }
+});
+
+/* =========================
+   FETCH PUBLIC
 ========================= */
 router.get("/public/:status", apiLimiter, async (req, res) => {
   try {
@@ -149,7 +177,7 @@ router.get("/public/:status", apiLimiter, async (req, res) => {
 });
 
 /* =========================
-   FETCH (ADMIN)
+   FETCH ADMIN
 ========================= */
 router.get(
   "/admin/:status",
