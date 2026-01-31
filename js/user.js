@@ -85,7 +85,7 @@ document.getElementById("myTournamentsBtn").onclick = () => {
 };
 
 document.getElementById("supportBtn").onclick = () => {
-  window.open("https://wa.me/91XXXXXXXXXX", "_blank");
+  window.open("https://wa.me/919981977828", "_blank");
 };
 
 /* =========================
