@@ -11,6 +11,7 @@ body {
   min-height: 100vh;
 }
 
+/* ================= TOP BAR ================= */
 .top-bar {
   display: flex;
   justify-content: space-between;
@@ -26,6 +27,7 @@ body {
   font-size: 14px;
 }
 
+/* ================= PROFILE CARD ================= */
 .profile-container {
   display: flex;
   justify-content: center;
@@ -42,12 +44,12 @@ body {
   text-align: center;
 }
 
+/* ================= AVATAR DISPLAY ================= */
 .avatar-circle {
-  width: 80px;
-  height: 80px;
-  background: #00ffd5;
-  color: #000;
-  font-size: 32px;
+  width: 90px;
+  height: 90px;
+  background: #0f0f0f;
+  border: 2px solid #00ffd5;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -55,6 +57,14 @@ body {
   margin: 0 auto 15px;
 }
 
+.avatar-img {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* ================= USER INFO ================= */
 .profile-card h3 {
   font-size: 20px;
   margin-bottom: 5px;
@@ -84,6 +94,7 @@ body {
   color: #777;
 }
 
+/* ================= STATS ================= */
 .stats {
   display: flex;
   justify-content: space-between;
@@ -106,4 +117,42 @@ body {
 .stat span {
   font-size: 11px;
   color: #888;
+}
+
+/* ================= AVATAR PICKER ================= */
+.avatar-section {
+  margin-top: 25px;
+  padding-top: 15px;
+  border-top: 1px dashed #222;
+}
+
+.section-title {
+  font-size: 14px;
+  margin-bottom: 12px;
+  color: #00ffd5;
+}
+
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+
+.avatar-option {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  background: #0f0f0f;
+}
+
+.avatar-option:hover {
+  border-color: #00ffd5;
+}
+
+.avatar-note {
+  margin-top: 10px;
+  font-size: 11px;
+  color: #777;
 }
