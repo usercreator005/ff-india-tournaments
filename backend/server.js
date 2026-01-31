@@ -57,6 +57,7 @@ app.use(apiLimiter);
    Routes
 ======================= */
 app.use("/auth", require("./routes/authRoutes"));
+app.use("/user", require("./routes/userRoutes")); // ✅ AVATAR ROUTE ADDED
 app.use("/team", require("./routes/teamRoutes"));
 app.use("/tournaments", require("./routes/tournamentRoutes"));
 app.use("/creator", require("./routes/creatorRoutes"));
