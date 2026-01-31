@@ -29,6 +29,46 @@ const validateErrors = (req, res) => {
 };
 
 /* =========================
+   GET MY TEAM (USER ONLY)
+   FIXES /team/my 404 ISSUE
+========================= */
+router.get("/my", auth, async (req, res) => {
+  try {
+    if (req.role !== "user") {
+      return res.status(403).json({ msg: "Only users can access team" });
+    }
+
+    const user = await User.findOne({ email: req.user.email });
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    if (!user.teamId) {
+      return res.json({
+        hasTeam: false,
+        msg: "User is not in any team",
+      });
+    }
+
+    const team = await Team.findById(user.teamId);
+    if (!team) {
+      return res.json({
+        hasTeam: false,
+        msg: "Team not found",
+      });
+    }
+
+    res.json({
+      hasTeam: true,
+      team,
+    });
+  } catch (err) {
+    console.error("Get my team error:", err);
+    res.status(500).json({ msg: "Server error" });
+  }
+});
+
+/* =========================
    CREATE TEAM (USER ONLY)
 ========================= */
 router.post(
