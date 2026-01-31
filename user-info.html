@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>User Profile | FF India Tournaments</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/user-info.css" />
+
+  <!-- Firebase -->
+  <script type="module" src="js/user-info.js" defer></script>
+</head>
+<body>
+
+  <header class="top-bar">
+    <h2>👤 User Profile</h2>
+    <a href="user.html" class="back-btn">← Back to Dashboard</a>
+  </header>
+
+  <main class="profile-container">
+
+    <div class="profile-card">
+      <div class="avatar-circle">🎮</div>
+
+      <h3 id="userName">Loading...</h3>
+      <p id="userEmail">Loading...</p>
+
+      <div class="info-box">
+        <div>
+          <span>User ID</span>
+          <p id="userUID">----</p>
+        </div>
+        <div>
+          <span>Account Type</span>
+          <p>User</p>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <h4 id="joinedCount">0</h4>
+          <span>Tournaments Joined</span>
+        </div>
+        <div class="stat">
+          <h4>Active</h4>
+          <span>Status</span>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+</body>
+</html>
