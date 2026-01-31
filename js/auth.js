@@ -1,5 +1,6 @@
 // js/auth.js
-// Google Login + Backend Role Verification (FINAL & STABLE)
+// Google Login + Backend Role Verification
+// FINAL • STABLE • PRODUCTION READY
 
 import { auth } from "./firebase.js";
 import {
@@ -13,6 +14,7 @@ import {
    CONFIG
 ========================= */
 const BACKEND_URL = "https://ff-india-tournaments.onrender.com";
+let isRedirecting = false;
 
 /* =========================
    GOOGLE LOGIN BUTTON
@@ -21,7 +23,10 @@ const googleBtn = document.getElementById("googleLoginBtn");
 
 if (googleBtn) {
   googleBtn.addEventListener("click", async () => {
+    if (googleBtn.disabled) return;
+
     googleBtn.disabled = true;
+    googleBtn.innerText = "Connecting to Google...";
 
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: "select_account" });
@@ -37,17 +42,19 @@ if (googleBtn) {
 
     } catch (err) {
       console.error("Google login failed:", err);
-      alert("Google login failed. Please try again.");
+      alert("Login failed. Please try again.");
+
       googleBtn.disabled = false;
+      googleBtn.innerText = "Continue with Google";
     }
   });
 }
 
 /* =========================
-   AUTO LOGIN (REFRESH SAFE)
+   AUTO LOGIN (SESSION SAFE)
 ========================= */
 onAuthStateChanged(auth, async (user) => {
-  if (!user) return;
+  if (!user || isRedirecting) return;
 
   try {
     const token = await user.getIdToken();
@@ -56,7 +63,7 @@ onAuthStateChanged(auth, async (user) => {
   } catch (err) {
     console.error("Session verification failed:", err);
     await signOut(auth);
-    window.location.href = "index.html";
+    window.location.replace("index.html");
   }
 });
 
@@ -77,7 +84,7 @@ async function fetchUserRole(idToken) {
 
   const data = await res.json();
 
-  if (!data.role) {
+  if (!data || !data.role) {
     throw new Error("Invalid role response");
   }
 
@@ -85,16 +92,21 @@ async function fetchUserRole(idToken) {
 }
 
 /* =========================
-   REDIRECT HANDLER
+   REDIRECT HANDLER (SAFE)
 ========================= */
 function redirectUser(role) {
+  if (isRedirecting) return;
+  isRedirecting = true;
+
   switch (role) {
     case "creator":
       window.location.replace("creator.html");
       break;
+
     case "admin":
       window.location.replace("admin.html");
       break;
+
     case "user":
     default:
       window.location.replace("user.html");
