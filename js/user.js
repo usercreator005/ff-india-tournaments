@@ -1,4 +1,4 @@
-// js/user.js (Backend Integrated - STABLE + FIXED)
+// js/user.js (Backend Integrated - STABLE + UI FIXED)
 
 // Firebase Auth (Modular)
 import { auth } from "./firebase.js";
@@ -51,32 +51,63 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 /* =========================
-SIDEBAR TOGGLE
+ELEMENTS
 ========================= */
 const avatar = document.getElementById("avatar");
 const sidebar = document.getElementById("sidebar");
+const bell = document.getElementById("notificationBell");
+const panel = document.getElementById("notificationPanel");
 
-avatar.addEventListener("click", () => {
+/* =========================
+SIDEBAR TOGGLE
+========================= */
+avatar.addEventListener("click", (e) => {
+  e.stopPropagation();
   sidebar.classList.toggle("active");
+  panel.classList.remove("active");
 });
 
 /* =========================
-SIDEBAR BUTTONS (BASIC ACTIONS)
+NOTIFICATION PANEL TOGGLE
+========================= */
+bell.addEventListener("click", (e) => {
+  e.stopPropagation();
+  panel.classList.toggle("active");
+  sidebar.classList.remove("active");
+});
+
+/* =========================
+CLOSE SIDEBAR / PANEL ON OUTSIDE CLICK
+========================= */
+document.addEventListener("click", () => {
+  sidebar.classList.remove("active");
+  panel.classList.remove("active");
+});
+
+sidebar.addEventListener("click", (e) => e.stopPropagation());
+panel.addEventListener("click", (e) => e.stopPropagation());
+
+/* =========================
+SIDEBAR BUTTONS
 ========================= */
 document.getElementById("userInfoBtn").onclick = () => {
   alert("User Info section coming soon");
+  sidebar.classList.remove("active");
 };
 
 document.getElementById("teamBtn").onclick = () => {
   alert("Team feature coming soon");
+  sidebar.classList.remove("active");
 };
 
 document.getElementById("myTournamentsBtn").onclick = () => {
   alert("My Tournaments section coming soon");
+  sidebar.classList.remove("active");
 };
 
 document.getElementById("supportBtn").onclick = () => {
   window.open("https://wa.me/91XXXXXXXXXX", "_blank");
+  sidebar.classList.remove("active");
 };
 
 /* =========================
@@ -106,21 +137,12 @@ tabBtns.forEach((btn) => {
     btn.classList.add("active");
     document.getElementById(btn.dataset.tab).classList.add("active");
 
-    // Hot tab open karte hi badge clear
+    sidebar.classList.remove("active");
+
     if (btn.dataset.tab === "hot") {
       clearHotBadge();
     }
   });
-});
-
-/* =========================
-NOTIFICATION PANEL
-========================= */
-const bell = document.getElementById("notificationBell");
-const panel = document.getElementById("notificationPanel");
-
-bell.addEventListener("click", () => {
-  panel.classList.toggle("active");
 });
 
 /* =========================
@@ -162,7 +184,7 @@ function renderTournaments(tabId, tournaments) {
 }
 
 /* =========================
-FETCH HOT SLOTS + BADGE LOGIC
+FETCH HOT SLOTS + BADGE
 ========================= */
 async function fetchHotSlots() {
   try {
@@ -178,9 +200,8 @@ async function fetchHotSlots() {
       return;
     }
 
-    // 🔔 BADGE LOGIC
-    const lastSeenCount = Number(localStorage.getItem("hotSlotCount") || 0);
-    const newCount = slots.length - lastSeenCount;
+    const lastSeen = Number(localStorage.getItem("hotSlotCount") || 0);
+    const newCount = slots.length - lastSeen;
 
     if (newCount > 0) {
       badge.innerText = newCount;
@@ -218,4 +239,4 @@ function clearHotBadge() {
     .then(slots => {
       localStorage.setItem("hotSlotCount", slots.length);
     });
-                    }
+}
