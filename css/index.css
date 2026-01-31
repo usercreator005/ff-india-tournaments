@@ -7,10 +7,13 @@
 
 body {
   min-height: 100vh;
-  background: radial-gradient(circle at top, #121212 0%, #000 65%);
+  background:
+    radial-gradient(circle at top, #1a1a1a 0%, #000 70%),
+    linear-gradient(180deg, #050505, #000);
   color: #fff;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
 }
 
 /* =====================
@@ -18,12 +21,13 @@ body {
 ===================== */
 .top-header {
   text-align: center;
-  padding: 16px;
+  padding: 18px;
   font-size: 22px;
-  font-weight: 800;
-  letter-spacing: 1.2px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
   background: #000;
   border-bottom: 1px solid #222;
+  text-shadow: 0 0 12px rgba(255, 179, 0, 0.35);
 }
 
 /* =====================
@@ -34,30 +38,60 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 20px;
+  padding: 24px;
 }
 
+/* =====================
+   LOGIN CARD
+===================== */
 .login-card {
   width: 100%;
-  max-width: 380px;
-  background: rgba(255, 255, 255, 0.07);
-  backdrop-filter: blur(12px);
-  padding: 30px 25px;
-  border-radius: 18px;
+  max-width: 390px;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.08),
+    rgba(255, 255, 255, 0.02)
+  );
+  backdrop-filter: blur(14px);
+  padding: 32px 26px;
+  border-radius: 20px;
   text-align: center;
-  box-shadow: 0 0 45px rgba(0, 0, 0, 0.85);
-  border: 1px solid rgba(255,255,255,0.08);
+  position: relative;
+  box-shadow:
+    0 0 50px rgba(0, 0, 0, 0.9),
+    inset 0 0 0 rgba(255,255,255,0);
+  border: 1px solid rgba(255,255,255,0.12);
 }
 
+/* Neon glow border */
+.login-card::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 20px;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255,179,0,0.45),
+    transparent
+  );
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* =====================
+   TITLE
+===================== */
 .login-card h2 {
-  font-size: 22px;
-  margin-bottom: 8px;
+  font-size: 23px;
+  margin-bottom: 6px;
+  font-weight: 800;
 }
 
 .login-card .sub-text {
   font-size: 13px;
   color: #bbb;
-  margin-bottom: 22px;
+  margin-bottom: 24px;
 }
 
 /* =====================
@@ -65,19 +99,20 @@ body {
 ===================== */
 #googleLoginBtn {
   width: 100%;
-  padding: 12px 14px;
-  border-radius: 10px;
+  padding: 13px 14px;
+  border-radius: 12px;
   border: none;
-  background: #ffffff;
+  background: linear-gradient(180deg, #ffffff, #ededed);
   color: #000;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
   cursor: pointer;
   transition: all 0.25s ease;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.4);
 }
 
 #googleLoginBtn img {
@@ -85,22 +120,31 @@ body {
 }
 
 #googleLoginBtn:hover {
-  background: #f2f2f2;
-  transform: scale(1.02);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(255,179,0,0.35);
 }
 
 #googleLoginBtn:active {
-  transform: scale(0.98);
+  transform: scale(0.96);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+}
+
+/* Disabled state (JS will use this later) */
+#googleLoginBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 /* =====================
    INFO TEXT
 ===================== */
 .info-text {
-  margin-top: 18px;
+  margin-top: 20px;
   font-size: 12px;
   color: #ccc;
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
 /* =====================
@@ -108,8 +152,8 @@ body {
 ===================== */
 .disclaimer {
   font-size: 11px;
-  margin-top: 16px;
-  color: #aaa;
+  margin-top: 18px;
+  color: #999;
 }
 
 /* =====================
@@ -131,9 +175,9 @@ footer {
   color: #aaa;
   margin: 0 6px;
   text-decoration: none;
-  transition: color 0.2s ease;
+  transition: color 0.25s ease;
 }
 
 .footer-links a:hover {
-  color: #fff;
-}
+  color: #ffb300;
+  }
