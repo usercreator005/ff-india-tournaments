@@ -57,7 +57,7 @@ app.use(apiLimiter);
    Routes
 ======================= */
 app.use("/auth", require("./routes/authRoutes"));
-app.use("/teams", require("./routes/teamRoutes"));
+app.use("/team", require("./routes/teamRoutes"));
 app.use("/tournaments", require("./routes/tournamentRoutes"));
 app.use("/creator", require("./routes/creatorRoutes"));
 app.use("/payments", require("./routes/paymentRoutes"));
