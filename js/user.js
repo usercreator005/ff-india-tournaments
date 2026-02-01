@@ -1,4 +1,4 @@
-// js/user.js (FINAL – CLEAN ARCHITECTURE)
+// js/user.js (FINAL – AVATAR POLISH + CLEAN ARCHITECTURE)
 
 // Firebase Auth
 import { auth } from "./firebase.js";
@@ -11,6 +11,15 @@ import {
 const BACKEND_URL = "https://ff-india-tournaments.onrender.com";
 
 /* =========================
+ELEMENTS
+========================= */
+const sidebar = document.getElementById("sidebar");
+const headerAvatar = document.getElementById("headerAvatar");
+const sidebarAvatar = document.getElementById("sidebarAvatar");
+const bell = document.getElementById("notificationBell");
+const panel = document.getElementById("notificationPanel");
+
+/* =========================
 AUTH GUARD
 ========================= */
 onAuthStateChanged(auth, async (user) => {
@@ -21,12 +30,16 @@ onAuthStateChanged(auth, async (user) => {
 
   try {
     const token = await getIdToken(user);
+
     const res = await fetch(`${BACKEND_URL}/auth/role`, {
       headers: { Authorization: `Bearer ${token}` }
     });
 
     const data = await res.json();
     if (data.role !== "user") throw new Error("Not user");
+
+    // 🔥 Avatar load
+    await loadUserAvatar(token);
 
     fetchTournaments();
     fetchHotSlots();
@@ -39,17 +52,33 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 /* =========================
-ELEMENTS
+LOAD USER AVATAR 🔥
 ========================= */
-const sidebar = document.getElementById("sidebar");
-const avatar = document.getElementById("avatar");
-const bell = document.getElementById("notificationBell");
-const panel = document.getElementById("notificationPanel");
+async function loadUserAvatar(token) {
+  try {
+    const res = await fetch(`${BACKEND_URL}/users/me`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    const data = await res.json();
+    const avatarCode = data?.avatar || "a1";
+
+    const avatarPath = `assets/avatars/${avatarCode}.png`;
+
+    headerAvatar.src = avatarPath;
+    sidebarAvatar.src = avatarPath;
+
+  } catch (err) {
+    console.error("Avatar load error:", err);
+  }
+}
 
 /* =========================
-SIDEBAR & NOTIFICATION TOGGLE ✅
+SIDEBAR & NOTIFICATION TOGGLE
 ========================= */
-avatar.addEventListener("click", (e) => {
+headerAvatar.addEventListener("click", (e) => {
   e.stopPropagation();
   sidebar.classList.toggle("active");
   panel.classList.remove("active");
@@ -70,7 +99,7 @@ document.addEventListener("click", () => {
 });
 
 /* =========================
-SIDEBAR NAVIGATION (PAGES ONLY) 🔥
+SIDEBAR NAVIGATION
 ========================= */
 document.getElementById("userInfoBtn").onclick = () => {
   window.location.href = "user-info.html";
@@ -97,7 +126,7 @@ document.getElementById("logout").onclick = async () => {
 };
 
 /* =========================
-DASHBOARD TABS (UNCHANGED)
+DASHBOARD TABS
 ========================= */
 document.querySelectorAll(".tab-btn").forEach(btn => {
   btn.onclick = () => {
@@ -197,4 +226,4 @@ function clearHotBadge() {
     .then(d =>
       localStorage.setItem("hotSlotCount", Array.isArray(d) ? d.length : 0)
     );
-      }
+}
