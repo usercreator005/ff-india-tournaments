@@ -1,4 +1,5 @@
-// js/team.js (FINAL – BACKEND ALIGNED & PRODUCTION SAFE)
+// js/team.js
+// FINAL – TEAM MODULE (UI + BACKEND ALIGNED)
 
 import { auth } from "./firebase.js";
 import {
@@ -27,9 +28,7 @@ onAuthStateChanged(auth, async (user) => {
       }
     });
 
-    if (!res.ok) {
-      throw new Error("Team fetch failed");
-    }
+    if (!res.ok) throw new Error("Team fetch failed");
 
     const data = await res.json();
 
@@ -38,7 +37,11 @@ onAuthStateChanged(auth, async (user) => {
       {
         success: true,
         hasTeam: true/false,
-        team: { name, captain, players }
+        team: {
+          name: string,
+          captain: string,
+          players: [string]
+        }
       }
     */
 
@@ -61,7 +64,7 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 /* =========================
-   UI HELPERS
+   EMPTY STATE
 ========================= */
 function showEmpty() {
   box.innerHTML = `
@@ -72,24 +75,51 @@ function showEmpty() {
   `;
 }
 
+/* =========================
+   RENDER TEAM
+========================= */
 function renderTeam(team) {
+  const players = Array.isArray(team.players) ? team.players : [];
+
+  const playing = players.slice(0, 4);     // Playing 4
+  const subs = players.slice(4, 6);        // Substitutes 2
+
   box.innerHTML = `
     <div class="card">
       <h3>${team.name}</h3>
 
       <div class="label">Captain</div>
-      <div class="player">${team.captain}</div>
+      <div class="player captain">
+        ${team.captain}
+        <span>Captain</span>
+      </div>
 
-      <div class="label">Players</div>
+      <div class="label">Playing Squad (4)</div>
       ${
-        Array.isArray(team.players) && team.players.length
-          ? team.players
-              .map(
-                (p) => `<div class="player">${p}</div>`
-              )
-              .join("")
-          : "<p class='muted'>No players added</p>"
+        playing.length
+          ? playing.map(p => `
+              <div class="player playing">
+                ${p}
+                <span>Playing</span>
+              </div>
+            `).join("")
+          : `<p class="label">No playing members</p>`
       }
+
+      <div class="label">Substitutes (2)</div>
+      ${
+        subs.length
+          ? subs.map(p => `
+              <div class="player sub">
+                ${p}
+                <span>Sub</span>
+              </div>
+            `).join("")
+          : `<p class="label">No substitutes</p>`
+      }
+
+      <div class="label">Team Size</div>
+      <p class="label">${players.length} / 6 Players</p>
     </div>
   `;
 }
