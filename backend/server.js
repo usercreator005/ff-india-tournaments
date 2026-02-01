@@ -25,21 +25,22 @@ connectDB();
 app.use(helmet());
 
 /* =======================
-   CORS (🔥 FIXED)
+   CORS (🔥 PATCH FIXED)
 ======================= */
 const corsOptions = {
   origin: [
     "https://ff-india-tournaments.vercel.app",
     "http://localhost:3000"
   ],
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // ✅ PATCH ADDED
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
 };
 
+// Apply CORS globally
 app.use(cors(corsOptions));
 
-/* 🔥 VERY IMPORTANT – Preflight support */
+// ✅ Explicit preflight support (VERY IMPORTANT)
 app.options("*", cors(corsOptions));
 
 /* =======================
@@ -57,7 +58,7 @@ app.use(apiLimiter);
    Routes
 ======================= */
 app.use("/auth", require("./routes/authRoutes"));
-app.use("/user", require("./routes/userRoutes")); // ✅ AVATAR ROUTE ADDED
+app.use("/user", require("./routes/userRoutes")); // Avatar PATCH route
 app.use("/team", require("./routes/teamRoutes"));
 app.use("/tournaments", require("./routes/tournamentRoutes"));
 app.use("/creator", require("./routes/creatorRoutes"));
