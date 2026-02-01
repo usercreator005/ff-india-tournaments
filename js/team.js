@@ -1,5 +1,5 @@
 // js/team.js
-// FINAL – TEAM MODULE (UI + BACKEND ALIGNED)
+// FINAL – TEAM MODULE (UI + BACKEND ALIGNED + NO TEAM ACTIONS)
 
 import { auth } from "./firebase.js";
 import {
@@ -8,7 +8,9 @@ import {
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
 const BACKEND_URL = "https://ff-india-tournaments.onrender.com";
+
 const box = document.getElementById("teamBox");
+const noTeamActions = document.getElementById("noTeamActions");
 
 /* =========================
    AUTH GUARD
@@ -46,7 +48,7 @@ onAuthStateChanged(auth, async (user) => {
     */
 
     if (!data.success || !data.hasTeam || !data.team) {
-      showEmpty();
+      showNoTeamState();
       return;
     }
 
@@ -60,29 +62,32 @@ onAuthStateChanged(auth, async (user) => {
         <p>Please try again later.</p>
       </div>
     `;
+    if (noTeamActions) noTeamActions.style.display = "none";
   }
 });
 
 /* =========================
-   EMPTY STATE
+   NO TEAM STATE
 ========================= */
-function showEmpty() {
-  box.innerHTML = `
-    <div class="empty">
-      <h3>No Team Created</h3>
-      <p>You are not part of any team yet.</p>
-    </div>
-  `;
+function showNoTeamState() {
+  box.innerHTML = "";
+  if (noTeamActions) {
+    noTeamActions.style.display = "block";
+  }
 }
 
 /* =========================
    RENDER TEAM
 ========================= */
 function renderTeam(team) {
+  if (noTeamActions) {
+    noTeamActions.style.display = "none";
+  }
+
   const players = Array.isArray(team.players) ? team.players : [];
 
-  const playing = players.slice(0, 4);     // Playing 4
-  const subs = players.slice(4, 6);        // Substitutes 2
+  const playing = players.slice(0, 4); // Playing 4
+  const subs = players.slice(4, 6);    // Substitutes 2
 
   box.innerHTML = `
     <div class="card">
