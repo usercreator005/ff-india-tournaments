@@ -8,7 +8,7 @@
   <!-- CSS -->
   <link rel="stylesheet" href="css/user-info.css" />
 
-  <!-- JS (logic later phases) -->
+  <!-- JS (logic in next phase) -->
   <script type="module" src="js/user-info.js" defer></script>
 </head>
 <body>
@@ -22,12 +22,16 @@
 
     <div class="profile-card">
 
-      <!-- CURRENT AVATAR -->
+      <!-- =========================
+           CURRENT AVATAR (DYNAMIC)
+      ========================== -->
       <div class="avatar-circle">
         <img
+          id="currentAvatar"
           src="assets/avatars/a1.png"
           alt="User Avatar"
           class="avatar-img"
+          data-avatar="a1"
         />
       </div>
 
@@ -63,16 +67,16 @@
         <h4 class="section-title">Choose Your Avatar</h4>
 
         <div class="avatar-grid">
-          <img src="assets/avatars/a1.png" alt="a1" class="avatar-option" />
-          <img src="assets/avatars/a2.png" alt="a2" class="avatar-option" />
-          <img src="assets/avatars/a3.png" alt="a3" class="avatar-option" />
-          <img src="assets/avatars/a4.png" alt="a4" class="avatar-option" />
-          <img src="assets/avatars/a5.png" alt="a5" class="avatar-option" />
-          <img src="assets/avatars/a6.png" alt="a6" class="avatar-option" />
-          <img src="assets/avatars/a7.png" alt="a7" class="avatar-option" />
-          <img src="assets/avatars/a8.png" alt="a8" class="avatar-option" />
-          <img src="assets/avatars/a9.png" alt="a9" class="avatar-option" />
-          <img src="assets/avatars/a10.png" alt="a10" class="avatar-option" />
+          <img src="assets/avatars/a1.png" alt="a1" class="avatar-option" data-avatar="a1" />
+          <img src="assets/avatars/a2.png" alt="a2" class="avatar-option" data-avatar="a2" />
+          <img src="assets/avatars/a3.png" alt="a3" class="avatar-option" data-avatar="a3" />
+          <img src="assets/avatars/a4.png" alt="a4" class="avatar-option" data-avatar="a4" />
+          <img src="assets/avatars/a5.png" alt="a5" class="avatar-option" data-avatar="a5" />
+          <img src="assets/avatars/a6.png" alt="a6" class="avatar-option" data-avatar="a6" />
+          <img src="assets/avatars/a7.png" alt="a7" class="avatar-option" data-avatar="a7" />
+          <img src="assets/avatars/a8.png" alt="a8" class="avatar-option" data-avatar="a8" />
+          <img src="assets/avatars/a9.png" alt="a9" class="avatar-option" data-avatar="a9" />
+          <img src="assets/avatars/a10.png" alt="a10" class="avatar-option" data-avatar="a10" />
         </div>
 
         <p class="avatar-note">
