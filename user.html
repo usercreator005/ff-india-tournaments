@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <title>User Dashboard | FF INDIA TOURNAMENTS</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Styles -->
   <link rel="stylesheet" href="css/user.css">
 </head>
 
@@ -15,12 +17,30 @@
 
     <div class="header-icons">
       <span id="notificationBell" title="Notifications">🔔</span>
-      <img src="assets/default-avatar.png" id="avatar" alt="Avatar">
+
+      <!-- 🔥 AVATAR (Dynamic) -->
+      <img
+        src="assets/avatars/a1.png"
+        id="headerAvatar"
+        class="header-avatar"
+        alt="User Avatar"
+        title="Open Menu"
+      >
     </div>
   </header>
 
   <!-- ================= SIDEBAR ================= -->
-  <aside id="sidebar">
+  <aside id="sidebar" class="sidebar hidden">
+    <div class="sidebar-profile">
+      <img
+        src="assets/avatars/a1.png"
+        id="sidebarAvatar"
+        class="sidebar-avatar"
+        alt="User Avatar"
+      >
+      <p id="sidebarUserName">Player</p>
+    </div>
+
     <div class="sidebar-section" id="userInfoBtn">User Info</div>
     <div class="sidebar-section" id="teamBtn">Team</div>
     <div class="sidebar-section" id="myTournamentsBtn">My Tournaments</div>
@@ -29,7 +49,7 @@
   </aside>
 
   <!-- ================= NOTIFICATION PANEL ================= -->
-  <div id="notificationPanel">
+  <div id="notificationPanel" class="hidden">
     <h3>Notifications</h3>
     <ul id="notificationList">
       <li>No new notifications</li>
