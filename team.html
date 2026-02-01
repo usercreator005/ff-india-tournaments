@@ -11,19 +11,47 @@
 
 <body>
 
-<header class="top-bar">
-  <h2>👥 My Team</h2>
-  <a href="user.html" class="back-btn">← Dashboard</a>
-</header>
+  <!-- ================= TOP BAR ================= -->
+  <header class="top-bar">
+    <h2>👥 My Team</h2>
+    <a href="user.html" class="back-btn">← Dashboard</a>
+  </header>
 
-<main class="container">
+  <!-- ================= MAIN ================= -->
+  <main class="container">
 
-  <!-- TEAM CONTENT -->
-  <div id="teamBox" class="team-box">
-    <p class="loading">Loading team info...</p>
-  </div>
+    <!-- ================= TEAM CONTENT ================= -->
+    <div id="teamBox" class="team-box">
+      <p class="loading">Loading team info...</p>
+    </div>
 
-</main>
+    <!-- ================= NO TEAM ACTIONS (JS will toggle) ================= -->
+    <div id="noTeamActions" style="display:none; margin-top:30px; text-align:center;">
+
+      <div class="card">
+        <h3>No Team Found</h3>
+        <p style="color:#aaa; font-size:13px; margin-top:6px;">
+          You are not part of any team yet.
+        </p>
+
+        <div style="margin-top:20px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+          <a href="team-create.html" class="action-btn create">
+            ➕ Create Team
+          </a>
+
+          <a href="team-join.html" class="action-btn join">
+            🤝 Join Team
+          </a>
+        </div>
+
+        <p style="margin-top:14px; font-size:11px; color:#777;">
+          Max 6 players (4 playing + 2 substitutes)
+        </p>
+      </div>
+
+    </div>
+
+  </main>
 
 </body>
 </html>
