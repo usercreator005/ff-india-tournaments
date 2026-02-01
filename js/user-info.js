@@ -1,4 +1,4 @@
-// js/user-info.js (PHASE 3 – STEP 2)
+// js/user-info.js (PHASE 3 – STEP 3c FINAL)
 
 import { auth } from "./firebase.js";
 import {
@@ -9,7 +9,7 @@ import {
 const BACKEND_URL = "https://ff-india-tournaments.onrender.com";
 
 /* =========================
-   AUTH GUARD
+   AUTH + PROFILE LOAD
 ========================= */
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
@@ -17,27 +17,18 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
-  /* =========================
-     BASIC USER INFO
-  ========================= */
+  // Basic Firebase info
   document.getElementById("userName").innerText =
     user.displayName || "Player";
-
   document.getElementById("userEmail").innerText = user.email;
   document.getElementById("userUID").innerText = user.uid;
 
-  /* =========================
-     AVATAR LOAD (LOCAL FIRST)
-  ========================= */
-  const savedAvatar = localStorage.getItem("userAvatar") || "a1";
-  setCurrentAvatar(savedAvatar);
-
-  /* =========================
-     TOURNAMENT COUNT
-  ========================= */
   try {
     const token = await getIdToken(user);
 
+    /* =========================
+       LOAD JOINED TOURNAMENTS
+    ========================= */
     const res = await fetch(`${BACKEND_URL}/tournaments/my`, {
       headers: {
         Authorization: `Bearer ${token}`
@@ -48,43 +39,81 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById("joinedCount").innerText =
       Array.isArray(data) ? data.length : 0;
 
+    /* =========================
+       LOAD USER AVATAR (DB)
+    ========================= */
+    const avatarRes = await fetch(`${BACKEND_URL}/auth/me`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    if (avatarRes.ok) {
+      const userData = await avatarRes.json();
+      if (userData.avatar) {
+        setCurrentAvatar(userData.avatar);
+      }
+    }
+
   } catch (err) {
     console.error("Profile fetch error:", err);
   }
 });
 
 /* =========================
-   AVATAR SELECTION (UI)
+   AVATAR UI LOGIC
 ========================= */
+const avatarImg = document.querySelector(".avatar-img");
 const avatarOptions = document.querySelectorAll(".avatar-option");
 
-avatarOptions.forEach((img) => {
-  img.addEventListener("click", () => {
-    const avatar = img.dataset.avatar;
-    if (!avatar) return;
+// Highlight selected avatar
+function setCurrentAvatar(code) {
+  avatarImg.src = `assets/avatars/${code}.png`;
 
-    setCurrentAvatar(avatar);
-    localStorage.setItem("userAvatar", avatar);
-
-    // 🔒 Backend sync will be added in Phase 4
-  });
-});
-
-/* =========================
-   HELPERS
-========================= */
-function setCurrentAvatar(avatar) {
-  const current = document.getElementById("currentAvatar");
-  if (!current) return;
-
-  current.src = `assets/avatars/${avatar}.png`;
-  current.dataset.avatar = avatar;
-
-  // Active border handling
-  avatarOptions.forEach((img) => {
-    img.classList.toggle(
-      "active",
-      img.dataset.avatar === avatar
+  avatarOptions.forEach(opt => {
+    opt.classList.toggle(
+      "selected",
+      opt.getAttribute("alt") === code
     );
   });
 }
+
+/* =========================
+   AVATAR CLICK → BACKEND
+========================= */
+avatarOptions.forEach(option => {
+  option.addEventListener("click", async () => {
+    const selectedAvatar = option.getAttribute("alt");
+
+    try {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const token = await getIdToken(user);
+
+      const res = await fetch(`${BACKEND_URL}/user/avatar`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          avatar: selectedAvatar
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.msg || "Avatar update failed");
+      }
+
+      // Update UI instantly
+      setCurrentAvatar(selectedAvatar);
+
+    } catch (err) {
+      console.error("Avatar update error:", err);
+      alert("Failed to update avatar. Try again.");
+    }
+  });
+});
