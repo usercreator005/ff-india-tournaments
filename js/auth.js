@@ -1,6 +1,6 @@
 // js/auth.js
 // Google Login + Backend Role Verification
-// FINAL • STABLE • PRODUCTION READY
+// FINAL • STABLE • PRODUCTION READY • RENDER COLD-START SAFE
 
 import { auth } from "./firebase.js";
 import {
@@ -36,7 +36,9 @@ if (googleBtn) {
       const user = result.user;
 
       const token = await user.getIdToken(true);
-      const role = await fetchUserRole(token);
+
+      // 🔥 Cold-start safe role fetch
+      const role = await fetchUserRoleWithRetry(token);
 
       redirectUser(role);
 
@@ -58,8 +60,12 @@ onAuthStateChanged(auth, async (user) => {
 
   try {
     const token = await user.getIdToken();
-    const role = await fetchUserRole(token);
+
+    // 🔥 Cold-start safe role fetch
+    const role = await fetchUserRoleWithRetry(token);
+
     redirectUser(role);
+
   } catch (err) {
     console.error("Session verification failed:", err);
     await signOut(auth);
@@ -68,31 +74,46 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 /* =========================
-   BACKEND ROLE FETCH
+   BACKEND ROLE FETCH (RETRY)
 ========================= */
-async function fetchUserRole(idToken) {
-  const res = await fetch(`${BACKEND_URL}/auth/role`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${idToken}`
+async function fetchUserRoleWithRetry(idToken, retries = 3) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(`${BACKEND_URL}/auth/role`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${idToken}`
+        }
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      if (!data || !data.role) {
+        throw new Error("Invalid role response");
+      }
+
+      return data.role;
+
+    } catch (err) {
+      lastError = err;
+      console.warn(`Role fetch attempt ${attempt} failed`);
+
+      // ⏳ Render cold start wait
+      await new Promise(res => setTimeout(res, 1500));
     }
-  });
-
-  if (!res.ok) {
-    throw new Error("Role fetch failed");
   }
 
-  const data = await res.json();
-
-  if (!data || !data.role) {
-    throw new Error("Invalid role response");
-  }
-
-  return data.role;
+  throw lastError;
 }
 
 /* =========================
-   REDIRECT HANDLER (SAFE)
+   REDIRECT HANDLER (HARD SAFE)
 ========================= */
 function redirectUser(role) {
   if (isRedirecting) return;
@@ -112,4 +133,4 @@ function redirectUser(role) {
       window.location.replace("user.html");
       break;
   }
-}
+  }
