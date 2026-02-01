@@ -1,4 +1,4 @@
-// js/user-info.js (PHASE 3 – STEP 3c FINAL)
+// js/user-info.js (PHASE 3 – FIXED & LOCKED)
 
 import { auth } from "./firebase.js";
 import {
@@ -17,7 +17,7 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
-  // Basic Firebase info
+  // Firebase basic info
   document.getElementById("userName").innerText =
     user.displayName || "Player";
   document.getElementById("userEmail").innerText = user.email;
@@ -27,7 +27,7 @@ onAuthStateChanged(auth, async (user) => {
     const token = await getIdToken(user);
 
     /* =========================
-       LOAD JOINED TOURNAMENTS
+       JOINED TOURNAMENT COUNT
     ========================= */
     const res = await fetch(`${BACKEND_URL}/tournaments/my`, {
       headers: {
@@ -40,18 +40,20 @@ onAuthStateChanged(auth, async (user) => {
       Array.isArray(data) ? data.length : 0;
 
     /* =========================
-       LOAD USER AVATAR (DB)
+       LOAD USER (DB) + AVATAR
     ========================= */
-    const avatarRes = await fetch(`${BACKEND_URL}/auth/me`, {
+    const meRes = await fetch(`${BACKEND_URL}/auth/me`, {
       headers: {
         Authorization: `Bearer ${token}`
       }
     });
 
-    if (avatarRes.ok) {
-      const userData = await avatarRes.json();
-      if (userData.avatar) {
-        setCurrentAvatar(userData.avatar);
+    if (meRes.ok) {
+      const meData = await meRes.json();
+
+      // 🔥 FIX: avatar is inside meData.user
+      if (meData?.user?.avatar) {
+        setCurrentAvatar(meData.user.avatar);
       }
     }
 
@@ -66,7 +68,6 @@ onAuthStateChanged(auth, async (user) => {
 const avatarImg = document.querySelector(".avatar-img");
 const avatarOptions = document.querySelectorAll(".avatar-option");
 
-// Highlight selected avatar
 function setCurrentAvatar(code) {
   avatarImg.src = `assets/avatars/${code}.png`;
 
@@ -79,7 +80,7 @@ function setCurrentAvatar(code) {
 }
 
 /* =========================
-   AVATAR CLICK → BACKEND
+   AVATAR UPDATE (BACKEND)
 ========================= */
 avatarOptions.forEach(option => {
   option.addEventListener("click", async () => {
