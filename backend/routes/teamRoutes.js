@@ -35,7 +35,6 @@ const validateErrors = (req, res) => {
 
 /* =========================
    GET MY TEAM (USER ONLY)
-   ✅ FIXED /team/my
 ========================= */
 router.get("/my", auth, async (req, res) => {
   try {
@@ -195,6 +194,13 @@ router.post(
         });
       }
 
+      if (team.members.length >= 6) {
+        return res.status(400).json({
+          success: false,
+          msg: "Team is full (max 6 players)",
+        });
+      }
+
       team.members.push(user.email);
       await team.save();
 
@@ -214,5 +220,114 @@ router.post(
     }
   }
 );
+
+/* =========================
+   LEAVE TEAM (USER ONLY)
+========================= */
+router.post("/leave", apiLimiter, auth, async (req, res) => {
+  try {
+    if (req.role !== "user") {
+      return res.status(403).json({
+        success: false,
+        msg: "Only users can leave team",
+      });
+    }
+
+    const user = await User.findOne({ email: req.user.email });
+    if (!user || !user.teamId) {
+      return res.status(400).json({
+        success: false,
+        msg: "User is not in any team",
+      });
+    }
+
+    const team = await Team.findById(user.teamId);
+    if (!team) {
+      user.teamId = null;
+      await user.save();
+      return res.json({ success: true });
+    }
+
+    if (team.leaderEmail === user.email) {
+      return res.status(400).json({
+        success: false,
+        msg: "Captain cannot leave team. Disband instead.",
+      });
+    }
+
+    team.members = team.members.filter(
+      (email) => email !== user.email
+    );
+    await team.save();
+
+    user.teamId = null;
+    await user.save();
+
+    res.json({
+      success: true,
+      msg: "Left team successfully",
+    });
+  } catch (err) {
+    console.error("Leave team error:", err);
+    res.status(500).json({
+      success: false,
+      msg: "Server error",
+    });
+  }
+});
+
+/* =========================
+   DISBAND TEAM (CAPTAIN ONLY)
+========================= */
+router.delete("/disband", apiLimiter, auth, async (req, res) => {
+  try {
+    if (req.role !== "user") {
+      return res.status(403).json({
+        success: false,
+        msg: "Only users can disband team",
+      });
+    }
+
+    const user = await User.findOne({ email: req.user.email });
+    if (!user || !user.teamId) {
+      return res.status(400).json({
+        success: false,
+        msg: "No team to disband",
+      });
+    }
+
+    const team = await Team.findById(user.teamId);
+    if (!team) {
+      user.teamId = null;
+      await user.save();
+      return res.json({ success: true });
+    }
+
+    if (team.leaderEmail !== user.email) {
+      return res.status(403).json({
+        success: false,
+        msg: "Only captain can disband team",
+      });
+    }
+
+    await User.updateMany(
+      { teamId: team._id },
+      { $set: { teamId: null } }
+    );
+
+    await Team.findByIdAndDelete(team._id);
+
+    res.json({
+      success: true,
+      msg: "Team disbanded successfully",
+    });
+  } catch (err) {
+    console.error("Disband team error:", err);
+    res.status(500).json({
+      success: false,
+      msg: "Server error",
+    });
+  }
+});
 
 module.exports = router;
