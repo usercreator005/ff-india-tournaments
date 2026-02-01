@@ -5,7 +5,10 @@
   <title>My Team | FF India Tournaments</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+  <!-- Styles -->
   <link rel="stylesheet" href="css/team.css" />
+
+  <!-- Script -->
   <script type="module" src="js/team.js" defer></script>
 </head>
 
@@ -21,20 +24,65 @@
   <main class="container">
 
     <!-- ================= TEAM CONTENT ================= -->
+    <!-- JS will render team card here -->
     <div id="teamBox" class="team-box">
       <p class="loading">Loading team info...</p>
     </div>
 
-    <!-- ================= NO TEAM ACTIONS (JS will toggle) ================= -->
-    <div id="noTeamActions" style="display:none; margin-top:30px; text-align:center;">
+    <!-- ================= TEAM ACTIONS (VISIBLE WHEN TEAM EXISTS) ================= -->
+    <!-- JS will toggle buttons based on role (captain / member) -->
+    <div
+      id="teamActions"
+      style="display:none; margin-top:24px; text-align:center;"
+    >
+      <div style="display:flex; gap:14px; justify-content:center; flex-wrap:wrap;">
 
+        <!-- Leave Team (Non-captain) -->
+        <button
+          id="leaveTeamBtn"
+          class="action-btn leave"
+          style="display:none;"
+        >
+          🚪 Leave Team
+        </button>
+
+        <!-- Disband Team (Captain only) -->
+        <button
+          id="disbandTeamBtn"
+          class="action-btn disband"
+          style="display:none;"
+        >
+          ❌ Disband Team
+        </button>
+
+      </div>
+
+      <p style="margin-top:12px; font-size:11px; color:#777;">
+        Leaving or disbanding a team cannot be undone.
+      </p>
+    </div>
+
+    <!-- ================= NO TEAM ACTIONS ================= -->
+    <!-- JS will show this when user has no team -->
+    <div
+      id="noTeamActions"
+      style="display:none; margin-top:30px; text-align:center;"
+    >
       <div class="card">
         <h3>No Team Found</h3>
         <p style="color:#aaa; font-size:13px; margin-top:6px;">
           You are not part of any team yet.
         </p>
 
-        <div style="margin-top:20px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+        <div
+          style="
+            margin-top:20px;
+            display:flex;
+            gap:12px;
+            justify-content:center;
+            flex-wrap:wrap;
+          "
+        >
           <a href="team-create.html" class="action-btn create">
             ➕ Create Team
           </a>
@@ -48,7 +96,6 @@
           Max 6 players (4 playing + 2 substitutes)
         </p>
       </div>
-
     </div>
 
   </main>
