@@ -39,14 +39,9 @@ body{
   padding:20px;
 }
 
-/* ================= LOADING / EMPTY ================= */
+/* ================= STATES ================= */
 
-.loading{
-  text-align:center;
-  color:#aaa;
-  margin-top:40px;
-}
-
+.loading,
 .empty{
   text-align:center;
   color:#888;
@@ -61,8 +56,8 @@ body{
   border:1px solid #222;
   border-radius:16px;
   padding:18px;
-  box-shadow:0 0 22px rgba(0,255,213,.08);
-  margin-bottom:16px;
+  box-shadow:0 0 24px rgba(0,255,213,.08);
+  margin-bottom:18px;
 }
 
 .card h3{
@@ -76,7 +71,7 @@ body{
 .label{
   font-size:12px;
   color:#aaa;
-  margin:6px 0;
+  margin:10px 0 4px;
 }
 
 /* ================= PLAYER ================= */
@@ -100,46 +95,65 @@ body{
 
 /* ================= ROLES ================= */
 
-.player.playing{
-  border-left:3px solid #00ffd5;
-}
+.player.playing{ border-left:3px solid #00ffd5; }
+.player.sub{ border-left:3px solid #ffaa00; opacity:.9; }
+.player.captain{ border-left:3px solid #ff4d4d; }
 
-.player.sub{
-  border-left:3px solid #ffaa00;
-  opacity:0.9;
-}
+/* ================= ACTION BUTTONS ================= */
 
-.player.captain{
-  border-left:3px solid #ff4d4d;
+.action-row{
+  margin-top:18px;
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
 }
-
-/* ================= BUTTONS ================= */
 
 .btn{
-  width:100%;
+  flex:1;
+  min-width:140px;
   padding:12px;
-  margin-top:10px;
-  border-radius:10px;
+  border-radius:12px;
   border:none;
   cursor:pointer;
   font-weight:600;
   font-size:14px;
+  transition:.25s;
 }
 
+/* Primary – Create / Join */
 .btn.primary{
   background:#00ffd5;
   color:#000;
 }
+.btn.primary:hover{
+  box-shadow:0 0 12px rgba(0,255,213,.5);
+}
 
+/* Warning – Leave */
+.btn.warning{
+  background:#ffaa00;
+  color:#000;
+}
+
+/* Danger – Disband */
 .btn.danger{
   background:#ff4d4d;
   color:#000;
 }
 
+/* Secondary */
 .btn.secondary{
   background:#1b1b1b;
   color:#fff;
   border:1px solid #333;
+}
+
+/* Disabled */
+.btn.disabled{
+  background:#222;
+  color:#666;
+  cursor:not-allowed;
+  box-shadow:none;
 }
 
 /* ================= INPUT ================= */
@@ -147,7 +161,7 @@ body{
 input{
   width:100%;
   padding:12px;
-  border-radius:10px;
+  border-radius:12px;
   border:1px solid #222;
   background:#0b0b0b;
   color:#fff;
@@ -158,15 +172,11 @@ input::placeholder{
   color:#666;
 }
 
-/* ================= INVITE CODE ================= */
+/* ================= INFO BOX ================= */
 
-.invite-code{
-  background:#090909;
-  padding:10px;
-  border-radius:10px;
-  border:1px dashed #00ffd5;
+.note{
+  font-size:12px;
+  color:#777;
+  margin-top:10px;
   text-align:center;
-  margin:10px 0;
-  font-size:14px;
-  letter-spacing:1px;
-}
+  }
