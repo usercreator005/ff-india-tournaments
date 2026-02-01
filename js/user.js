@@ -1,4 +1,5 @@
-// js/user.js (FINAL – AVATAR POLISH + CLEAN ARCHITECTURE)
+// js/user.js
+// PHASE 3 – USER DASHBOARD + AVATAR SYNC (LOCKED)
 
 // Firebase Auth
 import { auth } from "./firebase.js";
@@ -11,16 +12,18 @@ import {
 const BACKEND_URL = "https://ff-india-tournaments.onrender.com";
 
 /* =========================
-ELEMENTS
+   ELEMENTS (SAFE SELECT)
 ========================= */
 const sidebar = document.getElementById("sidebar");
 const headerAvatar = document.getElementById("headerAvatar");
 const sidebarAvatar = document.getElementById("sidebarAvatar");
+const sidebarUserName = document.getElementById("sidebarUserName");
+
 const bell = document.getElementById("notificationBell");
 const panel = document.getElementById("notificationPanel");
 
 /* =========================
-AUTH GUARD
+   AUTH GUARD + INIT
 ========================= */
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
@@ -31,16 +34,21 @@ onAuthStateChanged(auth, async (user) => {
   try {
     const token = await getIdToken(user);
 
-    const res = await fetch(`${BACKEND_URL}/auth/role`, {
+    // 🔐 Verify role
+    const roleRes = await fetch(`${BACKEND_URL}/auth/role`, {
       headers: { Authorization: `Bearer ${token}` }
     });
 
-    const data = await res.json();
-    if (data.role !== "user") throw new Error("Not user");
+    const roleData = await roleRes.json();
+    if (roleData.role !== "user") throw new Error("Not user");
 
-    // 🔥 Avatar load
+    // 👤 Set name
+    sidebarUserName.innerText = user.displayName || "Player";
+
+    // 🖼 Load avatar from DB
     await loadUserAvatar(token);
 
+    // 📊 Dashboard data
     fetchTournaments();
     fetchHotSlots();
 
@@ -52,23 +60,20 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 /* =========================
-LOAD USER AVATAR 🔥
+   LOAD USER AVATAR
 ========================= */
 async function loadUserAvatar(token) {
   try {
-    const res = await fetch(`${BACKEND_URL}/users/me`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+    const res = await fetch(`${BACKEND_URL}/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` }
     });
 
+    if (!res.ok) return;
+
     const data = await res.json();
-    const avatarCode = data?.avatar || "a1";
+    const avatarCode = data?.user?.avatar || "a1";
 
-    const avatarPath = `assets/avatars/${avatarCode}.png`;
-
-    headerAvatar.src = avatarPath;
-    sidebarAvatar.src = avatarPath;
+    setAvatarUI(avatarCode);
 
   } catch (err) {
     console.error("Avatar load error:", err);
@@ -76,19 +81,33 @@ async function loadUserAvatar(token) {
 }
 
 /* =========================
-SIDEBAR & NOTIFICATION TOGGLE
+   AVATAR UI SYNC
 ========================= */
-headerAvatar.addEventListener("click", (e) => {
-  e.stopPropagation();
-  sidebar.classList.toggle("active");
-  panel.classList.remove("active");
-});
+function setAvatarUI(code) {
+  const path = `assets/avatars/${code}.png`;
 
-bell.addEventListener("click", (e) => {
-  e.stopPropagation();
-  panel.classList.toggle("active");
-  sidebar.classList.remove("active");
-});
+  if (headerAvatar) headerAvatar.src = path;
+  if (sidebarAvatar) sidebarAvatar.src = path;
+}
+
+/* =========================
+   SIDEBAR & NOTIFICATION TOGGLE
+========================= */
+if (headerAvatar) {
+  headerAvatar.addEventListener("click", (e) => {
+    e.stopPropagation();
+    sidebar.classList.toggle("active");
+    panel.classList.remove("active");
+  });
+}
+
+if (bell) {
+  bell.addEventListener("click", (e) => {
+    e.stopPropagation();
+    panel.classList.toggle("active");
+    sidebar.classList.remove("active");
+  });
+}
 
 sidebar.addEventListener("click", e => e.stopPropagation());
 panel.addEventListener("click", e => e.stopPropagation());
@@ -99,7 +118,7 @@ document.addEventListener("click", () => {
 });
 
 /* =========================
-SIDEBAR NAVIGATION
+   SIDEBAR NAVIGATION
 ========================= */
 document.getElementById("userInfoBtn").onclick = () => {
   window.location.href = "user-info.html";
@@ -118,7 +137,7 @@ document.getElementById("supportBtn").onclick = () => {
 };
 
 /* =========================
-LOGOUT
+   LOGOUT
 ========================= */
 document.getElementById("logout").onclick = async () => {
   await signOut(auth);
@@ -126,7 +145,7 @@ document.getElementById("logout").onclick = async () => {
 };
 
 /* =========================
-DASHBOARD TABS
+   DASHBOARD TABS
 ========================= */
 document.querySelectorAll(".tab-btn").forEach(btn => {
   btn.onclick = () => {
@@ -145,7 +164,7 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
 });
 
 /* =========================
-FETCH TOURNAMENTS
+   FETCH TOURNAMENTS
 ========================= */
 async function fetchTournaments() {
   try {
@@ -183,7 +202,7 @@ function renderTournaments(id, list) {
 }
 
 /* =========================
-HOT SLOTS
+   HOT SLOTS
 ========================= */
 async function fetchHotSlots() {
   try {
@@ -226,4 +245,4 @@ function clearHotBadge() {
     .then(d =>
       localStorage.setItem("hotSlotCount", Array.isArray(d) ? d.length : 0)
     );
-}
+                         }
