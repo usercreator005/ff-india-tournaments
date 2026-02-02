@@ -1,5 +1,5 @@
 // js/team-join.js
-// JOIN TEAM BY INVITE CODE – PRODUCTION SAFE
+// JOIN TEAM BY INVITE CODE – FINAL PRODUCTION FIX
 
 import { auth } from "./firebase.js";
 import {
@@ -9,15 +9,18 @@ import {
 
 const BACKEND_URL = "https://ff-india-tournaments.onrender.com";
 
-const input = document.getElementById("inviteCodeInput");
-const joinBtn = document.getElementById("joinBtn");
+document.addEventListener("DOMContentLoaded", () => {
 
-/* =========================
-   PAGE GUARD
-========================= */
-if (!input || !joinBtn) {
-  console.warn("team-join.js loaded on wrong page");
-} else {
+  const input = document.getElementById("inviteCodeInput");
+  const joinBtn = document.getElementById("joinBtn");
+
+  /* =========================
+     PAGE GUARD
+  ========================= */
+  if (!input || !joinBtn) {
+    console.warn("team-join.js loaded on wrong page");
+    return;
+  }
 
   let authToken = null;
 
@@ -29,6 +32,7 @@ if (!input || !joinBtn) {
       window.location.href = "index.html";
       return;
     }
+
     authToken = await getIdToken(user);
   });
 
@@ -40,6 +44,11 @@ if (!input || !joinBtn) {
 
     if (!inviteCode) {
       alert("Please enter invite code");
+      return;
+    }
+
+    if (!authToken) {
+      alert("Authentication not ready. Please wait.");
       return;
     }
 
@@ -77,4 +86,5 @@ if (!input || !joinBtn) {
       joinBtn.textContent = "🚀 Join Team";
     }
   });
-}
+
+});
