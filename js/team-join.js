@@ -1,5 +1,5 @@
 // js/team-join.js
-// JOIN TEAM – PRODUCTION SAFE
+// JOIN TEAM BY INVITE CODE – PRODUCTION READY
 
 import { auth } from "./firebase.js";
 import {
@@ -9,7 +9,7 @@ import {
 
 const BACKEND_URL = "https://ff-india-tournaments.onrender.com";
 
-const input = document.getElementById("teamIdInput");
+const input = document.getElementById("inviteCodeInput");
 const joinBtn = document.getElementById("joinBtn");
 
 let authToken = null;
@@ -27,13 +27,13 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 /* =========================
-   JOIN TEAM
+   JOIN TEAM (INVITE CODE)
 ========================= */
 joinBtn.addEventListener("click", async () => {
-  const teamId = input.value.trim();
+  const inviteCode = input.value.trim().toUpperCase();
 
-  if (!teamId) {
-    alert("Please enter Team ID");
+  if (!inviteCode || inviteCode.length < 5) {
+    alert("Please enter a valid invite code");
     return;
   }
 
@@ -42,7 +42,7 @@ joinBtn.addEventListener("click", async () => {
 
   try {
     const res = await fetch(
-      `${BACKEND_URL}/team/join/${teamId}`,
+      `${BACKEND_URL}/team/join-by-code/${inviteCode}`,
       {
         method: "POST",
         headers: {
@@ -51,14 +51,7 @@ joinBtn.addEventListener("click", async () => {
       }
     );
 
-    const text = await res.text();
-    let data;
-
-    try {
-      data = JSON.parse(text);
-    } catch {
-      throw new Error("Invalid server response");
-    }
+    const data = await res.json();
 
     if (!data.success) {
       alert(data.msg || "Unable to join team");
