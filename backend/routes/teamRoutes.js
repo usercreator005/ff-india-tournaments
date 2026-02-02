@@ -8,6 +8,13 @@ const apiLimiter = require("../middleware/rateLimiter");
 const { body, param, validationResult } = require("express-validator");
 
 /* =========================
+   HELPERS
+========================= */
+const generateInviteCode = () => {
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
+};
+
+/* =========================
    VALIDATION HELPERS
 ========================= */
 const validateTeamCreate = [
@@ -63,6 +70,7 @@ router.get("/my", auth, async (req, res) => {
         name: team.name,
         captain: team.leaderEmail,
         players: team.members,
+        inviteCode: team.inviteCode || null, // ✅ ADDED
       },
     });
   } catch (err) {
@@ -98,10 +106,13 @@ router.post(
         });
       }
 
+      const inviteCode = generateInviteCode();
+
       const team = await Team.create({
         name: req.body.name,
         leaderEmail: user.email,
         members: [user.email],
+        inviteCode, // ✅ STORED
       });
 
       user.teamId = team._id;
@@ -111,6 +122,7 @@ router.post(
         success: true,
         msg: "Team created successfully",
         teamId: team._id,
+        inviteCode, // ✅ RETURNED
       });
     } catch (err) {
       console.error("Create team error:", err);
@@ -120,7 +132,7 @@ router.post(
 );
 
 /* =========================
-   JOIN TEAM
+   JOIN TEAM (BY ID – AS IS)
 ========================= */
 router.post(
   "/join/:id",
