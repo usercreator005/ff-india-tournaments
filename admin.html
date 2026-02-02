@@ -16,14 +16,12 @@
   </div>
 </header>
 
-<!-- SIDEBAR -->
 <aside id="sidebar">
   <div class="side-item">Admin Info</div>
   <div class="side-item">Tournament History</div>
   <div class="side-item logout" id="logout">Logout</div>
 </aside>
 
-<!-- MAIN -->
 <main class="main">
   <div class="actions">
     <button id="btnCreate">➕ Create Tournament</button>
@@ -31,7 +29,7 @@
   </div>
 
   <!-- CREATE FORM -->
-  <section id="createForm" class="card hidden">
+  <form id="createForm" class="card hidden">
     <h3>Create Tournament</h3>
 
     <input type="text" id="tournamentName" placeholder="Tournament Name" required>
@@ -44,14 +42,13 @@
       <option value="paid">Paid</option>
     </select>
 
-    <!-- PAID ONLY -->
     <div id="paidBox" class="hidden">
       <input type="number" id="entryFee" placeholder="Entry Fee (₹)">
-      <input type="text" id="upiId" placeholder="UPI ID (for payments)">
+      <input type="text" id="upiId" placeholder="UPI ID">
     </div>
 
-    <button class="submit">Create Tournament</button>
-  </section>
+    <button type="submit" class="submit">Create Tournament</button>
+  </form>
 
   <!-- MANAGE -->
   <section id="manageSection" class="card hidden">
