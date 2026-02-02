@@ -1,5 +1,5 @@
 // js/team.js
-// FINAL – TEAM MODULE (JOIN + LEAVE + DISBAND FIXED)
+// FINAL – TEAM MODULE (JOIN + LEAVE + DISBAND FIXED & STABLE)
 
 import { auth } from "./firebase.js";
 import {
@@ -76,7 +76,7 @@ function showNoTeamState() {
 function renderTeam(team) {
   if (noTeamActions) noTeamActions.style.display = "none";
 
-  const players = team.players || [];
+  const players = Array.isArray(team.players) ? team.players : [];
   const isCaptain = team.captain === currentUserEmail;
 
   box.innerHTML = `
@@ -106,7 +106,7 @@ function renderTeam(team) {
         ${
           isCaptain
             ? `<button id="disbandBtn" class="btn danger">❌ Disband Team</button>`
-            : `<button id="leaveBtn" class="btn warning">🚪 Leave Team</button>`
+            : `<button id="leaveBtn" class="btn secondary">🚪 Leave Team</button>`
         }
       </div>
     </div>
@@ -116,7 +116,7 @@ function renderTeam(team) {
 }
 
 /* =========================
-   ACTIONS
+   ACTION BINDING
 ========================= */
 function bindActions(isCaptain) {
   if (isCaptain) {
@@ -159,14 +159,14 @@ async function leaveTeam() {
 }
 
 /* =========================
-   DISBAND TEAM (FIXED)
+   DISBAND TEAM (DELETE)
 ========================= */
 async function disbandTeam() {
   if (!confirm("This will remove all members. Continue?")) return;
 
   try {
     const res = await fetch(`${BACKEND_URL}/team/disband`, {
-      method: "DELETE", // ✅ FIXED
+      method: "DELETE",
       headers: {
         Authorization: `Bearer ${authToken}`
       }
@@ -192,4 +192,4 @@ async function disbandTeam() {
     console.error("Disband error:", err);
     alert("Server error");
   }
-              }
+                    }
