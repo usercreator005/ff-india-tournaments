@@ -1,5 +1,5 @@
 // js/team-join.js
-// JOIN TEAM BY INVITE CODE – PRODUCTION SAFE & BACKEND ALIGNED
+// JOIN TEAM – PRODUCTION SAFE (FIXED)
 
 import { auth } from "./firebase.js";
 import {
@@ -12,6 +12,14 @@ const BACKEND_URL = "https://ff-india-tournaments.onrender.com";
 const input = document.getElementById("teamIdInput");
 const joinBtn = document.getElementById("joinBtn");
 
+/* =========================
+   PAGE GUARD (IMPORTANT)
+========================= */
+if (!input || !joinBtn) {
+  console.warn("team-join.js loaded on wrong page");
+  return;
+}
+
 let authToken = null;
 
 /* =========================
@@ -22,18 +30,17 @@ onAuthStateChanged(auth, async (user) => {
     window.location.href = "index.html";
     return;
   }
-
   authToken = await getIdToken(user);
 });
 
 /* =========================
-   JOIN TEAM (BY INVITE CODE)
+   JOIN TEAM
 ========================= */
 joinBtn.addEventListener("click", async () => {
-  const inviteCode = input.value.trim().toUpperCase();
+  const teamId = input.value.trim();
 
-  if (!inviteCode) {
-    alert("Please enter Invite Code");
+  if (!teamId) {
+    alert("Please enter Team ID");
     return;
   }
 
@@ -42,25 +49,16 @@ joinBtn.addEventListener("click", async () => {
 
   try {
     const res = await fetch(
-      `${BACKEND_URL}/team/join-by-code`,
+      `${BACKEND_URL}/team/join/${teamId}`,
       {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${authToken}`
-        },
-        body: JSON.stringify({ inviteCode })
+        }
       }
     );
 
-    const text = await res.text();
-    let data;
-
-    try {
-      data = JSON.parse(text);
-    } catch {
-      throw new Error("Invalid server response");
-    }
+    const data = await res.json();
 
     if (!data.success) {
       alert(data.msg || "Unable to join team");
