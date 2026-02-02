@@ -71,7 +71,9 @@ entryType.onchange = () => {
 /* =========================
    CREATE TOURNAMENT
 ========================= */
-document.querySelector(".submit").onclick = async () => {
+createForm.onsubmit = async (e) => {
+  e.preventDefault();
+
   const token = await getIdToken(auth.currentUser);
 
   const name = tournamentName.value.trim();
@@ -83,6 +85,12 @@ document.querySelector(".submit").onclick = async () => {
     return alert("Please fill all required fields");
   }
 
+  if (type === "paid") {
+    if (!entryFee.value || !upiId.value.trim()) {
+      return alert("Entry fee & UPI ID required for paid tournament");
+    }
+  }
+
   const body = {
     name,
     slots: slotCount,
@@ -92,44 +100,58 @@ document.querySelector(".submit").onclick = async () => {
     payment: type === "paid" ? { upiId: upiId.value.trim() } : null
   };
 
-  const res = await fetch(`${BACKEND_URL}/tournaments/create`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`
-    },
-    body: JSON.stringify(body)
-  });
+  try {
+    const res = await fetch(`${BACKEND_URL}/tournaments/create`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(body)
+    });
 
-  const data = await res.json();
-  alert(data.msg || "Done");
-  createForm.reset();
-  paidBox.classList.add("hidden");
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.msg || "Create failed");
+
+    alert("Tournament created successfully ✅");
+    createForm.reset();
+    paidBox.classList.add("hidden");
+
+  } catch (err) {
+    alert(err.message);
+  }
 };
 
 /* =========================
    FETCH TOURNAMENTS
 ========================= */
 async function fetchTournaments() {
-  const token = await getIdToken(auth.currentUser);
-  const res = await fetch(`${BACKEND_URL}/tournaments/admin/upcoming`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-
-  const tournaments = await res.json();
   const list = document.getElementById("tournamentList");
+  list.innerHTML = "Loading...";
 
-  if (!tournaments.length) {
-    list.innerHTML = "<p>No tournaments found</p>";
-    return;
+  try {
+    const token = await getIdToken(auth.currentUser);
+    const res = await fetch(`${BACKEND_URL}/tournaments/admin/upcoming`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const tournaments = await res.json();
+
+    if (!tournaments.length) {
+      list.innerHTML = "<p>No tournaments found</p>";
+      return;
+    }
+
+    list.innerHTML = tournaments.map(t => `
+      <div class="tournament-card">
+        <h4>${t.name}</h4>
+        <p>Entry: ${t.entryType}</p>
+        <p>Fee: ${t.entryFee ? "₹" + t.entryFee : "-"}</p>
+        <p>UPI: ${t.payment?.upiId || "-"}</p>
+      </div>
+    `).join("");
+
+  } catch (err) {
+    list.innerHTML = "<p>Error loading tournaments</p>";
   }
-
-  list.innerHTML = tournaments.map(t => `
-    <div class="tournament-card">
-      <h4>${t.name}</h4>
-      <p>Entry: ${t.entryType}</p>
-      <p>Fee: ${t.entryFee ? "₹" + t.entryFee : "-"}</p>
-      <p>UPI: ${t.payment?.upiId || "-"}</p>
-    </div>
-  `).join("");
 }
