@@ -74,85 +74,109 @@ router.get("/my", auth, async (req, res) => {
 /* =========================
    CREATE TEAM
 ========================= */
-router.post("/create", apiLimiter, auth, validateTeamCreate, async (req, res) => {
-  try {
-    if (req.role !== "user") {
-      return res.status(403).json({ success: false, msg: "Only users allowed" });
-    }
+router.post(
+  "/create",
+  apiLimiter,
+  auth,
+  validateTeamCreate,
+  async (req, res) => {
+    try {
+      if (req.role !== "user") {
+        return res.status(403).json({
+          success: false,
+          msg: "Only users allowed",
+        });
+      }
 
-    if (validateErrors(req, res)) return;
+      if (validateErrors(req, res)) return;
 
-    const user = await User.findOne({ email: req.user.email });
-    if (!user || user.teamId) {
-      return res.status(400).json({
-        success: false,
-        msg: "User already in a team",
+      const user = await User.findOne({ email: req.user.email });
+      if (!user || user.teamId) {
+        return res.status(400).json({
+          success: false,
+          msg: "User already in a team",
+        });
+      }
+
+      const team = await Team.create({
+        name: req.body.name,
+        leaderEmail: user.email,
+        members: [user.email],
       });
+
+      user.teamId = team._id;
+      await user.save();
+
+      res.status(201).json({
+        success: true,
+        msg: "Team created successfully",
+        teamId: team._id,
+      });
+    } catch (err) {
+      console.error("Create team error:", err);
+      res.status(500).json({ success: false, msg: "Server error" });
     }
-
-    const team = await Team.create({
-      name: req.body.name,
-      leaderEmail: user.email,
-      members: [user.email],
-    });
-
-    user.teamId = team._id;
-    await user.save();
-
-    res.status(201).json({
-      success: true,
-      msg: "Team created successfully",
-      teamId: team._id,
-    });
-  } catch (err) {
-    console.error("Create team error:", err);
-    res.status(500).json({ success: false, msg: "Server error" });
   }
-});
+);
 
 /* =========================
    JOIN TEAM
 ========================= */
-router.post("/join/:id", apiLimiter, auth, validateJoinTeam, async (req, res) => {
-  try {
-    if (req.role !== "user") {
-      return res.status(403).json({ success: false, msg: "Only users allowed" });
-    }
+router.post(
+  "/join/:id",
+  apiLimiter,
+  auth,
+  validateJoinTeam,
+  async (req, res) => {
+    try {
+      if (req.role !== "user") {
+        return res.status(403).json({
+          success: false,
+          msg: "Only users allowed",
+        });
+      }
 
-    if (validateErrors(req, res)) return;
+      if (validateErrors(req, res)) return;
 
-    const user = await User.findOne({ email: req.user.email });
-    if (!user || user.teamId) {
-      return res.status(400).json({
-        success: false,
-        msg: "User already in a team",
+      const user = await User.findOne({ email: req.user.email });
+      if (!user || user.teamId) {
+        return res.status(400).json({
+          success: false,
+          msg: "User already in a team",
+        });
+      }
+
+      const team = await Team.findById(req.params.id);
+      if (!team) {
+        return res.status(404).json({
+          success: false,
+          msg: "Team not found",
+        });
+      }
+
+      if (team.members.length >= 6) {
+        return res.status(400).json({
+          success: false,
+          msg: "Team is full (max 6 players)",
+        });
+      }
+
+      team.members.push(user.email);
+      await team.save();
+
+      user.teamId = team._id;
+      await user.save();
+
+      res.json({
+        success: true,
+        msg: "Joined team successfully",
       });
+    } catch (err) {
+      console.error("Join team error:", err);
+      res.status(500).json({ success: false, msg: "Server error" });
     }
-
-    const team = await Team.findById(req.params.id);
-    if (!team) {
-      return res.status(404).json({ success: false, msg: "Team not found" });
-    }
-
-    if (team.members.length >= 6) {
-      return res.status(400).json({
-        success: false,
-        msg: "Team is full (max 6 players)",
-      });
-    }
-
-    team.members.push(user.email);
-    await team.save();
-
-    user.teamId = team._id;
-    await user.save();
-
-    res.json({ success: true, msg: "Joined team successfully" });
-  } catch (err) {
-    console.error("Join team error:", err);
-    res.status(500).json({ success: false, msg: "Server error" });
   }
-});
+);
 
 /* =========================
    LEAVE TEAM (MEMBER)
@@ -181,13 +205,18 @@ router.post("/leave", apiLimiter, auth, async (req, res) => {
       });
     }
 
-    team.members = team.members.filter(e => e !== user.email);
+    team.members = team.members.filter(
+      (email) => email !== user.email
+    );
     await team.save();
 
     user.teamId = null;
     await user.save();
 
-    res.json({ success: true, msg: "Left team successfully" });
+    res.json({
+      success: true,
+      msg: "Left team successfully",
+    });
   } catch (err) {
     console.error("Leave team error:", err);
     res.status(500).json({ success: false, msg: "Server error" });
