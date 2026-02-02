@@ -24,8 +24,15 @@ const validateTeamCreate = [
     .withMessage("Team name must be at least 3 characters"),
 ];
 
-const validateJoinTeam = [
+const validateJoinTeamById = [
   param("id").isMongoId().withMessage("Invalid team ID"),
+];
+
+const validateJoinByCode = [
+  body("inviteCode")
+    .trim()
+    .isLength({ min: 5 })
+    .withMessage("Invalid invite code"),
 ];
 
 const validateErrors = (req, res) => {
@@ -41,7 +48,7 @@ const validateErrors = (req, res) => {
 };
 
 /* =========================
-   GET MY TEAM (USER ONLY)
+   GET MY TEAM
 ========================= */
 router.get("/my", auth, async (req, res) => {
   try {
@@ -70,7 +77,7 @@ router.get("/my", auth, async (req, res) => {
         name: team.name,
         captain: team.leaderEmail,
         players: team.members,
-        inviteCode: team.inviteCode || null, // ✅ ADDED
+        inviteCode: team.inviteCode || null,
       },
     });
   } catch (err) {
@@ -112,7 +119,7 @@ router.post(
         name: req.body.name,
         leaderEmail: user.email,
         members: [user.email],
-        inviteCode, // ✅ STORED
+        inviteCode,
       });
 
       user.teamId = team._id;
@@ -122,7 +129,7 @@ router.post(
         success: true,
         msg: "Team created successfully",
         teamId: team._id,
-        inviteCode, // ✅ RETURNED
+        inviteCode,
       });
     } catch (err) {
       console.error("Create team error:", err);
@@ -132,13 +139,75 @@ router.post(
 );
 
 /* =========================
-   JOIN TEAM (BY ID – AS IS)
+   JOIN TEAM (BY INVITE CODE) ✅ NEW
+========================= */
+router.post(
+  "/join-by-code",
+  apiLimiter,
+  auth,
+  validateJoinByCode,
+  async (req, res) => {
+    try {
+      if (req.role !== "user") {
+        return res.status(403).json({
+          success: false,
+          msg: "Only users allowed",
+        });
+      }
+
+      if (validateErrors(req, res)) return;
+
+      const user = await User.findOne({ email: req.user.email });
+      if (!user || user.teamId) {
+        return res.status(400).json({
+          success: false,
+          msg: "User already in a team",
+        });
+      }
+
+      const team = await Team.findOne({
+        inviteCode: req.body.inviteCode.toUpperCase(),
+      });
+
+      if (!team) {
+        return res.status(404).json({
+          success: false,
+          msg: "Invalid invite code",
+        });
+      }
+
+      if (team.members.length >= 6) {
+        return res.status(400).json({
+          success: false,
+          msg: "Team is full (max 6 players)",
+        });
+      }
+
+      team.members.push(user.email);
+      await team.save();
+
+      user.teamId = team._id;
+      await user.save();
+
+      res.json({
+        success: true,
+        msg: "Joined team successfully",
+      });
+    } catch (err) {
+      console.error("Join by code error:", err);
+      res.status(500).json({ success: false, msg: "Server error" });
+    }
+  }
+);
+
+/* =========================
+   JOIN TEAM (BY ID – OLD)
 ========================= */
 router.post(
   "/join/:id",
   apiLimiter,
   auth,
-  validateJoinTeam,
+  validateJoinTeamById,
   async (req, res) => {
     try {
       if (req.role !== "user") {
@@ -191,7 +260,7 @@ router.post(
 );
 
 /* =========================
-   LEAVE TEAM (MEMBER)
+   LEAVE TEAM
 ========================= */
 router.post("/leave", apiLimiter, auth, async (req, res) => {
   try {
@@ -236,7 +305,7 @@ router.post("/leave", apiLimiter, auth, async (req, res) => {
 });
 
 /* =========================
-   DISBAND TEAM (CAPTAIN)
+   DISBAND TEAM
 ========================= */
 router.post("/disband", apiLimiter, auth, async (req, res) => {
   try {
