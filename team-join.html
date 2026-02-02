@@ -19,17 +19,19 @@
   <main class="container">
 
     <div class="card">
-      <h3>Enter Team ID</h3>
+      <h3>Enter Invite Code</h3>
 
       <p class="label">
-        Ask your captain for Team ID
+        Ask your captain for the team invite code
       </p>
 
       <input
         type="text"
-        id="teamIdInput"
-        placeholder="Paste Team ID here"
+        id="inviteCodeInput"
+        placeholder="Enter Invite Code (e.g. A9X2KD)"
         autocomplete="off"
+        maxlength="6"
+        style="text-transform: uppercase;"
       />
 
       <button id="joinBtn" class="btn primary">
