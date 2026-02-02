@@ -1,5 +1,5 @@
 // js/team.js
-// FINAL – TEAM MODULE (JOIN + LEAVE + DISBAND FIXED & STABLE)
+// FINAL – TEAM MODULE (JOIN + LEAVE + DISBAND 100% BACKEND ALIGNED)
 
 import { auth } from "./firebase.js";
 import {
@@ -41,13 +41,7 @@ async function loadMyTeam() {
       }
     });
 
-    const text = await res.text();
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      throw new Error("Invalid JSON response");
-    }
+    const data = await res.json();
 
     if (!data.success || !data.hasTeam) {
       showNoTeamState();
@@ -159,26 +153,20 @@ async function leaveTeam() {
 }
 
 /* =========================
-   DISBAND TEAM (DELETE)
+   DISBAND TEAM (POST – FIXED)
 ========================= */
 async function disbandTeam() {
   if (!confirm("This will remove all members. Continue?")) return;
 
   try {
     const res = await fetch(`${BACKEND_URL}/team/disband`, {
-      method: "DELETE",
+      method: "POST", // ✅ BACKEND ALIGNED
       headers: {
         Authorization: `Bearer ${authToken}`
       }
     });
 
-    const text = await res.text();
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      throw new Error("Invalid response");
-    }
+    const data = await res.json();
 
     if (!data.success) {
       alert(data.msg || "Failed to disband team");
@@ -192,4 +180,4 @@ async function disbandTeam() {
     console.error("Disband error:", err);
     alert("Server error");
   }
-                    }
+}
