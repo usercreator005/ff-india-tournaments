@@ -1,5 +1,5 @@
 // js/team.js
-// FINAL – TEAM MODULE (UI + BACKEND ALIGNED + ACTIONS SAFE)
+// FINAL – TEAM MODULE (JOIN + LEAVE + DISBAND FIXED)
 
 import { auth } from "./firebase.js";
 import {
@@ -11,9 +11,6 @@ const BACKEND_URL = "https://ff-india-tournaments.onrender.com";
 
 const box = document.getElementById("teamBox");
 const noTeamActions = document.getElementById("noTeamActions");
-const teamActions = document.getElementById("teamActions");
-const leaveBtn = document.getElementById("leaveTeamBtn");
-const disbandBtn = document.getElementById("disbandTeamBtn");
 
 let currentUserEmail = null;
 let authToken = null;
@@ -34,7 +31,7 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 /* =========================
-   LOAD TEAM
+   LOAD MY TEAM
 ========================= */
 async function loadMyTeam() {
   try {
@@ -44,11 +41,15 @@ async function loadMyTeam() {
       }
     });
 
-    if (!res.ok) throw new Error("Team fetch failed");
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error("Invalid JSON response");
+    }
 
-    const data = await res.json();
-
-    if (!data.success || !data.hasTeam || !data.team) {
+    if (!data.success || !data.hasTeam) {
       showNoTeamState();
       return;
     }
@@ -56,23 +57,16 @@ async function loadMyTeam() {
     renderTeam(data.team);
 
   } catch (err) {
-    console.error("Team error:", err);
-    box.innerHTML = `
-      <div class="empty">
-        <h3>Unable to load team</h3>
-        <p>Please try again later.</p>
-      </div>
-    `;
-    hideAllActions();
+    console.error("Team load error:", err);
+    box.innerHTML = `<p class="empty">Unable to load team</p>`;
   }
 }
 
 /* =========================
-   NO TEAM STATE
+   NO TEAM UI
 ========================= */
 function showNoTeamState() {
   box.innerHTML = "";
-  hideAllActions();
   if (noTeamActions) noTeamActions.style.display = "block";
 }
 
@@ -82,9 +76,8 @@ function showNoTeamState() {
 function renderTeam(team) {
   if (noTeamActions) noTeamActions.style.display = "none";
 
-  const players = Array.isArray(team.players) ? team.players : [];
-  const playing = players.slice(0, 4);
-  const subs = players.slice(4, 6);
+  const players = team.players || [];
+  const isCaptain = team.captain === currentUserEmail;
 
   box.innerHTML = `
     <div class="card">
@@ -96,131 +89,107 @@ function renderTeam(team) {
         <span>Captain</span>
       </div>
 
-      <div class="label">Playing Squad (4)</div>
+      <div class="label">Members</div>
       ${
-        playing.length
-          ? playing.map(p => `
-              <div class="player playing">
-                ${p}
-                <span>Playing</span>
-              </div>
-            `).join("")
-          : `<p class="label">No playing members</p>`
-      }
-
-      <div class="label">Substitutes (2)</div>
-      ${
-        subs.length
-          ? subs.map(p => `
-              <div class="player sub">
-                ${p}
-                <span>Sub</span>
-              </div>
-            `).join("")
-          : `<p class="label">No substitutes</p>`
+        players.map(email => `
+          <div class="player ${email === team.captain ? "captain" : "playing"}">
+            ${email}
+            <span>${email === team.captain ? "Captain" : "Member"}</span>
+          </div>
+        `).join("")
       }
 
       <div class="label">Team Size</div>
       <p class="label">${players.length} / 6 Players</p>
+
+      <div class="action-row">
+        ${
+          isCaptain
+            ? `<button id="disbandBtn" class="btn danger">❌ Disband Team</button>`
+            : `<button id="leaveBtn" class="btn warning">🚪 Leave Team</button>`
+        }
+      </div>
     </div>
   `;
 
-  setupActions(team);
+  bindActions(isCaptain);
 }
 
 /* =========================
-   ACTION VISIBILITY
+   ACTIONS
 ========================= */
-function setupActions(team) {
-  hideAllActions();
-
-  if (!teamActions) return;
-
-  teamActions.style.display = "block";
-
-  const isCaptain = team.captain === currentUserEmail;
-
+function bindActions(isCaptain) {
   if (isCaptain) {
-    if (disbandBtn) disbandBtn.style.display = "inline-block";
+    const disbandBtn = document.getElementById("disbandBtn");
+    if (disbandBtn) disbandBtn.onclick = disbandTeam;
   } else {
-    if (leaveBtn) leaveBtn.style.display = "inline-block";
+    const leaveBtn = document.getElementById("leaveBtn");
+    if (leaveBtn) leaveBtn.onclick = leaveTeam;
   }
-}
-
-/* =========================
-   HIDE ACTIONS
-========================= */
-function hideAllActions() {
-  if (noTeamActions) noTeamActions.style.display = "none";
-  if (teamActions) teamActions.style.display = "none";
-  if (leaveBtn) leaveBtn.style.display = "none";
-  if (disbandBtn) disbandBtn.style.display = "none";
 }
 
 /* =========================
    LEAVE TEAM
 ========================= */
-if (leaveBtn) {
-  leaveBtn.addEventListener("click", async () => {
-    const ok = confirm("Are you sure you want to leave this team?");
-    if (!ok) return;
+async function leaveTeam() {
+  if (!confirm("Are you sure you want to leave the team?")) return;
 
-    try {
-      const res = await fetch(`${BACKEND_URL}/team/leave`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${authToken}`
-        }
-      });
-
-      const data = await res.json();
-
-      if (!data.success) {
-        alert(data.msg || "Failed to leave team");
-        return;
+  try {
+    const res = await fetch(`${BACKEND_URL}/team/leave`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${authToken}`
       }
+    });
 
-      alert("You have left the team");
-      showNoTeamState();
+    const data = await res.json();
 
-    } catch (err) {
-      console.error("Leave team error:", err);
-      alert("Server error");
+    if (!data.success) {
+      alert(data.msg || "Failed to leave team");
+      return;
     }
-  });
+
+    alert("You left the team");
+    showNoTeamState();
+
+  } catch (err) {
+    console.error("Leave error:", err);
+    alert("Server error");
+  }
 }
 
 /* =========================
-   DISBAND TEAM
+   DISBAND TEAM (FIXED)
 ========================= */
-if (disbandBtn) {
-  disbandBtn.addEventListener("click", async () => {
-    const ok = confirm(
-      "Disbanding the team will remove all members. Continue?"
-    );
-    if (!ok) return;
+async function disbandTeam() {
+  if (!confirm("This will remove all members. Continue?")) return;
 
-    try {
-      const res = await fetch(`${BACKEND_URL}/team/disband`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${authToken}`
-        }
-      });
-
-      const data = await res.json();
-
-      if (!data.success) {
-        alert(data.msg || "Failed to disband team");
-        return;
+  try {
+    const res = await fetch(`${BACKEND_URL}/team/disband`, {
+      method: "DELETE", // ✅ FIXED
+      headers: {
+        Authorization: `Bearer ${authToken}`
       }
+    });
 
-      alert("Team disbanded successfully");
-      showNoTeamState();
-
-    } catch (err) {
-      console.error("Disband team error:", err);
-      alert("Server error");
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error("Invalid response");
     }
-  });
-}
+
+    if (!data.success) {
+      alert(data.msg || "Failed to disband team");
+      return;
+    }
+
+    alert("Team disbanded successfully");
+    showNoTeamState();
+
+  } catch (err) {
+    console.error("Disband error:", err);
+    alert("Server error");
+  }
+              }
