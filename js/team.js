@@ -1,5 +1,5 @@
 // js/team.js
-// FINAL – TEAM MODULE (JOIN + LEAVE + DISBAND 100% BACKEND ALIGNED)
+// FINAL – TEAM MODULE (INVITE CODE + JOIN + LEAVE + DISBAND BACKEND ALIGNED)
 
 import { auth } from "./firebase.js";
 import {
@@ -77,6 +77,20 @@ function renderTeam(team) {
     <div class="card">
       <h3>${team.name}</h3>
 
+      ${
+        isCaptain && team.inviteCode
+          ? `
+            <div class="label">Invite Code</div>
+            <div class="invite-code" id="inviteCodeBox">
+              ${team.inviteCode}
+            </div>
+            <button class="btn secondary" id="copyInviteBtn">
+              📋 Copy Invite Code
+            </button>
+          `
+          : ""
+      }
+
       <div class="label">Captain</div>
       <div class="player captain">
         ${team.captain}
@@ -107,6 +121,25 @@ function renderTeam(team) {
   `;
 
   bindActions(isCaptain);
+  bindInviteCopy(team.inviteCode, isCaptain);
+}
+
+/* =========================
+   COPY INVITE CODE
+========================= */
+function bindInviteCopy(inviteCode, isCaptain) {
+  if (!isCaptain || !inviteCode) return;
+
+  const btn = document.getElementById("copyInviteBtn");
+  if (!btn) return;
+
+  btn.onclick = () => {
+    navigator.clipboard.writeText(inviteCode);
+    btn.innerText = "✅ Copied!";
+    setTimeout(() => {
+      btn.innerText = "📋 Copy Invite Code";
+    }, 1500);
+  };
 }
 
 /* =========================
@@ -153,14 +186,14 @@ async function leaveTeam() {
 }
 
 /* =========================
-   DISBAND TEAM (POST – FIXED)
+   DISBAND TEAM (POST)
 ========================= */
 async function disbandTeam() {
   if (!confirm("This will remove all members. Continue?")) return;
 
   try {
     const res = await fetch(`${BACKEND_URL}/team/disband`, {
-      method: "POST", // ✅ BACKEND ALIGNED
+      method: "POST",
       headers: {
         Authorization: `Bearer ${authToken}`
       }
@@ -180,4 +213,4 @@ async function disbandTeam() {
     console.error("Disband error:", err);
     alert("Server error");
   }
-}
+      }
