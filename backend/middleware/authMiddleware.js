@@ -6,17 +6,28 @@ const authMiddleware = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
 
+    /* =========================
+       TOKEN CHECK
+    ========================= */
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ message: "Authorization token missing" });
+      return res.status(401).json({
+        success: false,
+        msg: "Authorization token missing",
+      });
     }
 
     const token = authHeader.split(" ")[1];
 
-    // Verify Firebase token
+    /* =========================
+       VERIFY FIREBASE TOKEN
+    ========================= */
     const decoded = await admin.auth().verifyIdToken(token);
 
     if (!decoded || !decoded.email) {
-      return res.status(401).json({ message: "Invalid Firebase token" });
+      return res.status(401).json({
+        success: false,
+        msg: "Invalid Firebase token",
+      });
     }
 
     const email = decoded.email.toLowerCase();
@@ -25,16 +36,12 @@ const authMiddleware = async (req, res, next) => {
     /* =========================
        ROLE DETECTION
     ========================= */
-
-    // Creator (highest priority)
     if (
       process.env.CREATOR_EMAIL &&
       email === process.env.CREATOR_EMAIL.toLowerCase()
     ) {
       role = "creator";
-    }
-    // Admin
-    else {
+    } else {
       const isAdmin = await Admin.findOne({ email });
       if (isAdmin) role = "admin";
     }
@@ -42,7 +49,6 @@ const authMiddleware = async (req, res, next) => {
     /* =========================
        USER SYNC (AUTO)
     ========================= */
-
     let user = await User.findOne({ email });
 
     if (!user) {
@@ -50,21 +56,20 @@ const authMiddleware = async (req, res, next) => {
         uid: decoded.uid,
         name: decoded.name || "Player",
         email,
-        role
+        role,
       });
     } else if (user.role !== role) {
-      // Auto role sync
       user.role = role;
       await user.save();
     }
 
     /* =========================
-       REQUEST ATTACH
+       ATTACH REQUEST DATA
     ========================= */
     req.user = {
       uid: decoded.uid,
       email,
-      name: decoded.name || user.name
+      name: decoded.name || user.name,
     };
 
     req.role = role;
@@ -73,7 +78,11 @@ const authMiddleware = async (req, res, next) => {
     next();
   } catch (error) {
     console.error("Auth Middleware Error:", error.message);
-    return res.status(403).json({ message: "Authentication failed" });
+
+    return res.status(401).json({
+      success: false,
+      msg: "Authentication failed or token expired",
+    });
   }
 };
 
