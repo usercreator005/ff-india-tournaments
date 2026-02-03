@@ -1,5 +1,5 @@
 // js/team.js
-// FINAL – TEAM MODULE (INVITE CODE + JOIN + LEAVE + DISBAND BACKEND ALIGNED)
+// FINAL – TEAM MODULE (CAPTAIN COUNTS AS PLAYER • NO DUPLICATION)
 
 import { auth } from "./firebase.js";
 import {
@@ -70,8 +70,14 @@ function showNoTeamState() {
 function renderTeam(team) {
   if (noTeamActions) noTeamActions.style.display = "none";
 
-  const players = Array.isArray(team.players) ? team.players : [];
+  // backend safety
+  const members = Array.isArray(team.players) ? team.players : [];
+
   const isCaptain = team.captain === currentUserEmail;
+
+  // 🔥 captain always counts as player
+  const totalPlayers = members.length + 1;
+  const MAX_PLAYERS = 6;
 
   box.innerHTML = `
     <div class="card">
@@ -99,16 +105,18 @@ function renderTeam(team) {
 
       <div class="label">Members</div>
       ${
-        players.map(email => `
-          <div class="player ${email === team.captain ? "captain" : "playing"}">
-            ${email}
-            <span>${email === team.captain ? "Captain" : "Member"}</span>
-          </div>
-        `).join("")
+        members.length > 0
+          ? members.map(member => `
+              <div class="player playing">
+                ${member}
+                <span>Member</span>
+              </div>
+            `).join("")
+          : `<p class="empty">No members joined yet</p>`
       }
 
       <div class="label">Team Size</div>
-      <p class="label">${players.length} / 6 Players</p>
+      <p class="label">${totalPlayers} / ${MAX_PLAYERS} Players</p>
 
       <div class="action-row">
         ${
@@ -186,7 +194,7 @@ async function leaveTeam() {
 }
 
 /* =========================
-   DISBAND TEAM (POST)
+   DISBAND TEAM
 ========================= */
 async function disbandTeam() {
   if (!confirm("This will remove all members. Continue?")) return;
@@ -213,4 +221,4 @@ async function disbandTeam() {
     console.error("Disband error:", err);
     alert("Server error");
   }
-      }
+                  }
