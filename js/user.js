@@ -34,7 +34,6 @@ onAuthStateChanged(auth, async (user) => {
   try {
     const token = await getIdToken(user);
 
-    // 🔐 Verify role
     const roleRes = await fetch(`${BACKEND_URL}/auth/role`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -42,13 +41,10 @@ onAuthStateChanged(auth, async (user) => {
     const roleData = await roleRes.json();
     if (roleData.role !== "user") throw new Error("Not user");
 
-    // 👤 Set name
     sidebarUserName.innerText = user.displayName || "Player";
 
-    // 🖼 Load avatar from DB
     await loadUserAvatar(token);
 
-    // 📊 Dashboard data
     fetchTournaments();
     fetchHotSlots();
 
@@ -72,7 +68,6 @@ async function loadUserAvatar(token) {
 
     const data = await res.json();
     const avatarCode = data?.user?.avatar || "a1";
-
     setAvatarUI(avatarCode);
 
   } catch (err) {
@@ -85,7 +80,6 @@ async function loadUserAvatar(token) {
 ========================= */
 function setAvatarUI(code) {
   const path = `assets/avatars/${code}.png`;
-
   if (headerAvatar) headerAvatar.src = path;
   if (sidebarAvatar) sidebarAvatar.src = path;
 }
@@ -164,7 +158,7 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
 });
 
 /* =========================
-   FETCH TOURNAMENTS
+   FETCH TOURNAMENTS ✅ FIXED
 ========================= */
 async function fetchTournaments() {
   try {
@@ -182,9 +176,10 @@ async function fetchTournaments() {
   }
 }
 
+/* 🔥 BACKEND RESPONSE NORMALIZER */
 function normalize(d) {
   if (Array.isArray(d)) return d;
-  if (Array.isArray(d?.data)) return d.data;
+  if (Array.isArray(d?.tournaments)) return d.tournaments;
   return [];
 }
 
@@ -245,4 +240,4 @@ function clearHotBadge() {
     .then(d =>
       localStorage.setItem("hotSlotCount", Array.isArray(d) ? d.length : 0)
     );
-                         }
+}
