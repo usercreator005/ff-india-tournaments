@@ -11,17 +11,26 @@ const teamSchema = new mongoose.Schema(
       trim: true
     },
 
+    // ✅ Captain identification (still email for auth safety)
     leaderEmail: {
       type: String,
       required: true
     },
 
+    // ✅ Team WhatsApp Number (NEW)
+    whatsapp: {
+      type: String,
+      required: true,
+      trim: true
+    },
+
+    // ✅ Members stored as USERNAMES (NOT EMAILS)
     members: {
-      type: [String],
+      type: [String], // usernames
       default: []
     },
 
-    // 🔑 INVITE CODE (CAPTAIN SHARES THIS)
+    // 🔑 INVITE CODE
     inviteCode: {
       type: String,
       required: true,
