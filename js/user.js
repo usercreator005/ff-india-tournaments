@@ -1,4 +1,4 @@
-js/user.js
+
 
 // js/user.js
 // PHASE 3 – USER DASHBOARD + AVATAR SYNC (LOCKED)
