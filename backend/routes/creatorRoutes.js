@@ -17,20 +17,35 @@ const { body, param, validationResult } = require("express-validator");
 const CREATOR_EMAIL = "jarahul989@gmail.com";
 
 /* =========================
-   CREATOR ONLY MIDDLEWARE
+   CENTRAL CREATOR GUARD (C3.1)
 ========================= */
-const creatorOnly = (req, res, next) => {
-  if (
-    req.role !== "creator" ||
-    !req.user ||
-    req.user.email !== CREATOR_EMAIL
-  ) {
-    return res.status(403).json({
+const isCreator = (req, res, next) => {
+  try {
+    if (!req.user || !req.user.email) {
+      return res.status(401).json({
+        success: false,
+        msg: "Unauthorized",
+      });
+    }
+
+    // Hard authority check (single source of truth)
+    if (req.user.email !== CREATOR_EMAIL) {
+      return res.status(403).json({
+        success: false,
+        msg: "Creator access only",
+      });
+    }
+
+    // Force role consistency (defensive)
+    req.role = "creator";
+    next();
+  } catch (err) {
+    console.error("Creator guard error:", err);
+    return res.status(500).json({
       success: false,
-      msg: "Creator access only",
+      msg: "Security check failed",
     });
   }
-  next();
 };
 
 /* =========================
@@ -94,7 +109,7 @@ router.get(
   "/stats",
   apiLimiter,
   auth,
-  creatorOnly,
+  isCreator,
   async (req, res) => {
     try {
       const [totalUsers, admins, activeTournaments] = await Promise.all([
@@ -105,6 +120,7 @@ router.get(
 
       res.json({
         success: true,
+        creator: CREATOR_EMAIL,
         totalUsers,
         activeTournaments,
         admins,
@@ -126,7 +142,7 @@ router.post(
   "/create-admin",
   apiLimiter,
   auth,
-  creatorOnly,
+  isCreator,
   validateCreateAdmin,
   async (req, res) => {
     try {
@@ -135,7 +151,6 @@ router.post(
       const name = req.body.name.trim();
       const email = req.body.email.toLowerCase();
 
-      // Absolute creator safety
       if (email === CREATOR_EMAIL) {
         return res.status(400).json({
           success: false,
@@ -175,7 +190,7 @@ router.delete(
   "/remove-admin/:email",
   apiLimiter,
   auth,
-  creatorOnly,
+  isCreator,
   validateRemoveAdmin,
   async (req, res) => {
     try {
@@ -220,7 +235,7 @@ router.post(
   "/hot-slot",
   apiLimiter,
   auth,
-  creatorOnly,
+  isCreator,
   validateHotSlot,
   async (req, res) => {
     try {
@@ -242,6 +257,7 @@ router.post(
         stage,
         slots,
         contact: `DM ME FOR DETAILS - ${contact}`,
+        createdBy: CREATOR_EMAIL,
       });
 
       res.status(201).json({
