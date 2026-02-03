@@ -33,12 +33,12 @@ const validateCreateTournament = [
   body("prizePool").notEmpty(),
   body("entryType").isIn(["free", "paid"]),
   body("entryFee").optional().isInt({ min: 0 }),
-  body("upiId").optional().isString().trim(),
+  body("upiId").optional().isString().trim()
 ];
 
 const validateStatusParam = [
   param("id").isMongoId(),
-  body("status").isIn(["upcoming", "ongoing", "past"]),
+  body("status").isIn(["upcoming", "ongoing", "past"])
 ];
 
 /* =========================
@@ -61,14 +61,14 @@ router.post(
         entryType,
         entryFee = 0,
         upiId,
-        qrImage,
+        qrImage
       } = req.body;
 
       if (entryType === "paid") {
         if (!upiId || entryFee <= 0) {
           return res.status(400).json({
             success: false,
-            msg: "Paid tournament requires UPI ID and entry fee",
+            msg: "Paid tournament requires UPI ID and entry fee"
           });
         }
       }
@@ -79,18 +79,16 @@ router.post(
         prizePool,
         entryType,
         entryFee: entryType === "paid" ? entryFee : 0,
-        payment:
-          entryType === "paid"
-            ? { upiId, qrImage }
-            : undefined,
+        upiId: entryType === "paid" ? upiId : null,
+        qrImage: entryType === "paid" ? qrImage || null : null,
         status: "upcoming",
-        createdBy: req.user.email,
+        createdBy: req.user.email
       });
 
       res.status(201).json({
         success: true,
         msg: "Tournament created",
-        tournament,
+        tournament
       });
     } catch (err) {
       console.error("Create tournament error:", err);
@@ -129,26 +127,24 @@ router.patch(
 );
 
 /* =========================
-   MY TOURNAMENTS (USER ONLY)
-   🔥 FIX FOR USER DASHBOARD
+   MY TOURNAMENTS (USER)
 ========================= */
 router.get("/my", apiLimiter, auth, async (req, res) => {
   try {
     if (req.role !== "user") {
       return res.status(403).json({
         success: false,
-        msg: "Only users can access their tournaments",
+        msg: "Only users can access their tournaments"
       });
     }
 
     const tournaments = await Tournament.find({
-      players: req.user.email,
+      players: req.user.email
     }).sort({ createdAt: -1 });
 
     res.json({
       success: true,
-      count: tournaments.length,
-      tournaments,
+      tournaments
     });
   } catch (err) {
     console.error("My tournaments error:", err);
@@ -157,7 +153,7 @@ router.get("/my", apiLimiter, auth, async (req, res) => {
 });
 
 /* =========================
-   FETCH PUBLIC
+   FETCH PUBLIC TOURNAMENTS
 ========================= */
 router.get("/public/:status", apiLimiter, async (req, res) => {
   try {
@@ -167,7 +163,7 @@ router.get("/public/:status", apiLimiter, async (req, res) => {
     }
 
     const tournaments = await Tournament.find({
-      status: req.params.status,
+      status: req.params.status
     }).sort({ createdAt: -1 });
 
     res.json({ success: true, tournaments });
@@ -177,7 +173,7 @@ router.get("/public/:status", apiLimiter, async (req, res) => {
 });
 
 /* =========================
-   FETCH ADMIN
+   FETCH ADMIN TOURNAMENTS
 ========================= */
 router.get(
   "/admin/:status",
@@ -192,9 +188,10 @@ router.get(
       }
 
       const tournaments = await Tournament.find({
-        status: req.params.status,
+        status: req.params.status
       }).sort({ createdAt: -1 });
 
+      // ✅ frontend compatible
       res.json({ success: true, tournaments });
     } catch (err) {
       res.status(500).json({ success: false, msg: "Server error" });
