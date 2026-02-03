@@ -2,6 +2,15 @@ const admin = require("../config/firebaseAdmin");
 const User = require("../models/User");
 const Admin = require("../models/Admin");
 
+/**
+ * ============================
+ * HARD LOCKED CREATOR CONFIG
+ * ============================
+ * ⚠️ DO NOT CHANGE
+ * Only ONE creator allowed permanently
+ */
+const CREATOR_EMAIL = "jarahul989@gmail.com";
+
 const authMiddleware = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
@@ -34,20 +43,22 @@ const authMiddleware = async (req, res, next) => {
     let role = "user";
 
     /* =========================
-       ROLE DETECTION
+       ROLE DETECTION (SECURE)
     ========================= */
-    if (
-      process.env.CREATOR_EMAIL &&
-      email === process.env.CREATOR_EMAIL.toLowerCase()
-    ) {
+
+    // 🔒 CREATOR: HARD LOCK (EMAIL ONLY)
+    if (email === CREATOR_EMAIL) {
       role = "creator";
     } else {
+      // ADMIN CHECK (DB BASED)
       const isAdmin = await Admin.findOne({ email });
-      if (isAdmin) role = "admin";
+      if (isAdmin) {
+        role = "admin";
+      }
     }
 
     /* =========================
-       USER SYNC (AUTO)
+       USER SYNC (AUTO & SAFE)
     ========================= */
     let user = await User.findOne({ email });
 
@@ -58,9 +69,23 @@ const authMiddleware = async (req, res, next) => {
         email,
         role,
       });
-    } else if (user.role !== role) {
-      user.role = role;
-      await user.save();
+    } else {
+      /**
+       * 🚨 SECURITY RULE
+       * - Creator role can NEVER be assigned to anyone else
+       * - Even if DB is manipulated
+       */
+      if (user.role === "creator" && email !== CREATOR_EMAIL) {
+        return res.status(403).json({
+          success: false,
+          msg: "Creator access forbidden",
+        });
+      }
+
+      if (user.role !== role) {
+        user.role = role;
+        await user.save();
+      }
     }
 
     /* =========================
