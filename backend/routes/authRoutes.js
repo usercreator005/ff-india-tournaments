@@ -5,14 +5,16 @@ const authMiddleware = require("../middleware/authMiddleware");
 const User = require("../models/User");
 
 /* =========================
-   HELPERS
+   USERNAME GENERATOR (UNIQUE)
+   one-time & permanent
 ========================= */
 const generateUsername = async () => {
   let username;
   let exists = true;
 
   while (exists) {
-    username = "user" + Date.now().toString().slice(-5);
+    const random = Math.floor(10000 + Math.random() * 90000); // 5 digit
+    username = `user${random}`;
     exists = await User.exists({ username });
   }
 
@@ -21,7 +23,7 @@ const generateUsername = async () => {
 
 /* =========================
    GET USER ROLE
-   🔥 ALSO ENSURES USER + USERNAME
+   🔥 ENSURES USER + USERNAME
 ========================= */
 router.get("/role", authMiddleware, async (req, res) => {
   try {
@@ -38,15 +40,17 @@ router.get("/role", authMiddleware, async (req, res) => {
       });
     }
 
-    // 🛠 Old user but username missing (BUG FIX)
+    // 🛠 Old user bug fix (username missing)
     if (!user.username) {
       user.username = await generateUsername();
       await user.save();
     }
 
     res.json({
+      success: true,
       email: user.email,
-      role: user.role
+      role: user.role,
+      username: user.username
     });
 
   } catch (err) {
@@ -59,7 +63,7 @@ router.get("/role", authMiddleware, async (req, res) => {
 });
 
 /* =========================
-   GET LOGGED IN USER
+   GET LOGGED IN USER PROFILE
 ========================= */
 router.get("/me", authMiddleware, async (req, res) => {
   try {
