@@ -16,30 +16,34 @@ const generateInviteCode = () =>
 const validateErrors = (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       msg: errors.array()[0].msg
     });
+    return true; // ✅ IMPORTANT FIX
   }
+  return false;
 };
 
 /* =========================
    VALIDATIONS
 ========================= */
 const validateTeamCreate = [
-  body("name").trim().isLength({ min: 3 }),
+  body("name")
+    .trim()
+    .isLength({ min: 3 })
+    .withMessage("Team name too short"),
+
   body("whatsapp")
     .trim()
-    .isLength({ min: 10 })
+    .matches(/^[0-9]{10,15}$/)
     .withMessage("Valid WhatsApp number required")
 ];
 
-const validateJoinTeamById = [
-  param("id").isMongoId()
-];
-
 const validateJoinByCode = [
-  body("inviteCode").trim().isLength({ min: 5, max: 8 })
+  body("inviteCode")
+    .trim()
+    .isLength({ min: 5, max: 8 })
 ];
 
 /* =========================
@@ -61,7 +65,7 @@ router.get("/my", auth, async (req, res) => {
       return res.json({ success: true, hasTeam: false });
     }
 
-    return res.json({
+    res.json({
       success: true,
       hasTeam: true,
       team: {
@@ -110,14 +114,12 @@ router.post(
         });
       }
 
-      const inviteCode = generateInviteCode();
-
       const team = await Team.create({
         name: req.body.name.trim(),
         whatsapp: req.body.whatsapp.trim(),
         leaderEmail: user.email,
-        members: [user.username], // ✅ username
-        inviteCode
+        members: [user.username],
+        inviteCode: generateInviteCode()
       });
 
       user.teamId = team._id;
@@ -126,7 +128,7 @@ router.post(
       res.status(201).json({
         success: true,
         msg: "Team created",
-        inviteCode
+        inviteCode: team.inviteCode
       });
     } catch (err) {
       console.error("Create team error:", err);
@@ -170,13 +172,6 @@ router.post(
         });
       }
 
-      if (team.members.includes(user.username)) {
-        return res.status(400).json({
-          success: false,
-          msg: "Already in this team"
-        });
-      }
-
       if (team.members.length >= 6) {
         return res.status(400).json({
           success: false,
@@ -190,10 +185,7 @@ router.post(
       user.teamId = team._id;
       await user.save();
 
-      res.json({
-        success: true,
-        msg: "Joined team"
-      });
+      res.json({ success: true, msg: "Joined team" });
     } catch (err) {
       console.error("Join team error:", err);
       res.status(500).json({ success: false });
@@ -225,9 +217,7 @@ router.post("/leave", apiLimiter, auth, async (req, res) => {
       });
     }
 
-    team.members = team.members.filter(
-      (u) => u !== user.username
-    );
+    team.members = team.members.filter(u => u !== user.username);
     await team.save();
 
     user.teamId = null;
