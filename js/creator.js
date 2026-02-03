@@ -10,7 +10,7 @@ import {
 const BACKEND_URL = "https://ff-india-tournaments.onrender.com";
 
 /* =========================
-   CREATOR AUTH GUARD + BACKEND ROLE CHECK
+   CREATOR AUTH GUARD
 ========================= */
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
@@ -19,138 +19,135 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   try {
-    const token = await getIdToken(user, true);
+    const token = await getIdToken(user);
     const res = await fetch(`${BACKEND_URL}/auth/role`, {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${token}`
-      }
+      headers: { Authorization: `Bearer ${token}` }
     });
 
-    if (!res.ok) throw new Error("Role verification failed");
+    if (!res.ok) throw new Error("Role check failed");
 
     const data = await res.json();
 
     if (data.role !== "creator") {
-      alert("Unauthorized access! You are not a creator.");
+      alert("Unauthorized access");
       await signOut(auth);
       window.location.href = "index.html";
       return;
     }
 
-    console.log("Creator verified:", data.email, data.role);
+    console.log("Creator verified:", data.email);
 
-    // Optional: fetch stats from backend
     fetchStats(token);
-
-    // Optional: fetch existing admins
     fetchAdmins(token);
 
   } catch (err) {
     console.error(err);
-    alert("Authentication failed. Redirecting...");
     await signOut(auth);
     window.location.href = "index.html";
   }
 });
 
 /* =========================
-   LOGOUT
+   LOGOUT / AVATAR
 ========================= */
 const avatar = document.getElementById("avatar");
-
-avatar.addEventListener("click", () => {
-  document.querySelector(".header").classList.toggle("active");
-});
-
-const logoutBtn = document.getElementById("logout");
-if (logoutBtn) {
-  logoutBtn.addEventListener("click", async () => {
-    try {
-      await signOut(auth);
-      window.location.href = "index.html";
-    } catch (err) {
-      console.error(err);
-      alert("Logout failed");
-    }
+if (avatar) {
+  avatar.addEventListener("click", async () => {
+    const confirmLogout = confirm("Logout from Creator panel?");
+    if (!confirmLogout) return;
+    await signOut(auth);
+    window.location.href = "index.html";
   });
 }
 
 /* =========================
-   HOT SLOT POST
+   HOT SLOT UI
 ========================= */
-const numberInput = document.getElementById("contactNumber");
+const contactInput = document.getElementById("contactNumber");
 const dmNumber = document.getElementById("dmNumber");
 
-numberInput.addEventListener("input", () => {
-  dmNumber.innerText = numberInput.value || "—";
+if (contactInput) {
+  contactInput.addEventListener("input", () => {
+    dmNumber.innerText = contactInput.value || "Not Set";
+  });
+}
+
+dmNumber?.addEventListener("click", () => {
+  const num = contactInput.value;
+  if (!num || num.length !== 10) return;
+  window.open(`https://wa.me/91${num}`, "_blank");
 });
 
-dmNumber.addEventListener("click", async () => {
-  const num = numberInput.value;
-  if (!num) return;
-
-  window.open(
-    `https://wa.me/91${num}?text=DM%20ME%20FOR%20DETAILS%20-%20${num}`,
-    "_blank"
-  );
-});
-
-// Post hot slot to backend
+/* =========================
+   POST HOT SLOT
+========================= */
 const postBtn = document.getElementById("postSlot");
-postBtn.addEventListener("click", async () => {
+
+postBtn?.addEventListener("click", async () => {
   const user = auth.currentUser;
-  if (!user) return alert("Not logged in");
+  if (!user) return;
+
+  const tournament = document.getElementById("slotTournament").value.trim();
+  const prizePool = document.getElementById("slotPrize").value.trim();
+  const stage = document.getElementById("slotStage").value.trim();
+  const details = document.getElementById("slotDetails").value.trim();
+  const contact = contactInput.value.trim();
+
+  if (!tournament || !prizePool || !stage || !details || contact.length !== 10) {
+    alert("Fill all hot slot fields correctly");
+    return;
+  }
 
   const token = await getIdToken(user);
-
-  const slotData = {
-    tournament: document.querySelector('input[placeholder="Tournament Name"]').value,
-    prizePool: document.querySelector('input[placeholder="Prize Pool"]').value,
-    stage: document.querySelector('input[placeholder="Stage"]').value,
-    slots: document.querySelector('textarea').value,
-    contact: document.getElementById("contactNumber").value
-  };
 
   try {
     const res = await fetch(`${BACKEND_URL}/creator/hot-slot`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
+        Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify(slotData)
+      body: JSON.stringify({
+        tournament,
+        prizePool,
+        stage,
+        slots: details,
+        contact
+      })
     });
 
     const data = await res.json();
 
-    if (res.ok) {
-      alert("Hot slot posted successfully!");
-      document.querySelector('input[placeholder="Tournament Name"]').value = "";
-      document.querySelector('input[placeholder="Prize Pool"]').value = "";
-      document.querySelector('input[placeholder="Stage"]').value = "";
-      document.querySelector('textarea').value = "";
-      document.getElementById("contactNumber").value = "";
-      dmNumber.innerText = "—";
-    } else {
-      alert("Error: " + (data.msg || data.message));
-    }
+    if (!res.ok) throw new Error(data.message);
+
+    alert("Hot Slot posted successfully");
+
+    document.getElementById("slotTournament").value = "";
+    document.getElementById("slotPrize").value = "";
+    document.getElementById("slotStage").value = "";
+    document.getElementById("slotDetails").value = "";
+    contactInput.value = "";
+    dmNumber.innerText = "Not Set";
 
   } catch (err) {
     console.error(err);
-    alert("Failed to post hot slot. Check console.");
+    alert("Failed to post hot slot");
   }
 });
 
 /* =========================
-   CREATE / REMOVE ADMINS
+   CREATE ADMIN
 ========================= */
 const addAdminBtn = document.getElementById("addAdmin");
-addAdminBtn.addEventListener("click", async () => {
+
+addAdminBtn?.addEventListener("click", async () => {
   const name = document.getElementById("adminName").value.trim();
   const email = document.getElementById("adminEmail").value.trim();
 
-  if (!name || !email) return alert("Fill both fields");
+  if (!name || !email) {
+    alert("Enter admin name & email");
+    return;
+  }
 
   const token = await getIdToken(auth.currentUser);
 
@@ -159,78 +156,88 @@ addAdminBtn.addEventListener("click", async () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
+        Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({ name, email })
     });
 
     const data = await res.json();
-    if (res.ok) {
-      alert("Admin created successfully!");
-      fetchAdmins(token);
-      document.getElementById("adminName").value = "";
-      document.getElementById("adminEmail").value = "";
-    } else {
-      alert("Error: " + (data.msg || data.message));
-    }
+
+    if (!res.ok) throw new Error(data.message);
+
+    alert("Admin created");
+    document.getElementById("adminName").value = "";
+    document.getElementById("adminEmail").value = "";
+    fetchAdmins(token);
 
   } catch (err) {
     console.error(err);
-    alert("Failed to create admin");
+    alert("Admin creation failed");
   }
 });
 
-// Fetch existing admins
+/* =========================
+   FETCH ADMINS
+========================= */
 async function fetchAdmins(token) {
   try {
-    const res = await fetch(`${BACKEND_URL}/creator/stats`, {
-      headers: { "Authorization": `Bearer ${token}` }
+    const res = await fetch(`${BACKEND_URL}/creator/admins`, {
+      headers: { Authorization: `Bearer ${token}` }
     });
-    const data = await res.json();
 
+    if (!res.ok) return;
+
+    const admins = await res.json();
     const list = document.getElementById("adminList");
     list.innerHTML = "";
 
-    data.admins.forEach(a => {
+    admins.forEach((a) => {
       const li = document.createElement("li");
-      li.textContent = `${a.email} ❌`;
+      li.textContent = a.email + " ❌";
+
       li.addEventListener("click", async () => {
-        const confirmDel = confirm(`Remove admin ${a.email}?`);
-        if (!confirmDel) return;
+        if (!confirm(`Remove admin ${a.email}?`)) return;
 
-        const delRes = await fetch(`${BACKEND_URL}/creator/remove-admin/${a.email}`, {
-          method: "DELETE",
-          headers: { "Authorization": `Bearer ${token}` }
-        });
+        const del = await fetch(
+          `${BACKEND_URL}/creator/remove-admin/${a.email}`,
+          {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
 
-        if (delRes.ok) fetchAdmins(token);
+        if (del.ok) fetchAdmins(token);
         else alert("Failed to remove admin");
       });
+
       list.appendChild(li);
     });
 
   } catch (err) {
-    console.error("Fetch admins error:", err);
+    console.error("Fetch admins failed", err);
   }
 }
 
 /* =========================
-   STATS FETCH
+   FETCH STATS
 ========================= */
 async function fetchStats(token) {
   try {
     const res = await fetch(`${BACKEND_URL}/creator/stats`, {
-      headers: { "Authorization": `Bearer ${token}` }
+      headers: { Authorization: `Bearer ${token}` }
     });
 
     if (!res.ok) return;
 
     const data = await res.json();
+
     document.getElementById("totalUsers").innerText = data.totalUsers || 0;
-    document.getElementById("activeTournaments").innerText = data.activeTournaments || 0;
-    document.getElementById("totalAdmins").innerText = data.admins?.length || 0;
+    document.getElementById("activeTournaments").innerText =
+      data.activeTournaments || 0;
+    document.getElementById("totalAdmins").innerText =
+      data.totalAdmins || 0;
 
   } catch (err) {
-    console.error("Fetch stats error:", err);
+    console.error("Stats fetch error", err);
   }
     }
