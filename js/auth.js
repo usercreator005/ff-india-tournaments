@@ -1,6 +1,6 @@
 // js/auth.js
-// Google Login + Backend Role Verification
-// FINAL • STABLE • PRODUCTION READY • RENDER COLD-START SAFE
+// Google Login + Backend JWT + Role Verification
+// FINAL • PRODUCTION • TOKEN SAFE
 
 import { auth } from "./firebase.js";
 import {
@@ -17,7 +17,7 @@ const BACKEND_URL = "https://ff-india-tournaments.onrender.com";
 let isRedirecting = false;
 
 /* =========================
-   GOOGLE LOGIN BUTTON
+   GOOGLE LOGIN
 ========================= */
 const googleBtn = document.getElementById("googleLoginBtn");
 
@@ -26,25 +26,20 @@ if (googleBtn) {
     if (googleBtn.disabled) return;
 
     googleBtn.disabled = true;
-    googleBtn.innerText = "Connecting to Google...";
-
-    const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: "select_account" });
+    googleBtn.innerText = "Connecting...";
 
     try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
+
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      const token = await user.getIdToken(true);
-
-      // 🔥 Cold-start safe role fetch
-      const role = await fetchUserRoleWithRetry(token);
-
-      redirectUser(role);
+      await handleBackendLogin(user);
 
     } catch (err) {
-      console.error("Google login failed:", err);
-      alert("Login failed. Please try again.");
+      console.error("Login failed:", err);
+      alert("Login failed");
 
       googleBtn.disabled = false;
       googleBtn.innerText = "Continue with Google";
@@ -53,67 +48,55 @@ if (googleBtn) {
 }
 
 /* =========================
-   AUTO LOGIN (SESSION SAFE)
+   AUTO SESSION LOGIN
 ========================= */
 onAuthStateChanged(auth, async (user) => {
   if (!user || isRedirecting) return;
 
   try {
-    const token = await user.getIdToken();
-
-    // 🔥 Cold-start safe role fetch
-    const role = await fetchUserRoleWithRetry(token);
-
-    redirectUser(role);
-
+    await handleBackendLogin(user);
   } catch (err) {
-    console.error("Session verification failed:", err);
+    console.error("Session restore failed:", err);
     await signOut(auth);
+    localStorage.clear();
     window.location.replace("index.html");
   }
 });
 
 /* =========================
-   BACKEND ROLE FETCH (RETRY)
+   BACKEND LOGIN + TOKEN SAVE
 ========================= */
-async function fetchUserRoleWithRetry(idToken, retries = 3) {
-  let lastError;
+async function handleBackendLogin(user) {
+  const firebaseToken = await user.getIdToken(true);
 
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      const res = await fetch(`${BACKEND_URL}/auth/role`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${idToken}`
-        }
-      });
-
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
-      }
-
-      const data = await res.json();
-
-      if (!data || !data.role) {
-        throw new Error("Invalid role response");
-      }
-
-      return data.role;
-
-    } catch (err) {
-      lastError = err;
-      console.warn(`Role fetch attempt ${attempt} failed`);
-
-      // ⏳ Render cold start wait
-      await new Promise(res => setTimeout(res, 1500));
+  // 🔐 Backend login (JWT issue)
+  const res = await fetch(`${BACKEND_URL}/auth/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${firebaseToken}`
     }
+  });
+
+  if (!res.ok) {
+    throw new Error("Backend login failed");
   }
 
-  throw lastError;
+  const data = await res.json();
+
+  if (!data.token || !data.role) {
+    throw new Error("Invalid backend auth response");
+  }
+
+  // ✅ VERY IMPORTANT
+  localStorage.setItem("token", data.token);
+  localStorage.setItem("role", data.role);
+
+  redirectUser(data.role);
 }
 
 /* =========================
-   REDIRECT HANDLER (HARD SAFE)
+   REDIRECT
 ========================= */
 function redirectUser(role) {
   if (isRedirecting) return;
@@ -123,14 +106,10 @@ function redirectUser(role) {
     case "creator":
       window.location.replace("creator.html");
       break;
-
     case "admin":
       window.location.replace("admin.html");
       break;
-
-    case "user":
     default:
       window.location.replace("user.html");
-      break;
   }
-  }
+}
