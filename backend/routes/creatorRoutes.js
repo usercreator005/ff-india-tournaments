@@ -12,11 +12,19 @@ const apiLimiter = require("../middleware/rateLimiter");
 const { body, param, validationResult } = require("express-validator");
 
 /* =========================
+   HARD LOCKED CREATOR
+========================= */
+const CREATOR_EMAIL = "jarahul989@gmail.com";
+
+/* =========================
    COMMON HELPERS
 ========================= */
 const creatorOnly = (req, res, next) => {
-  if (req.role !== "creator") {
-    return res.status(403).json({ success: false, msg: "Creator access only" });
+  if (req.role !== "creator" || req.user.email !== CREATOR_EMAIL) {
+    return res.status(403).json({
+      success: false,
+      msg: "Creator access only",
+    });
   }
   next();
 };
@@ -26,7 +34,7 @@ const validate = (req, res) => {
   if (!errors.isEmpty()) {
     res.status(400).json({
       success: false,
-      errors: errors.array(),
+      msg: errors.array()[0].msg,
     });
     return true;
   }
@@ -47,10 +55,10 @@ const validateRemoveAdmin = [
 
 const validateHotSlot = [
   body("tournament").isMongoId().withMessage("Invalid tournament ID"),
-  body("prizePool").isInt({ min: 0 }),
-  body("stage").trim().isLength({ min: 2 }),
-  body("slots").isInt({ min: 1 }),
-  body("contact").trim().isLength({ min: 3 }),
+  body("prizePool").isInt({ min: 0 }).withMessage("Invalid prize pool"),
+  body("stage").trim().isLength({ min: 2 }).withMessage("Stage too short"),
+  body("slots").isInt({ min: 1 }).withMessage("Invalid slot count"),
+  body("contact").trim().isLength({ min: 3 }).withMessage("Invalid contact"),
 ];
 
 /* =========================
@@ -77,7 +85,10 @@ router.get(
       });
     } catch (err) {
       console.error("Creator stats error:", err);
-      res.status(500).json({ success: false, msg: "Server error" });
+      res.status(500).json({
+        success: false,
+        msg: "Server error",
+      });
     }
   }
 );
@@ -98,7 +109,8 @@ router.post(
       const name = req.body.name.trim();
       const email = req.body.email.toLowerCase();
 
-      if (email === process.env.CREATOR_EMAIL?.toLowerCase()) {
+      // 🔒 Absolute safety
+      if (email === CREATOR_EMAIL) {
         return res.status(400).json({
           success: false,
           msg: "Creator cannot be added as admin",
@@ -122,7 +134,10 @@ router.post(
       });
     } catch (err) {
       console.error("Create admin error:", err);
-      res.status(500).json({ success: false, msg: "Server error" });
+      res.status(500).json({
+        success: false,
+        msg: "Server error",
+      });
     }
   }
 );
@@ -142,7 +157,7 @@ router.delete(
 
       const email = req.params.email.toLowerCase();
 
-      if (email === process.env.CREATOR_EMAIL?.toLowerCase()) {
+      if (email === CREATOR_EMAIL) {
         return res.status(400).json({
           success: false,
           msg: "Creator cannot be removed",
@@ -164,7 +179,10 @@ router.delete(
       });
     } catch (err) {
       console.error("Remove admin error:", err);
-      res.status(500).json({ success: false, msg: "Server error" });
+      res.status(500).json({
+        success: false,
+        msg: "Server error",
+      });
     }
   }
 );
@@ -207,7 +225,10 @@ router.post(
       });
     } catch (err) {
       console.error("Hot slot error:", err);
-      res.status(500).json({ success: false, msg: "Server error" });
+      res.status(500).json({
+        success: false,
+        msg: "Server error",
+      });
     }
   }
 );
