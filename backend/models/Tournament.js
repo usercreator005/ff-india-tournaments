@@ -2,9 +2,6 @@ const mongoose = require("mongoose");
 
 const tournamentSchema = new mongoose.Schema(
   {
-    /* =====================
-       BASIC INFO
-    ===================== */
     name: {
       type: String,
       required: true,
@@ -23,9 +20,6 @@ const tournamentSchema = new mongoose.Schema(
       trim: true
     },
 
-    /* =====================
-       ENTRY & PAYMENT
-    ===================== */
     entryType: {
       type: String,
       enum: ["free", "paid"],
@@ -38,10 +32,13 @@ const tournamentSchema = new mongoose.Schema(
       min: 0
     },
 
-    // 🔐 Payment info (PAID tournaments only)
+    /* =========================
+       PAYMENT (PAID ONLY)
+    ========================= */
     upiId: {
       type: String,
-      default: null
+      default: null,
+      trim: true
     },
 
     qrImage: {
@@ -49,34 +46,48 @@ const tournamentSchema = new mongoose.Schema(
       default: null
     },
 
-    /* =====================
+    /* =========================
        JOIN SYSTEM
-    ===================== */
+    ========================= */
     players: {
       type: [String], // user emails
       default: [],
-      index: true
+      validate: {
+        validator: function (arr) {
+          // prevent duplicate joins
+          return arr.length === new Set(arr).size;
+        },
+        message: "Duplicate players not allowed"
+      }
     },
 
-    /* =====================
-       STATUS & META
-    ===================== */
     status: {
       type: String,
       enum: ["upcoming", "ongoing", "past"],
-      default: "upcoming",
-      index: true
+      default: "upcoming"
     },
 
     createdBy: {
       type: String,
-      required: true,
-      index: true
+      required: true
     }
   },
   {
     timestamps: true
   }
 );
+
+/* =========================
+   VIRTUALS
+========================= */
+
+// remaining slots (read-only)
+tournamentSchema.virtual("slotsLeft").get(function () {
+  return Math.max(this.slots - this.players.length, 0);
+});
+
+// ensure virtuals appear in JSON
+tournamentSchema.set("toJSON", { virtuals: true });
+tournamentSchema.set("toObject", { virtuals: true });
 
 module.exports = mongoose.model("Tournament", tournamentSchema);
