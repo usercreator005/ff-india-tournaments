@@ -14,19 +14,21 @@ const tournamentSchema = new mongoose.Schema(
 
     entryFee: { type: Number, default: 0 },
 
-    // 🔐 Payment info (ONLY FOR PAID)
+    // ✅ PAYMENT (PAID ONLY)
     upiId: { type: String, default: null },
     qrImage: { type: String, default: null },
+
+    // ✅ JOIN SYSTEM READY
+    players: {
+      type: [String], // user emails
+      default: []
+    },
 
     status: {
       type: String,
       enum: ["upcoming", "ongoing", "past"],
       default: "upcoming"
     },
-
-    registrationStart: Date,
-    registrationEnd: Date,
-    matchStart: Date,
 
     createdBy: { type: String, required: true }
   },
