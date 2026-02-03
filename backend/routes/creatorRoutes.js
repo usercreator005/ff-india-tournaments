@@ -17,10 +17,14 @@ const { body, param, validationResult } = require("express-validator");
 const CREATOR_EMAIL = "jarahul989@gmail.com";
 
 /* =========================
-   COMMON HELPERS
+   CREATOR ONLY MIDDLEWARE
 ========================= */
 const creatorOnly = (req, res, next) => {
-  if (req.role !== "creator" || req.user.email !== CREATOR_EMAIL) {
+  if (
+    req.role !== "creator" ||
+    !req.user ||
+    req.user.email !== CREATOR_EMAIL
+  ) {
     return res.status(403).json({
       success: false,
       msg: "Creator access only",
@@ -29,6 +33,9 @@ const creatorOnly = (req, res, next) => {
   next();
 };
 
+/* =========================
+   VALIDATION HANDLER
+========================= */
 const validate = (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -45,20 +52,39 @@ const validate = (req, res) => {
    VALIDATIONS
 ========================= */
 const validateCreateAdmin = [
-  body("name").trim().isLength({ min: 2 }).withMessage("Name too short"),
-  body("email").isEmail().withMessage("Invalid email"),
+  body("name")
+    .trim()
+    .isLength({ min: 2 })
+    .withMessage("Name too short"),
+  body("email")
+    .isEmail()
+    .withMessage("Invalid email"),
 ];
 
 const validateRemoveAdmin = [
-  param("email").isEmail().withMessage("Invalid email"),
+  param("email")
+    .isEmail()
+    .withMessage("Invalid email"),
 ];
 
 const validateHotSlot = [
-  body("tournament").isMongoId().withMessage("Invalid tournament ID"),
-  body("prizePool").isInt({ min: 0 }).withMessage("Invalid prize pool"),
-  body("stage").trim().isLength({ min: 2 }).withMessage("Stage too short"),
-  body("slots").isInt({ min: 1 }).withMessage("Invalid slot count"),
-  body("contact").trim().isLength({ min: 3 }).withMessage("Invalid contact"),
+  body("tournament")
+    .isMongoId()
+    .withMessage("Invalid tournament ID"),
+  body("prizePool")
+    .isInt({ min: 0 })
+    .withMessage("Invalid prize pool"),
+  body("stage")
+    .trim()
+    .isLength({ min: 2 })
+    .withMessage("Stage too short"),
+  body("slots")
+    .isInt({ min: 1 })
+    .withMessage("Invalid slot count"),
+  body("contact")
+    .trim()
+    .isLength({ min: 3 })
+    .withMessage("Invalid contact"),
 ];
 
 /* =========================
@@ -73,7 +99,7 @@ router.get(
     try {
       const [totalUsers, admins, activeTournaments] = await Promise.all([
         User.countDocuments(),
-        Admin.find().select("-__v"),
+        Admin.find().select("name email createdAt"),
         Tournament.countDocuments({ status: "upcoming" }),
       ]);
 
@@ -109,7 +135,7 @@ router.post(
       const name = req.body.name.trim();
       const email = req.body.email.toLowerCase();
 
-      // 🔒 Absolute safety
+      // Absolute creator safety
       if (email === CREATOR_EMAIL) {
         return res.status(400).json({
           success: false,
