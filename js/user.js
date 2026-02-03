@@ -1,20 +1,19 @@
-
-
 // js/user.js
 // PHASE 3 – USER DASHBOARD + AVATAR SYNC (LOCKED)
+// + JOIN TOURNAMENT SYSTEM (SAFE ADDITION)
 
 // Firebase Auth
 import { auth } from "./firebase.js";
 import {
-onAuthStateChanged,
-signOut,
-getIdToken
+  onAuthStateChanged,
+  signOut,
+  getIdToken
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
 const BACKEND_URL = "https://ff-india-tournaments.onrender.com";
 
 /* =========================
-ELEMENTS (SAFE SELECT)
+   ELEMENTS (SAFE SELECT)
 ========================= */
 const sidebar = document.getElementById("sidebar");
 const headerAvatar = document.getElementById("headerAvatar");
@@ -25,217 +24,273 @@ const bell = document.getElementById("notificationBell");
 const panel = document.getElementById("notificationPanel");
 
 /* =========================
-AUTH GUARD + INIT
+   AUTH GUARD + INIT
 ========================= */
 onAuthStateChanged(auth, async (user) => {
-if (!user) {
-window.location.href = "index.html";
-return;
-}
+  if (!user) {
+    window.location.href = "index.html";
+    return;
+  }
 
-try {
-const token = await getIdToken(user);
+  try {
+    const token = await getIdToken(user);
 
-const roleRes = await fetch(`${BACKEND_URL}/auth/role`, {  
-  headers: { Authorization: `Bearer ${token}` }  
-});  
+    const roleRes = await fetch(`${BACKEND_URL}/auth/role`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
 
-const roleData = await roleRes.json();  
-if (roleData.role !== "user") throw new Error("Not user");  
+    const roleData = await roleRes.json();
+    if (roleData.role !== "user") throw new Error("Not user");
 
-sidebarUserName.innerText = user.displayName || "Player";  
+    sidebarUserName.innerText = user.displayName || "Player";
 
-await loadUserAvatar(token);  
+    await loadUserAvatar(token);
 
-fetchTournaments();  
-fetchHotSlots();
+    fetchTournaments();
+    fetchHotSlots();
 
-} catch (err) {
-console.error("Auth error:", err);
-await signOut(auth);
-window.location.href = "index.html";
-}
+  } catch (err) {
+    console.error("Auth error:", err);
+    await signOut(auth);
+    window.location.href = "index.html";
+  }
 });
 
 /* =========================
-LOAD USER AVATAR
+   LOAD USER AVATAR
 ========================= */
 async function loadUserAvatar(token) {
-try {
-const res = await fetch(${BACKEND_URL}/auth/me, {
-headers: { Authorization: Bearer ${token} }
-});
+  try {
+    const res = await fetch(`${BACKEND_URL}/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
 
-if (!res.ok) return;  
+    if (!res.ok) return;
 
-const data = await res.json();  
-const avatarCode = data?.user?.avatar || "a1";  
-setAvatarUI(avatarCode);
+    const data = await res.json();
+    const avatarCode = data?.user?.avatar || "a1";
+    setAvatarUI(avatarCode);
 
-} catch (err) {
-console.error("Avatar load error:", err);
-}
+  } catch (err) {
+    console.error("Avatar load error:", err);
+  }
 }
 
 /* =========================
-AVATAR UI SYNC
+   AVATAR UI SYNC
 ========================= */
 function setAvatarUI(code) {
-const path = assets/avatars/${code}.png;
-if (headerAvatar) headerAvatar.src = path;
-if (sidebarAvatar) sidebarAvatar.src = path;
+  const path = `assets/avatars/${code}.png`;
+  if (headerAvatar) headerAvatar.src = path;
+  if (sidebarAvatar) sidebarAvatar.src = path;
 }
 
 /* =========================
-SIDEBAR & NOTIFICATION TOGGLE
+   SIDEBAR & NOTIFICATION TOGGLE
 ========================= */
 if (headerAvatar) {
-headerAvatar.addEventListener("click", (e) => {
-e.stopPropagation();
-sidebar.classList.toggle("active");
-panel.classList.remove("active");
-});
+  headerAvatar.addEventListener("click", (e) => {
+    e.stopPropagation();
+    sidebar.classList.toggle("active");
+    panel.classList.remove("active");
+  });
 }
 
 if (bell) {
-bell.addEventListener("click", (e) => {
-e.stopPropagation();
-panel.classList.toggle("active");
-sidebar.classList.remove("active");
-});
+  bell.addEventListener("click", (e) => {
+    e.stopPropagation();
+    panel.classList.toggle("active");
+    sidebar.classList.remove("active");
+  });
 }
 
 sidebar.addEventListener("click", e => e.stopPropagation());
 panel.addEventListener("click", e => e.stopPropagation());
 
 document.addEventListener("click", () => {
-sidebar.classList.remove("active");
-panel.classList.remove("active");
+  sidebar.classList.remove("active");
+  panel.classList.remove("active");
 });
 
 /* =========================
-SIDEBAR NAVIGATION
+   SIDEBAR NAVIGATION
 ========================= */
 document.getElementById("userInfoBtn").onclick = () => {
-window.location.href = "user-info.html";
+  window.location.href = "user-info.html";
 };
 
 document.getElementById("teamBtn").onclick = () => {
-window.location.href = "team.html";
+  window.location.href = "team.html";
 };
 
 document.getElementById("myTournamentsBtn").onclick = () => {
-window.location.href = "my-tournaments.html";
+  window.location.href = "my-tournaments.html";
 };
 
 document.getElementById("supportBtn").onclick = () => {
-window.open("https://wa.me/919981977828", "_blank");
+  window.open("https://wa.me/919981977828", "_blank");
 };
 
 /* =========================
-LOGOUT
+   LOGOUT
 ========================= */
 document.getElementById("logout").onclick = async () => {
-await signOut(auth);
-window.location.href = "index.html";
+  await signOut(auth);
+  window.location.href = "index.html";
 };
 
 /* =========================
-DASHBOARD TABS
+   DASHBOARD TABS
 ========================= */
 document.querySelectorAll(".tab-btn").forEach(btn => {
-btn.onclick = () => {
-document.querySelectorAll(".tab-btn").forEach(b =>
-b.classList.remove("active")
-);
-document.querySelectorAll(".tab").forEach(t =>
-t.classList.remove("active")
-);
+  btn.onclick = () => {
+    document.querySelectorAll(".tab-btn").forEach(b =>
+      b.classList.remove("active")
+    );
+    document.querySelectorAll(".tab").forEach(t =>
+      t.classList.remove("active")
+    );
 
-btn.classList.add("active");  
-document.getElementById(btn.dataset.tab).classList.add("active");  
+    btn.classList.add("active");
+    document.getElementById(btn.dataset.tab).classList.add("active");
 
-if (btn.dataset.tab === "hot") clearHotBadge();
-
-};
+    if (btn.dataset.tab === "hot") clearHotBadge();
+  };
 });
 
 /* =========================
-FETCH TOURNAMENTS ✅ FIXED
+   FETCH TOURNAMENTS
 ========================= */
 async function fetchTournaments() {
-try {
-const [o, u, p] = await Promise.all([
-fetch(${BACKEND_URL}/tournaments/public/ongoing).then(r => r.json()),
-fetch(${BACKEND_URL}/tournaments/public/upcoming).then(r => r.json()),
-fetch(${BACKEND_URL}/tournaments/public/past).then(r => r.json())
-]);
+  try {
+    const [o, u, p] = await Promise.all([
+      fetch(`${BACKEND_URL}/tournaments/public/ongoing`).then(r => r.json()),
+      fetch(`${BACKEND_URL}/tournaments/public/upcoming`).then(r => r.json()),
+      fetch(`${BACKEND_URL}/tournaments/public/past`).then(r => r.json())
+    ]);
 
-renderTournaments("ongoing", normalize(o));  
-renderTournaments("upcoming", normalize(u));  
-renderTournaments("past", normalize(p));
+    renderTournaments("ongoing", normalize(o), false);
+    renderTournaments("upcoming", normalize(u), true); // 🔥 JOIN ENABLED
+    renderTournaments("past", normalize(p), false);
 
-} catch (err) {
-console.error("Tournament fetch error:", err);
-}
+  } catch (err) {
+    console.error("Tournament fetch error:", err);
+  }
 }
 
 /* 🔥 BACKEND RESPONSE NORMALIZER */
 function normalize(d) {
-if (Array.isArray(d)) return d;
-if (Array.isArray(d?.tournaments)) return d.tournaments;
-return [];
-}
-
-function renderTournaments(id, list) {
-const div = document.getElementById(id);
-div.innerHTML = list.length
-? list.map(t =>   <div class="card">   <h4>${t.name}</h4>   <p>Slots: ${t.slots}</p>   <p>Prize: ₹${t.prizePool}</p>   </div>  ).join("")
-: "<p>No tournaments found</p>";
+  if (Array.isArray(d)) return d;
+  if (Array.isArray(d?.tournaments)) return d.tournaments;
+  return [];
 }
 
 /* =========================
-HOT SLOTS
+   RENDER TOURNAMENTS + JOIN
+========================= */
+function renderTournaments(id, list, joinable) {
+  const div = document.getElementById(id);
+
+  div.innerHTML = list.length
+    ? list.map(t => `
+        <div class="card">
+          <h4>${t.name}</h4>
+          <p>Slots: ${t.players?.length || 0}/${t.slots}</p>
+          <p>Prize: ₹${t.prizePool}</p>
+          <p>Entry: ${t.entryType}</p>
+          ${
+            joinable
+              ? `<button onclick="joinTournament('${t._id}')">Join</button>`
+              : ""
+          }
+        </div>
+      `).join("")
+    : "<p>No tournaments found</p>";
+}
+
+/* =========================
+   JOIN TOURNAMENT 🔥 (SAFE)
+========================= */
+window.joinTournament = async (tournamentId) => {
+  try {
+    const token = await getIdToken(auth.currentUser);
+
+    const res = await fetch(
+      `${BACKEND_URL}/tournaments/join/${tournamentId}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.msg || "Join failed");
+      return;
+    }
+
+    // Paid tournament response
+    if (data.payment) {
+      alert(
+        `Paid Tournament\n\nEntry Fee: ₹${data.payment.entryFee}\nUPI ID: ${data.payment.upiId}`
+      );
+      return;
+    }
+
+    alert("Successfully joined tournament ✅");
+    fetchTournaments();
+
+  } catch (err) {
+    console.error("Join error:", err);
+    alert("Server error");
+  }
+};
+
+/* =========================
+   HOT SLOTS
 ========================= */
 async function fetchHotSlots() {
-try {
-const res = await fetch(${BACKEND_URL}/hot-slots);
-const data = await res.json();
-const slots = Array.isArray(data) ? data : [];
+  try {
+    const res = await fetch(`${BACKEND_URL}/hot-slots`);
+    const data = await res.json();
+    const slots = Array.isArray(data) ? data : [];
 
-const div = document.getElementById("hot");  
-const badge = document.getElementById("hotBadge");  
+    const div = document.getElementById("hot");
+    const badge = document.getElementById("hotBadge");
 
-if (!slots.length) {  
-  div.innerHTML = "No hot slots available";  
-  badge.style.display = "none";  
-  return;  
-}  
+    if (!slots.length) {
+      div.innerHTML = "No hot slots available";
+      badge.style.display = "none";
+      return;
+    }
 
-const last = Number(localStorage.getItem("hotSlotCount") || 0);  
-if (slots.length > last) {  
-  badge.innerText = slots.length - last;  
-  badge.style.display = "inline-block";  
-}  
+    const last = Number(localStorage.getItem("hotSlotCount") || 0);
+    if (slots.length > last) {
+      badge.innerText = slots.length - last;
+      badge.style.display = "inline-block";
+    }
 
-div.innerHTML = slots.map(s => `  
-  <div class="card hot-slot">  
-    <h4>${s.tournament}</h4>  
-    <p>Prize: ₹${s.prizePool}</p>  
-    <a href="https://wa.me/91${s.contact}" target="_blank">Contact</a>  
-  </div>  
-`).join("");
+    div.innerHTML = slots.map(s => `
+      <div class="card hot-slot">
+        <h4>${s.tournament}</h4>
+        <p>Prize: ₹${s.prizePool}</p>
+        <a href="https://wa.me/91${s.contact}" target="_blank">Contact</a>
+      </div>
+    `).join("");
 
-} catch (err) {
-console.error("Hot slot error:", err);
-}
+  } catch (err) {
+    console.error("Hot slot error:", err);
+  }
 }
 
 function clearHotBadge() {
-document.getElementById("hotBadge").style.display = "none";
-fetch(${BACKEND_URL}/hot-slots)
-.then(r => r.json())
-.then(d =>
-localStorage.setItem("hotSlotCount", Array.isArray(d) ? d.length : 0)
-);
-                                              }
+  document.getElementById("hotBadge").style.display = "none";
+  fetch(`${BACKEND_URL}/hot-slots`)
+    .then(r => r.json())
+    .then(d =>
+      localStorage.setItem("hotSlotCount", Array.isArray(d) ? d.length : 0)
+    );
+    }
