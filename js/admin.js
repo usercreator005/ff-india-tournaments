@@ -69,7 +69,7 @@ entryType.onchange = () => {
 };
 
 /* =========================
-   CREATE TOURNAMENT
+   CREATE TOURNAMENT ✅ FIXED
 ========================= */
 createForm.onsubmit = async (e) => {
   e.preventDefault();
@@ -91,13 +91,14 @@ createForm.onsubmit = async (e) => {
     }
   }
 
+  // 🔥 BACKEND-COMPATIBLE PAYLOAD
   const body = {
     name,
     slots: slotCount,
     prizePool: prize,
     entryType: type,
     entryFee: type === "paid" ? Number(entryFee.value) : 0,
-    payment: type === "paid" ? { upiId: upiId.value.trim() } : null
+    upiId: type === "paid" ? upiId.value.trim() : undefined
   };
 
   try {
@@ -123,7 +124,7 @@ createForm.onsubmit = async (e) => {
 };
 
 /* =========================
-   FETCH TOURNAMENTS
+   FETCH TOURNAMENTS ✅ FIXED
 ========================= */
 async function fetchTournaments() {
   const list = document.getElementById("tournamentList");
@@ -135,7 +136,8 @@ async function fetchTournaments() {
       headers: { Authorization: `Bearer ${token}` }
     });
 
-    const tournaments = await res.json();
+    const data = await res.json();
+    const tournaments = data.tournaments || [];
 
     if (!tournaments.length) {
       list.innerHTML = "<p>No tournaments found</p>";
@@ -147,7 +149,7 @@ async function fetchTournaments() {
         <h4>${t.name}</h4>
         <p>Entry: ${t.entryType}</p>
         <p>Fee: ${t.entryFee ? "₹" + t.entryFee : "-"}</p>
-        <p>UPI: ${t.payment?.upiId || "-"}</p>
+        <p>UPI: ${t.upiId || "-"}</p>
       </div>
     `).join("");
 
