@@ -7,6 +7,19 @@ const userSchema = new mongoose.Schema(
       required: true
     },
 
+    /* =========================
+       PUBLIC USERNAME
+       (Shown everywhere instead of email)
+    ========================= */
+    username: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      minlength: 3,
+      maxlength: 20
+    },
+
     name: {
       type: String,
       required: true
@@ -14,8 +27,8 @@ const userSchema = new mongoose.Schema(
 
     email: {
       type: String,
-      unique: true,
-      required: true
+      required: true,
+      unique: true
     },
 
     role: {
@@ -34,7 +47,7 @@ const userSchema = new mongoose.Schema(
     ========================= */
     avatar: {
       type: String,
-      default: "a1" // default avatar
+      default: "a1"
     }
   },
   {
