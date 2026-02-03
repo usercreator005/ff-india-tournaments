@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+
 const Tournament = require("../models/Tournament");
 const auth = require("../middleware/authMiddleware");
 const apiLimiter = require("../middleware/rateLimiter");
@@ -10,7 +11,10 @@ const { body, param, validationResult } = require("express-validator");
 ========================= */
 const adminOnly = (req, res, next) => {
   if (req.role !== "admin") {
-    return res.status(403).json({ success: false, msg: "Admin only" });
+    return res.status(403).json({
+      success: false,
+      msg: "Admin access only"
+    });
   }
   next();
 };
@@ -18,7 +22,10 @@ const adminOnly = (req, res, next) => {
 const validate = (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    res.status(400).json({ success: false, errors: errors.array() });
+    res.status(400).json({
+      success: false,
+      errors: errors.array()
+    });
     return true;
   }
   return false;
@@ -33,7 +40,7 @@ const validateCreateTournament = [
   body("prizePool").notEmpty(),
   body("entryType").isIn(["free", "paid"]),
   body("entryFee").optional().isInt({ min: 0 }),
-  body("upiId").optional().isString().trim()
+  body("upiId").optional().trim().notEmpty()
 ];
 
 const validateStatusParam = [
@@ -59,16 +66,16 @@ router.post(
         slots,
         prizePool,
         entryType,
-        entryFee = 0,
-        upiId,
-        qrImage
+        entryFee,
+        upiId
       } = req.body;
 
+      // 🔐 Strict paid validation
       if (entryType === "paid") {
-        if (!upiId || entryFee <= 0) {
+        if (!upiId || !entryFee || Number(entryFee) <= 0) {
           return res.status(400).json({
             success: false,
-            msg: "Paid tournament requires UPI ID and entry fee"
+            msg: "Paid tournament requires valid UPI ID & entry fee"
           });
         }
       }
@@ -78,21 +85,22 @@ router.post(
         slots,
         prizePool,
         entryType,
-        entryFee: entryType === "paid" ? entryFee : 0,
+        entryFee: entryType === "paid" ? Number(entryFee) : 0,
         upiId: entryType === "paid" ? upiId : null,
-        qrImage: entryType === "paid" ? qrImage || null : null,
         status: "upcoming",
         createdBy: req.user.email
       });
 
-      res.status(201).json({
+      return res.status(201).json({
         success: true,
-        msg: "Tournament created",
         tournament
       });
     } catch (err) {
       console.error("Create tournament error:", err);
-      res.status(500).json({ success: false, msg: "Server error" });
+      return res.status(500).json({
+        success: false,
+        msg: "Server error"
+      });
     }
   }
 );
@@ -112,16 +120,25 @@ router.patch(
 
       const tournament = await Tournament.findById(req.params.id);
       if (!tournament) {
-        return res.status(404).json({ success: false, msg: "Not found" });
+        return res.status(404).json({
+          success: false,
+          msg: "Tournament not found"
+        });
       }
 
       tournament.status = req.body.status;
       await tournament.save();
 
-      res.json({ success: true, msg: "Status updated", tournament });
+      res.json({
+        success: true,
+        tournament
+      });
     } catch (err) {
-      console.error("Status update error:", err);
-      res.status(500).json({ success: false, msg: "Server error" });
+      console.error("Update status error:", err);
+      res.status(500).json({
+        success: false,
+        msg: "Server error"
+      });
     }
   }
 );
@@ -134,7 +151,7 @@ router.get("/my", apiLimiter, auth, async (req, res) => {
     if (req.role !== "user") {
       return res.status(403).json({
         success: false,
-        msg: "Only users can access their tournaments"
+        msg: "User access only"
       });
     }
 
@@ -148,32 +165,43 @@ router.get("/my", apiLimiter, auth, async (req, res) => {
     });
   } catch (err) {
     console.error("My tournaments error:", err);
-    res.status(500).json({ success: false, msg: "Server error" });
+    res.status(500).json({
+      success: false,
+      msg: "Server error"
+    });
   }
 });
 
 /* =========================
-   FETCH PUBLIC TOURNAMENTS
+   PUBLIC TOURNAMENTS (USER)
 ========================= */
 router.get("/public/:status", apiLimiter, async (req, res) => {
   try {
     const allowed = ["upcoming", "ongoing", "past"];
     if (!allowed.includes(req.params.status)) {
-      return res.status(400).json({ success: false, msg: "Invalid status" });
+      return res.status(400).json({
+        success: false,
+        msg: "Invalid status"
+      });
     }
 
     const tournaments = await Tournament.find({
       status: req.params.status
     }).sort({ createdAt: -1 });
 
-    res.json({ success: true, tournaments });
+    // 🔑 frontend expects array OR data.tournaments
+    res.json(tournaments);
   } catch (err) {
-    res.status(500).json({ success: false, msg: "Server error" });
+    console.error("Public tournaments error:", err);
+    res.status(500).json({
+      success: false,
+      msg: "Server error"
+    });
   }
 });
 
 /* =========================
-   FETCH ADMIN TOURNAMENTS
+   ADMIN TOURNAMENTS
 ========================= */
 router.get(
   "/admin/:status",
@@ -184,17 +212,24 @@ router.get(
     try {
       const allowed = ["upcoming", "ongoing", "past"];
       if (!allowed.includes(req.params.status)) {
-        return res.status(400).json({ success: false, msg: "Invalid status" });
+        return res.status(400).json({
+          success: false,
+          msg: "Invalid status"
+        });
       }
 
       const tournaments = await Tournament.find({
         status: req.params.status
       }).sort({ createdAt: -1 });
 
-      // ✅ frontend compatible
-      res.json({ success: true, tournaments });
+      // 🔑 admin.js expects DIRECT ARRAY
+      res.json(tournaments);
     } catch (err) {
-      res.status(500).json({ success: false, msg: "Server error" });
+      console.error("Admin tournaments error:", err);
+      res.status(500).json({
+        success: false,
+        msg: "Server error"
+      });
     }
   }
 );
