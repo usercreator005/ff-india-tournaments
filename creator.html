@@ -1,74 +1,130 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Creator Dashboard | FF INDIA TOURNAMENTS</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <link rel="stylesheet" href="css/creator.css">
+  <!-- Creator CSS -->
+  <link rel="stylesheet" href="css/creator.css" />
+
+  <!-- Basic Security -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 </head>
 <body>
 
+<!-- ================= HEADER ================= -->
 <header class="header">
   <div class="logo">FF INDIA TOURNAMENTS</div>
 
   <div class="icons">
-    <button class="switch" id="loginUser">User</button>
-    <button class="switch" id="loginAdmin">Admin</button>
-    <img src="assets/default-avatar.png" id="avatar">
+    <button class="switch" id="switchUser">User</button>
+    <button class="switch" id="switchAdmin">Admin</button>
+    <img src="assets/default-avatar.png" id="avatar" alt="Creator Avatar" />
   </div>
 </header>
 
+<!-- ================= MAIN ================= -->
 <main class="main">
 
-  <!-- STATS -->
+  <!-- ===== STATS ===== -->
   <section class="stats">
-    <div class="card">👥 Total Users<br><span id="totalUsers">0</span></div>
-    <div class="card">🏆 Active Tournaments<br><span id="activeTournaments">0</span></div>
-    <div class="card">🛡️ Admins<br><span id="totalAdmins">0</span></div>
+    <div class="card">
+      👥 Total Users<br />
+      <span id="totalUsers">0</span>
+    </div>
+
+    <div class="card">
+      🏆 Active Tournaments<br />
+      <span id="activeTournaments">0</span>
+    </div>
+
+    <div class="card">
+      🛡️ Total Admins<br />
+      <span id="totalAdmins">0</span>
+    </div>
   </section>
 
-  <!-- ADMIN MANAGEMENT -->
+  <!-- ===== ADMIN MANAGEMENT ===== -->
   <section class="card full">
     <h3>Admin Management</h3>
 
-    <input type="text" id="adminName" placeholder="Admin Username">
-    <input type="email" id="adminEmail" placeholder="Admin Gmail">
+    <input
+      type="text"
+      id="adminName"
+      placeholder="Admin Username"
+      autocomplete="off"
+    />
+
+    <input
+      type="email"
+      id="adminEmail"
+      placeholder="Admin Gmail (Only Google Login)"
+      autocomplete="off"
+    />
+
     <button id="addAdmin">➕ Create Admin</button>
 
     <ul class="admin-list" id="adminList">
-      <li>admin1@gmail.com ❌</li>
-      <li>admin2@gmail.com ❌</li>
+      <!-- Dynamic Admin List -->
     </ul>
   </section>
 
-  <!-- HOST SLOT -->
+  <!-- ===== HOT SLOT POST ===== -->
   <section class="card full">
-    <h3>🔥 Host Slot Post</h3>
+    <h3>🔥 Hot Slot Post</h3>
 
-    <input type="text" placeholder="Tournament Name">
-    <input type="text" placeholder="Prize Pool">
-    <input type="text" placeholder="Stage">
-    <textarea placeholder="Slot List"></textarea>
-    <input type="tel" id="contactNumber" placeholder="Contact Number (India)">
+    <input
+      type="text"
+      id="slotTournament"
+      placeholder="Tournament Name"
+    />
 
-    <button id="postSlot">Post Hot Slot</button>
+    <input
+      type="text"
+      id="slotPrize"
+      placeholder="Prize Pool (e.g. ₹5,000)"
+    />
+
+    <input
+      type="text"
+      id="slotStage"
+      placeholder="Stage (Qualifiers / Finals)"
+    />
+
+    <textarea
+      id="slotDetails"
+      placeholder="Slot Details (Room, Time, Rules)"
+    ></textarea>
+
+    <input
+      type="tel"
+      id="contactNumber"
+      placeholder="Contact Number (India)"
+      maxlength="10"
+    />
+
+    <button id="postSlot">🚀 Post Hot Slot</button>
 
     <p class="dm-text">
-      DM ME FOR DETAILS -
-      <span id="dmNumber">----------</span>
+      DM ME FOR DETAILS :
+      <span id="dmNumber">Not Set</span>
     </p>
   </section>
 
 </main>
 
+<!-- ================= FOOTER ================= -->
 <footer class="footer">
-  Creator Terms & Policy
+  © 2026 FF INDIA TOURNAMENTS • Creator Panel
 </footer>
 
-<!-- Modular Firebase JS -->
+<!-- ================= SCRIPTS ================= -->
+<!-- Firebase Core -->
 <script type="module" src="js/firebase.js"></script>
+
+<!-- Creator Logic -->
 <script type="module" src="js/creator.js"></script>
 
 </body>
-  </html>
+</html>
