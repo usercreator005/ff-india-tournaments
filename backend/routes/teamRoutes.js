@@ -29,11 +29,7 @@ const validateErrors = (req, res) => {
    VALIDATIONS
 ========================= */
 const validateTeamCreate = [
-  body("name")
-    .trim()
-    .isLength({ min: 3 })
-    .withMessage("Team name too short"),
-
+  body("name").trim().isLength({ min: 3 }).withMessage("Team name too short"),
   body("whatsapp")
     .trim()
     .matches(/^[0-9]{10,15}$/)
@@ -53,10 +49,7 @@ const validateJoinByCode = [
 router.get("/my", auth, async (req, res) => {
   try {
     if (req.role !== "user") {
-      return res.status(403).json({
-        success: false,
-        message: "Access denied"
-      });
+      return res.status(403).json({ success: false });
     }
 
     const user = await User.findOne({ email: req.user.email });
@@ -69,6 +62,10 @@ router.get("/my", auth, async (req, res) => {
       return res.json({ success: true, hasTeam: false });
     }
 
+    const captainUser = await User.findOne({
+      email: team.leaderEmail
+    });
+
     res.json({
       success: true,
       hasTeam: true,
@@ -76,17 +73,16 @@ router.get("/my", auth, async (req, res) => {
         id: team._id,
         name: team.name,
         whatsapp: team.whatsapp,
-        captain: team.leaderEmail,
-        members: team.members,
-        inviteCode: team.inviteCode
+        captain: captainUser.username, // ✅ USERNAME
+        members: team.members,         // ✅ usernames (captain included)
+        inviteCode: team.inviteCode,
+        maxPlayers: 6
       }
     });
+
   } catch (err) {
     console.error("Get team error:", err);
-    res.status(500).json({
-      success: false,
-      message: "Server error"
-    });
+    res.status(500).json({ success: false });
   }
 });
 
@@ -101,34 +97,16 @@ router.post(
   async (req, res) => {
     try {
       if (req.role !== "user") {
-        return res.status(403).json({
-          success: false,
-          message: "Access denied"
-        });
+        return res.status(403).json({ success: false });
       }
 
       if (validateErrors(req, res)) return;
 
       const user = await User.findOne({ email: req.user.email });
-
-      if (!user) {
+      if (!user || user.teamId || !user.username) {
         return res.status(400).json({
           success: false,
-          message: "User not found"
-        });
-      }
-
-      if (user.teamId) {
-        return res.status(400).json({
-          success: false,
-          message: "User already in a team"
-        });
-      }
-
-      if (!user.username) {
-        return res.status(400).json({
-          success: false,
-          message: "Username not set"
+          message: "Cannot create team"
         });
       }
 
@@ -136,7 +114,7 @@ router.post(
         name: req.body.name.trim(),
         whatsapp: req.body.whatsapp.trim(),
         leaderEmail: user.email,
-        members: [user.username],
+        members: [user.username], // ✅ captain included
         inviteCode: generateInviteCode()
       });
 
@@ -148,18 +126,16 @@ router.post(
         message: "Team created successfully",
         inviteCode: team.inviteCode
       });
+
     } catch (err) {
       console.error("Create team error:", err);
-      res.status(500).json({
-        success: false,
-        message: "Server error"
-      });
+      res.status(500).json({ success: false });
     }
   }
 );
 
 /* =========================
-   JOIN TEAM (INVITE CODE)
+   JOIN TEAM
 ========================= */
 router.post(
   "/join-by-code",
@@ -169,20 +145,14 @@ router.post(
   async (req, res) => {
     try {
       if (req.role !== "user") {
-        return res.status(403).json({
-          success: false,
-          message: "Access denied"
-        });
+        return res.status(403).json({ success: false });
       }
 
       if (validateErrors(req, res)) return;
 
       const user = await User.findOne({ email: req.user.email });
       if (!user || user.teamId || !user.username) {
-        return res.status(400).json({
-          success: false,
-          message: "Cannot join team"
-        });
+        return res.status(400).json({ success: false });
       }
 
       const team = await Team.findOne({
@@ -209,16 +179,11 @@ router.post(
       user.teamId = team._id;
       await user.save();
 
-      res.json({
-        success: true,
-        message: "Joined team successfully"
-      });
+      res.json({ success: true });
+
     } catch (err) {
       console.error("Join team error:", err);
-      res.status(500).json({
-        success: false,
-        message: "Server error"
-      });
+      res.status(500).json({ success: false });
     }
   }
 );
@@ -229,11 +194,8 @@ router.post(
 router.post("/leave", apiLimiter, auth, async (req, res) => {
   try {
     const user = await User.findOne({ email: req.user.email });
-    if (!user || !user.teamId || !user.username) {
-      return res.status(400).json({
-        success: false,
-        message: "Cannot leave team"
-      });
+    if (!user || !user.teamId) {
+      return res.status(400).json({ success: false });
     }
 
     const team = await Team.findById(user.teamId);
@@ -246,25 +208,21 @@ router.post("/leave", apiLimiter, auth, async (req, res) => {
     if (team.leaderEmail === user.email) {
       return res.status(400).json({
         success: false,
-        message: "Captain cannot leave the team"
+        message: "Captain cannot leave"
       });
     }
 
-    team.members = team.members.filter(
-      member => member !== user.username
-    );
+    team.members = team.members.filter(u => u !== user.username);
     await team.save();
 
     user.teamId = null;
     await user.save();
 
     res.json({ success: true });
+
   } catch (err) {
     console.error("Leave team error:", err);
-    res.status(500).json({
-      success: false,
-      message: "Server error"
-    });
+    res.status(500).json({ success: false });
   }
 });
 
@@ -275,10 +233,7 @@ router.post("/disband", apiLimiter, auth, async (req, res) => {
   try {
     const user = await User.findOne({ email: req.user.email });
     if (!user || !user.teamId) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid request"
-      });
+      return res.status(400).json({ success: false });
     }
 
     const team = await Team.findById(user.teamId);
@@ -289,10 +244,7 @@ router.post("/disband", apiLimiter, auth, async (req, res) => {
     }
 
     if (team.leaderEmail !== user.email) {
-      return res.status(403).json({
-        success: false,
-        message: "Only captain can disband the team"
-      });
+      return res.status(403).json({ success: false });
     }
 
     await User.updateMany(
@@ -301,14 +253,11 @@ router.post("/disband", apiLimiter, auth, async (req, res) => {
     );
 
     await Team.findByIdAndDelete(team._id);
-
     res.json({ success: true });
+
   } catch (err) {
     console.error("Disband team error:", err);
-    res.status(500).json({
-      success: false,
-      message: "Server error"
-    });
+    res.status(500).json({ success: false });
   }
 });
 
