@@ -1,6 +1,6 @@
 // js/auth.js
-// Google Login + Backend JWT + Role Verification
-// FINAL • PRODUCTION • TOKEN SAFE
+// Google Login + Backend Role Verification
+// FINAL • STABLE • NO /auth/login • RENDER SAFE
 
 import { auth } from "./firebase.js";
 import {
@@ -17,7 +17,7 @@ const BACKEND_URL = "https://ff-india-tournaments.onrender.com";
 let isRedirecting = false;
 
 /* =========================
-   GOOGLE LOGIN
+   GOOGLE LOGIN BUTTON
 ========================= */
 const googleBtn = document.getElementById("googleLoginBtn");
 
@@ -26,7 +26,7 @@ if (googleBtn) {
     if (googleBtn.disabled) return;
 
     googleBtn.disabled = true;
-    googleBtn.innerText = "Connecting...";
+    googleBtn.innerText = "Connecting to Google...";
 
     try {
       const provider = new GoogleAuthProvider();
@@ -35,11 +35,14 @@ if (googleBtn) {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      await handleBackendLogin(user);
+      const token = await user.getIdToken(true);
+
+      const role = await fetchUserRole(token);
+      redirectUser(role);
 
     } catch (err) {
-      console.error("Login failed:", err);
-      alert("Login failed");
+      console.error("Google login failed:", err);
+      alert("Login failed. Please try again.");
 
       googleBtn.disabled = false;
       googleBtn.innerText = "Continue with Google";
@@ -54,49 +57,42 @@ onAuthStateChanged(auth, async (user) => {
   if (!user || isRedirecting) return;
 
   try {
-    await handleBackendLogin(user);
+    const token = await user.getIdToken();
+    const role = await fetchUserRole(token);
+    redirectUser(role);
   } catch (err) {
     console.error("Session restore failed:", err);
     await signOut(auth);
-    localStorage.clear();
     window.location.replace("index.html");
   }
 });
 
 /* =========================
-   BACKEND LOGIN + TOKEN SAVE
+   BACKEND ROLE FETCH
 ========================= */
-async function handleBackendLogin(user) {
-  const firebaseToken = await user.getIdToken(true);
-
-  // 🔐 Backend login (JWT issue)
-  const res = await fetch(`${BACKEND_URL}/auth/login`, {
-    method: "POST",
+async function fetchUserRole(idToken) {
+  const res = await fetch(`${BACKEND_URL}/auth/role`, {
+    method: "GET",
     headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${firebaseToken}`
+      Authorization: `Bearer ${idToken}`
     }
   });
 
   if (!res.ok) {
-    throw new Error("Backend login failed");
+    throw new Error("Role fetch failed");
   }
 
   const data = await res.json();
 
-  if (!data.token || !data.role) {
-    throw new Error("Invalid backend auth response");
+  if (!data.role) {
+    throw new Error("Invalid role response");
   }
 
-  // ✅ VERY IMPORTANT
-  localStorage.setItem("token", data.token);
-  localStorage.setItem("role", data.role);
-
-  redirectUser(data.role);
+  return data.role;
 }
 
 /* =========================
-   REDIRECT
+   REDIRECT HANDLER
 ========================= */
 function redirectUser(role) {
   if (isRedirecting) return;
@@ -106,10 +102,13 @@ function redirectUser(role) {
     case "creator":
       window.location.replace("creator.html");
       break;
+
     case "admin":
       window.location.replace("admin.html");
       break;
+
     default:
       window.location.replace("user.html");
+      break;
   }
-}
+                                          }
