@@ -1,5 +1,5 @@
 // js/team.js
-// FINAL – TEAM MODULE (CAPTAIN COUNTS AS PLAYER • NO DUPLICATION)
+// FINAL – TEAM MODULE (USERNAME BASED • CAPTAIN INCLUDED • NO DUPLICATION)
 
 import { auth } from "./firebase.js";
 import {
@@ -12,7 +12,7 @@ const BACKEND_URL = "https://ff-india-tournaments.onrender.com";
 const box = document.getElementById("teamBox");
 const noTeamActions = document.getElementById("noTeamActions");
 
-let currentUserEmail = null;
+let currentUsername = null;
 let authToken = null;
 
 /* =========================
@@ -24,10 +24,8 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
-  currentUserEmail = user.email;
   authToken = await getIdToken(user);
-
-  loadMyTeam();
+  await loadMyTeam();
 });
 
 /* =========================
@@ -70,14 +68,18 @@ function showNoTeamState() {
 function renderTeam(team) {
   if (noTeamActions) noTeamActions.style.display = "none";
 
-  // backend safety
-  const members = Array.isArray(team.players) ? team.players : [];
+  const members = Array.isArray(team.members) ? team.members : [];
+  const captainUsername = team.captain;
 
-  const isCaptain = team.captain === currentUserEmail;
+  const isCaptain = members.includes(captainUsername);
 
-  // 🔥 captain always counts as player
-  const totalPlayers = members.length + 1;
+  // captain ko members list se hatao (UI ke liye)
+  const otherMembers = members.filter(
+    member => member !== captainUsername
+  );
+
   const MAX_PLAYERS = 6;
+  const totalPlayers = members.length;
 
   box.innerHTML = `
     <div class="card">
@@ -99,20 +101,20 @@ function renderTeam(team) {
 
       <div class="label">Captain</div>
       <div class="player captain">
-        ${team.captain}
+        ${captainUsername}
         <span>Captain</span>
       </div>
 
       <div class="label">Members</div>
       ${
-        members.length > 0
-          ? members.map(member => `
+        otherMembers.length > 0
+          ? otherMembers.map(member => `
               <div class="player playing">
                 ${member}
                 <span>Member</span>
               </div>
             `).join("")
-          : `<p class="empty">No members joined yet</p>`
+          : `<p class="empty">No other members</p>`
       }
 
       <div class="label">Team Size</div>
@@ -178,9 +180,8 @@ async function leaveTeam() {
     });
 
     const data = await res.json();
-
     if (!data.success) {
-      alert(data.msg || "Failed to leave team");
+      alert(data.message || "Failed to leave team");
       return;
     }
 
@@ -208,9 +209,8 @@ async function disbandTeam() {
     });
 
     const data = await res.json();
-
     if (!data.success) {
-      alert(data.msg || "Failed to disband team");
+      alert(data.message || "Failed to disband team");
       return;
     }
 
@@ -221,4 +221,4 @@ async function disbandTeam() {
     console.error("Disband error:", err);
     alert("Server error");
   }
-                  }
+  }
