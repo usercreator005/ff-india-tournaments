@@ -11,26 +11,27 @@ const teamSchema = new mongoose.Schema(
       trim: true
     },
 
-    // ✅ Captain identification (still email for auth safety)
+    // 🔐 Captain auth (email)
     leaderEmail: {
       type: String,
       required: true
     },
 
-    // ✅ Team WhatsApp Number (NEW)
+    // 📞 Team WhatsApp number
     whatsapp: {
       type: String,
       required: true,
       trim: true
     },
 
-    // ✅ Members stored as USERNAMES (NOT EMAILS)
+    // 👥 Members (USERNAMES only)
+    // Captain included
     members: {
-      type: [String], // usernames
+      type: [String],
       default: []
     },
 
-    // 🔑 INVITE CODE
+    // 🔑 Invite Code
     inviteCode: {
       type: String,
       required: true,
@@ -38,12 +39,7 @@ const teamSchema = new mongoose.Schema(
       index: true
     }
   },
-  {
-    timestamps: true
-  }
+  { timestamps: true }
 );
 
-/* =========================
-   EXPORT
-========================= */
 module.exports = mongoose.model("Team", teamSchema);
