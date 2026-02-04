@@ -9,6 +9,8 @@ const errorHandler = require("./middleware/errorHandler");
 
 const HotSlot = require("./models/HotSlot"); // 🔥 C5.3
 
+const axios = require("axios"); // ✅ Self-Ping
+
 const app = express();
 
 /* =======================
@@ -106,6 +108,29 @@ const startHotSlotCleanup = () => {
 };
 
 /* =======================
+   🔥 SELF-PING FUNCTION
+   Keep backend awake
+======================= */
+const startSelfPing = () => {
+  const BACKEND_URL = "https://ff-india-tournaments.onrender.com/health";
+
+  const pingBackend = async () => {
+    try {
+      const res = await axios.get(BACKEND_URL, { timeout: 15000 });
+      console.log("✅ Self ping successful at", new Date().toLocaleTimeString(), "Status:", res.status);
+    } catch (err) {
+      console.log("❌ Self ping failed at", new Date().toLocaleTimeString(), err.message);
+    }
+  };
+
+  // Ping immediately
+  pingBackend();
+
+  // Ping every 10 minutes
+  setInterval(pingBackend, 10 * 60 * 1000);
+};
+
+/* =======================
    Error Handler (LAST)
 ======================= */
 app.use(errorHandler);
@@ -117,4 +142,5 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🔥 Server running on port ${PORT}`);
   startHotSlotCleanup(); // ✅ START CLEANUP AFTER SERVER START
+  startSelfPing();       // ✅ START SELF-PING AFTER SERVER START
 });
