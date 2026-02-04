@@ -8,7 +8,7 @@ const hotSlotSchema = new mongoose.Schema(
     tournament: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Tournament",
-      required: false, // 🔥 External tournament allowed
+      required: false, // External / off-platform tournaments allowed
       index: true,
     },
 
@@ -56,16 +56,32 @@ const hotSlotSchema = new mongoose.Schema(
     },
 
     /* =========================
-       CREATOR META
+       CREATOR META (LOCKED)
     ========================= */
     createdBy: {
-      type: String,
-      required: true, // creator gmail
+      type: String, // creator gmail
+      required: true,
       index: true,
+      immutable: true,
     },
 
     /* =========================
-       EXPIRY SYSTEM (1 DAY)
+       ANALYTICS (READ-ONLY)
+    ========================= */
+    views: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    whatsappClicks: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    /* =========================
+       EXPIRY SYSTEM (AUTO – 1 DAY)
     ========================= */
     expiresAt: {
       type: Date,
@@ -80,9 +96,10 @@ const hotSlotSchema = new mongoose.Schema(
 );
 
 /* =========================
-   INDEXES (OPTIMIZED)
+   INDEXES (PERFORMANCE SAFE)
 ========================= */
+hotSlotSchema.index({ createdBy: 1, createdAt: -1 });
 hotSlotSchema.index({ expiresAt: 1 });
-hotSlotSchema.index({ createdAt: -1 });
+hotSlotSchema.index({ views: -1 });
 
 module.exports = mongoose.model("HotSlot", hotSlotSchema);
