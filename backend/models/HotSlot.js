@@ -1,14 +1,25 @@
 const mongoose = require("mongoose");
 
+/**
+ * ============================
+ * HOT SLOT SCHEMA (C5 FINAL)
+ * ============================
+ * ✔ External tournament friendly
+ * ✔ Frontend-safe (no invalid value)
+ * ✔ 24 hour auto-expiry support
+ */
+
 const hotSlotSchema = new mongoose.Schema(
   {
     /* =========================
-       OPTIONAL TOURNAMENT LINK
+       TOURNAMENT INFO (TEXT)
+       External / Any Platform
     ========================= */
-    tournament: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Tournament",
-      required: false,
+    tournamentName: {
+      type: String,
+      trim: true,
+      default: "External Tournament",
+      minlength: 3,
       index: true,
     },
 
@@ -25,14 +36,19 @@ const hotSlotSchema = new mongoose.Schema(
     description: {
       type: String,
       trim: true,
-      default: "Promotional Hot Slot",
+      required: true,
       minlength: 5,
     },
 
+    /* =========================
+       PRIZE POOL (TEXT)
+       e.g. ₹5,000 / Free Entry
+    ========================= */
     prizePool: {
-      type: Number,
-      required: true,
-      min: 0,
+      type: String,
+      trim: true,
+      default: "0",
+      minlength: 1,
     },
 
     stage: {
@@ -44,6 +60,7 @@ const hotSlotSchema = new mongoose.Schema(
 
     /* =========================
        SLOT DETAILS (TEXT)
+       Room ID / Time / Rules
     ========================= */
     slots: {
       type: String,
@@ -63,10 +80,10 @@ const hotSlotSchema = new mongoose.Schema(
        CREATOR META (LOCKED)
     ========================= */
     createdBy: {
-      type: String,
+      type: String, // creator gmail
       required: true,
-      index: true,
       immutable: true,
+      index: true,
     },
 
     /* =========================
@@ -85,11 +102,13 @@ const hotSlotSchema = new mongoose.Schema(
     },
 
     /* =========================
-       EXPIRY SYSTEM (24 HOURS)
+       EXPIRY SYSTEM (C5)
+       Auto handled by logic
     ========================= */
     expiresAt: {
       type: Date,
       required: true,
+      index: true,
     },
   },
   {
@@ -99,10 +118,9 @@ const hotSlotSchema = new mongoose.Schema(
 );
 
 /* =========================
-   INDEXES (SINGLE SOURCE)
+   INDEXES (NO DUPLICATES)
 ========================= */
 hotSlotSchema.index({ createdBy: 1, createdAt: -1 });
-hotSlotSchema.index({ expiresAt: 1 });
 hotSlotSchema.index({ views: -1 });
 
 module.exports = mongoose.model("HotSlot", hotSlotSchema);
