@@ -4,7 +4,6 @@ const router = express.Router();
 const HotSlot = require("../models/HotSlot");
 const Admin = require("../models/Admin");
 const User = require("../models/User");
-const Tournament = require("../models/Tournament");
 
 const auth = require("../middleware/authMiddleware");
 const apiLimiter = require("../middleware/rateLimiter");
@@ -39,7 +38,7 @@ const isCreator = (req, res, next) => {
     next();
   } catch (err) {
     console.error("Creator guard error:", err);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       msg: "Security check failed",
     });
@@ -52,13 +51,11 @@ const isCreator = (req, res, next) => {
 const validate = (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    res.status(400).json({
+    return res.status(400).json({
       success: false,
       msg: errors.array()[0].msg,
     });
-    return true;
   }
-  return false;
 };
 
 /* =========================
@@ -73,25 +70,37 @@ const validateRemoveAdmin = [
   param("email").isEmail().withMessage("Invalid email"),
 ];
 
-/* 🔥 FIXED: prizePool OPTIONAL */
+/* =========================
+   HOT SLOT VALIDATION
+   (MODEL ALIGNED)
+========================= */
 const validateHotSlot = [
-  body("title").optional().trim().isLength({ min: 3 }),
-  body("description").optional().trim().isLength({ min: 5 }),
-  body("tournament").optional().isMongoId(),
+  body("tournamentName")
+    .optional()
+    .trim()
+    .isLength({ min: 3 })
+    .withMessage("Tournament name too short"),
 
-  body("prizePool")
-    .optional({ checkFalsy: true })
-    .isInt({ min: 0 })
-    .withMessage("Invalid prize pool"),
-
-  body("stage").trim().isLength({ min: 2 }).withMessage("Stage too short"),
-
-  body("slots")
+  body("description")
     .trim()
     .isLength({ min: 5 })
     .withMessage("Slot details required"),
 
-  body("contact").trim().isLength({ min: 3 }).withMessage("Invalid contact"),
+  body("prizePool")
+    .optional()
+    .trim()
+    .isLength({ min: 1 })
+    .withMessage("Invalid prize pool"),
+
+  body("stage")
+    .trim()
+    .isLength({ min: 2 })
+    .withMessage("Stage too short"),
+
+  body("contact")
+    .trim()
+    .isLength({ min: 3 })
+    .withMessage("Invalid contact"),
 ];
 
 /* =========================
@@ -104,13 +113,11 @@ router.get("/stats", apiLimiter, auth, isCreator, async (req, res) => {
     const [
       totalUsers,
       admins,
-      activeTournaments,
       activeHotSlots,
       totalHotSlots,
     ] = await Promise.all([
       User.countDocuments(),
       Admin.find().select("name email createdAt"),
-      Tournament.countDocuments({ status: "upcoming" }),
       HotSlot.countDocuments({
         createdBy: CREATOR_EMAIL,
         expiresAt: { $gt: now },
@@ -122,7 +129,6 @@ router.get("/stats", apiLimiter, auth, isCreator, async (req, res) => {
       success: true,
       creator: CREATOR_EMAIL,
       totalUsers,
-      activeTournaments,
       activeHotSlots,
       totalHotSlots,
       admins,
@@ -147,7 +153,7 @@ router.post(
   validateCreateAdmin,
   async (req, res) => {
     try {
-      if (validate(req, res)) return;
+      validate(req, res);
 
       const name = req.body.name.trim();
       const email = req.body.email.toLowerCase();
@@ -195,7 +201,7 @@ router.delete(
   validateRemoveAdmin,
   async (req, res) => {
     try {
-      if (validate(req, res)) return;
+      validate(req, res);
 
       const email = req.params.email.toLowerCase();
 
@@ -230,7 +236,7 @@ router.delete(
 );
 
 /* =========================
-   POST HOT SLOT (AUTO 24H EXPIRY)
+   POST HOT SLOT (C5 – 24H)
 ========================= */
 router.post(
   "/hot-slot",
@@ -240,43 +246,25 @@ router.post(
   validateHotSlot,
   async (req, res) => {
     try {
-      if (validate(req, res)) return;
+      validate(req, res);
 
-      let {
-        tournament,
-        title,
+      const {
+        tournamentName,
         description,
         prizePool,
         stage,
-        slots,
         contact,
       } = req.body;
-
-      // ✅ DEFAULT PRIZE POOL
-      prizePool = prizePool ? Number(prizePool) : 0;
-
-      let tournamentRef = null;
-
-      if (tournament) {
-        const exists = await Tournament.findById(tournament);
-        if (!exists) {
-          return res.status(404).json({
-            success: false,
-            msg: "Tournament not found",
-          });
-        }
-        tournamentRef = tournament;
-      }
 
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
       const slot = await HotSlot.create({
-        tournament: tournamentRef,
-        title: title || "External Tournament",
-        description: description || "Promotional Hot Slot",
-        prizePool,
+        tournamentName: tournamentName || "External Tournament",
+        title: tournamentName || "External Tournament",
+        description,
+        prizePool: prizePool || "0",
         stage,
-        slots,
+        slots: description, // details stored here
         contact: `DM ME FOR DETAILS - ${contact}`,
         createdBy: CREATOR_EMAIL,
         expiresAt,
@@ -298,7 +286,7 @@ router.post(
 );
 
 /* =========================
-   CREATOR HOT SLOT ANALYTICS
+   CREATOR HOT SLOT LIST
 ========================= */
 router.get("/hot-slots", apiLimiter, auth, isCreator, async (req, res) => {
   try {
