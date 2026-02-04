@@ -38,7 +38,7 @@ onAuthStateChanged(auth, async (user) => {
 
     fetchStats(token);
     fetchAdmins(token);
-    fetchMyHotSlots(token); // ✅ ADDED
+    fetchMyHotSlots(token);
 
   } catch (err) {
     console.error("Creator auth error:", err);
@@ -101,7 +101,7 @@ document.getElementById("postSlot")?.addEventListener("click", async () => {
         Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({
-        title: tournamentName,   // ✅ BACKEND MATCH
+        tournamentName,   // ✅ FIXED (backend match)
         prizePool,
         stage,
         description,
@@ -125,7 +125,7 @@ document.getElementById("postSlot")?.addEventListener("click", async () => {
     contactInput.value = "";
     dmNumber.innerText = "Not Set";
 
-    fetchMyHotSlots(token); // ✅ REFRESH LIST
+    fetchMyHotSlots(token);
 
   } catch (err) {
     console.error("Hot slot error:", err);
@@ -201,7 +201,7 @@ async function fetchAdmins(token) {
 }
 
 /* =========================
-   FETCH MY HOT SLOTS ✅
+   FETCH MY HOT SLOTS (FIXED)
 ========================= */
 async function fetchMyHotSlots(token) {
   const res = await fetch(`${BACKEND_URL}/creator/hot-slots`, {
@@ -210,43 +210,33 @@ async function fetchMyHotSlots(token) {
 
   if (!res.ok) return;
 
-  const slots = await res.json();
+  const data = await res.json();
+  const slots = data.slots || [];
+
   const list = document.getElementById("hotSlotList");
   const empty = document.getElementById("hotSlotEmpty");
 
   list.innerHTML = "";
 
-  if (!slots.length) {
-    empty.classList.remove("hidden");
+  if (slots.length === 0) {
+    empty.style.display = "block";
     return;
   }
 
-  empty.classList.add("hidden");
+  empty.style.display = "none";
 
-  slots.forEach(slot => {
+  slots.forEach((slot) => {
     const li = document.createElement("li");
 
     li.innerHTML = `
       <div>
         <strong>${slot.title}</strong><br>
         Stage: ${slot.stage}<br>
-        Prize: ₹${slot.prizePool || "N/A"}<br>
-        ${slot.description}<br>
-        📞 ${slot.contact}
+        Prize: ${slot.prizePool}<br>
+        ${slot.slots}<br>
+        ${slot.expired ? "⛔ Expired" : "✅ Active"}
       </div>
-      <button class="delete-btn">Delete</button>
     `;
-
-    li.querySelector(".delete-btn").onclick = async () => {
-      if (!confirm("Delete this hot slot?")) return;
-
-      await fetch(`${BACKEND_URL}/creator/hot-slot/${slot._id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      fetchMyHotSlots(token);
-    };
 
     list.appendChild(li);
   });
@@ -264,6 +254,6 @@ async function fetchStats(token) {
 
   const data = await res.json();
   document.getElementById("totalUsers").innerText = data.totalUsers || 0;
-  document.getElementById("activeTournaments").innerText = data.activeTournaments || 0;
+  document.getElementById("activeTournaments").innerText = data.activeHotSlots || 0;
   document.getElementById("totalAdmins").innerText = data.admins?.length || 0;
-  }
+}
