@@ -19,9 +19,12 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   try {
-    const token = await getIdToken(user);
+    const token = await getIdToken(user, true);
+
     const res = await fetch(`${BACKEND_URL}/auth/role`, {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
     });
 
     if (!res.ok) throw new Error("Role check failed");
@@ -41,36 +44,34 @@ onAuthStateChanged(auth, async (user) => {
     fetchAdmins(token);
 
   } catch (err) {
-    console.error(err);
+    console.error("Creator auth error:", err);
     await signOut(auth);
     window.location.href = "index.html";
   }
 });
 
 /* =========================
-   LOGOUT / AVATAR
+   LOGOUT (AVATAR CLICK)
 ========================= */
 const avatar = document.getElementById("avatar");
-if (avatar) {
-  avatar.addEventListener("click", async () => {
-    const confirmLogout = confirm("Logout from Creator panel?");
-    if (!confirmLogout) return;
-    await signOut(auth);
-    window.location.href = "index.html";
-  });
-}
+
+avatar?.addEventListener("click", async () => {
+  const ok = confirm("Logout from Creator Panel?");
+  if (!ok) return;
+
+  await signOut(auth);
+  window.location.href = "index.html";
+});
 
 /* =========================
-   HOT SLOT UI
+   HOT SLOT UI HELPERS
 ========================= */
 const contactInput = document.getElementById("contactNumber");
 const dmNumber = document.getElementById("dmNumber");
 
-if (contactInput) {
-  contactInput.addEventListener("input", () => {
-    dmNumber.innerText = contactInput.value || "Not Set";
-  });
-}
+contactInput?.addEventListener("input", () => {
+  dmNumber.innerText = contactInput.value || "Not Set";
+});
 
 dmNumber?.addEventListener("click", () => {
   const num = contactInput.value;
@@ -79,7 +80,8 @@ dmNumber?.addEventListener("click", () => {
 });
 
 /* =========================
-   POST HOT SLOT
+   POST HOT SLOT (CREATOR)
+   NOTE: Promo only (not tied to site tournaments)
 ========================= */
 const postBtn = document.getElementById("postSlot");
 
@@ -93,14 +95,20 @@ postBtn?.addEventListener("click", async () => {
   const details = document.getElementById("slotDetails").value.trim();
   const contact = contactInput.value.trim();
 
-  if (!tournament || !prizePool || !stage || !details || contact.length !== 10) {
-    alert("Fill all hot slot fields correctly");
+  if (
+    !tournament ||
+    !prizePool ||
+    !stage ||
+    !details ||
+    contact.length !== 10
+  ) {
+    alert("Please fill all hot slot fields correctly");
     return;
   }
 
-  const token = await getIdToken(user);
-
   try {
+    const token = await getIdToken(user);
+
     const res = await fetch(`${BACKEND_URL}/creator/hot-slot`, {
       method: "POST",
       headers: {
@@ -108,17 +116,20 @@ postBtn?.addEventListener("click", async () => {
         Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({
-        tournament,
-        prizePool,
+        tournament,     // promo name
+        prizePool,      // text
         stage,
-        slots: details,
+        slots: details, // promo details (backend model will be aligned later)
         contact
       })
     });
 
     const data = await res.json();
 
-    if (!res.ok) throw new Error(data.message);
+    if (!res.ok) {
+      alert(data.msg || "Failed to post hot slot");
+      return;
+    }
 
     alert("Hot Slot posted successfully");
 
@@ -130,13 +141,13 @@ postBtn?.addEventListener("click", async () => {
     dmNumber.innerText = "Not Set";
 
   } catch (err) {
-    console.error(err);
-    alert("Failed to post hot slot");
+    console.error("Hot slot error:", err);
+    alert("Server error while posting hot slot");
   }
 });
 
 /* =========================
-   CREATE ADMIN
+   CREATE ADMIN (CREATOR ONLY)
 ========================= */
 const addAdminBtn = document.getElementById("addAdmin");
 
@@ -145,13 +156,13 @@ addAdminBtn?.addEventListener("click", async () => {
   const email = document.getElementById("adminEmail").value.trim();
 
   if (!name || !email) {
-    alert("Enter admin name & email");
+    alert("Enter admin name and email");
     return;
   }
 
-  const token = await getIdToken(auth.currentUser);
-
   try {
+    const token = await getIdToken(auth.currentUser);
+
     const res = await fetch(`${BACKEND_URL}/creator/create-admin`, {
       method: "POST",
       headers: {
@@ -163,43 +174,51 @@ addAdminBtn?.addEventListener("click", async () => {
 
     const data = await res.json();
 
-    if (!res.ok) throw new Error(data.message);
+    if (!res.ok) {
+      alert(data.msg || "Admin creation failed");
+      return;
+    }
 
-    alert("Admin created");
+    alert("Admin created successfully");
+
     document.getElementById("adminName").value = "";
     document.getElementById("adminEmail").value = "";
+
     fetchAdmins(token);
 
   } catch (err) {
-    console.error(err);
-    alert("Admin creation failed");
+    console.error("Create admin error:", err);
+    alert("Server error");
   }
 });
 
 /* =========================
-   FETCH ADMINS
+   FETCH ADMINS (FROM STATS)
 ========================= */
 async function fetchAdmins(token) {
   try {
-    const res = await fetch(`${BACKEND_URL}/creator/admins`, {
+    const res = await fetch(`${BACKEND_URL}/creator/stats`, {
       headers: { Authorization: `Bearer ${token}` }
     });
 
     if (!res.ok) return;
 
-    const admins = await res.json();
+    const data = await res.json();
+    const admins = data.admins || [];
+
     const list = document.getElementById("adminList");
     list.innerHTML = "";
 
-    admins.forEach((a) => {
+    admins.forEach((admin) => {
       const li = document.createElement("li");
-      li.textContent = a.email + " ❌";
+      li.textContent = `${admin.email} ❌`;
 
       li.addEventListener("click", async () => {
-        if (!confirm(`Remove admin ${a.email}?`)) return;
+        const ok = confirm(`Remove admin ${admin.email}?`);
+        if (!ok) return;
 
         const del = await fetch(
-          `${BACKEND_URL}/creator/remove-admin/${a.email}`,
+          `${BACKEND_URL}/creator/remove-admin/${admin.email}`,
           {
             method: "DELETE",
             headers: { Authorization: `Bearer ${token}` }
@@ -214,12 +233,12 @@ async function fetchAdmins(token) {
     });
 
   } catch (err) {
-    console.error("Fetch admins failed", err);
+    console.error("Fetch admins error:", err);
   }
 }
 
 /* =========================
-   FETCH STATS
+   FETCH CREATOR STATS
 ========================= */
 async function fetchStats(token) {
   try {
@@ -231,13 +250,16 @@ async function fetchStats(token) {
 
     const data = await res.json();
 
-    document.getElementById("totalUsers").innerText = data.totalUsers || 0;
+    document.getElementById("totalUsers").innerText =
+      data.totalUsers || 0;
+
     document.getElementById("activeTournaments").innerText =
       data.activeTournaments || 0;
+
     document.getElementById("totalAdmins").innerText =
-      data.totalAdmins || 0;
+      data.admins ? data.admins.length : 0;
 
   } catch (err) {
-    console.error("Stats fetch error", err);
+    console.error("Stats fetch error:", err);
   }
-    }
+}
