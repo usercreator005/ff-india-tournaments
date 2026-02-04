@@ -38,7 +38,7 @@ onAuthStateChanged(auth, async (user) => {
 
     fetchStats(token);
     fetchAdmins(token);
-    fetchHotSlots(token); // ✅ NEW
+    fetchMyHotSlots(token); // ✅ ADDED
 
   } catch (err) {
     console.error("Creator auth error:", err);
@@ -67,7 +67,7 @@ contactInput?.addEventListener("input", () => {
 });
 
 dmNumber?.addEventListener("click", () => {
-  const num = contactInput.value.trim();
+  const num = contactInput.value;
   if (num.length === 10) {
     window.open(`https://wa.me/91${num}`, "_blank");
   }
@@ -101,8 +101,8 @@ document.getElementById("postSlot")?.addEventListener("click", async () => {
         Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({
-        tournamentName,
-        prizePool: prizePool || 0,
+        title: tournamentName,   // ✅ BACKEND MATCH
+        prizePool,
         stage,
         description,
         contact
@@ -116,9 +116,7 @@ document.getElementById("postSlot")?.addEventListener("click", async () => {
       return;
     }
 
-    alert("Hot Slot posted");
-
-    fetchHotSlots(token); // ✅ refresh list
+    alert("Hot Slot posted successfully");
 
     document.getElementById("slotTournament").value = "";
     document.getElementById("slotPrize").value = "";
@@ -127,55 +125,13 @@ document.getElementById("postSlot")?.addEventListener("click", async () => {
     contactInput.value = "";
     dmNumber.innerText = "Not Set";
 
+    fetchMyHotSlots(token); // ✅ REFRESH LIST
+
   } catch (err) {
-    console.error(err);
-    alert("Server error");
+    console.error("Hot slot error:", err);
+    alert("Server error while posting hot slot");
   }
 });
-
-/* =========================
-   FETCH HOT SLOTS (NEW)
-========================= */
-async function fetchHotSlots(token) {
-  const res = await fetch(`${BACKEND_URL}/creator/hot-slots`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-
-  if (!res.ok) return;
-
-  const data = await res.json();
-  const list = document.getElementById("hotSlotList");
-  if (!list) return;
-
-  list.innerHTML = "";
-
-  (data.slots || []).forEach((slot) => {
-    const div = document.createElement("div");
-    div.className = "hot-slot-item";
-
-    div.innerHTML = `
-      <h4>${slot.tournamentName}</h4>
-      <p>Stage: ${slot.stage}</p>
-      <p>Prize: ₹${slot.prizePool}</p>
-      <p>${slot.description}</p>
-      <small>📞 ${slot.contact}</small>
-      <button class="delete-slot">Delete</button>
-    `;
-
-    div.querySelector(".delete-slot").onclick = async () => {
-      if (!confirm("Delete this hot slot?")) return;
-
-      await fetch(`${BACKEND_URL}/creator/hot-slot/${slot._id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      fetchHotSlots(token);
-    };
-
-    list.appendChild(div);
-  });
-}
 
 /* =========================
    CREATE ADMIN
@@ -184,23 +140,33 @@ document.getElementById("addAdmin")?.addEventListener("click", async () => {
   const name = document.getElementById("adminName").value.trim();
   const email = document.getElementById("adminEmail").value.trim();
 
-  if (!name || !email) return alert("Enter admin details");
+  if (!name || !email) {
+    alert("Enter admin name and email");
+    return;
+  }
 
-  const token = await getIdToken(auth.currentUser);
+  try {
+    const token = await getIdToken(auth.currentUser);
 
-  await fetch(`${BACKEND_URL}/creator/create-admin`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`
-    },
-    body: JSON.stringify({ name, email })
-  });
+    const res = await fetch(`${BACKEND_URL}/creator/create-admin`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ name, email })
+    });
 
-  document.getElementById("adminName").value = "";
-  document.getElementById("adminEmail").value = "";
+    if (!res.ok) throw new Error();
 
-  fetchAdmins(token);
+    document.getElementById("adminName").value = "";
+    document.getElementById("adminEmail").value = "";
+
+    fetchAdmins(token);
+
+  } catch {
+    alert("Admin creation failed");
+  }
 });
 
 /* =========================
@@ -222,14 +188,64 @@ async function fetchAdmins(token) {
     li.textContent = `${admin.email} ❌`;
 
     li.onclick = async () => {
-      if (!confirm(`Remove ${admin.email}?`)) return;
-
+      if (!confirm(`Remove admin ${admin.email}?`)) return;
       await fetch(`${BACKEND_URL}/creator/remove-admin/${admin.email}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` }
       });
-
       fetchAdmins(token);
+    };
+
+    list.appendChild(li);
+  });
+}
+
+/* =========================
+   FETCH MY HOT SLOTS ✅
+========================= */
+async function fetchMyHotSlots(token) {
+  const res = await fetch(`${BACKEND_URL}/creator/hot-slots`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+
+  if (!res.ok) return;
+
+  const slots = await res.json();
+  const list = document.getElementById("hotSlotList");
+  const empty = document.getElementById("hotSlotEmpty");
+
+  list.innerHTML = "";
+
+  if (!slots.length) {
+    empty.classList.remove("hidden");
+    return;
+  }
+
+  empty.classList.add("hidden");
+
+  slots.forEach(slot => {
+    const li = document.createElement("li");
+
+    li.innerHTML = `
+      <div>
+        <strong>${slot.title}</strong><br>
+        Stage: ${slot.stage}<br>
+        Prize: ₹${slot.prizePool || "N/A"}<br>
+        ${slot.description}<br>
+        📞 ${slot.contact}
+      </div>
+      <button class="delete-btn">Delete</button>
+    `;
+
+    li.querySelector(".delete-btn").onclick = async () => {
+      if (!confirm("Delete this hot slot?")) return;
+
+      await fetch(`${BACKEND_URL}/creator/hot-slot/${slot._id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      fetchMyHotSlots(token);
     };
 
     list.appendChild(li);
@@ -247,8 +263,7 @@ async function fetchStats(token) {
   if (!res.ok) return;
 
   const data = await res.json();
-
   document.getElementById("totalUsers").innerText = data.totalUsers || 0;
   document.getElementById("activeTournaments").innerText = data.activeTournaments || 0;
   document.getElementById("totalAdmins").innerText = data.admins?.length || 0;
-                               }
+  }
