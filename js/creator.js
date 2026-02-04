@@ -75,21 +75,23 @@ dmNumber?.addEventListener("click", () => {
 });
 
 /* =========================
-   POST HOT SLOT (FIXED)
+   POST HOT SLOT (ALIGNED)
 ========================= */
 document.getElementById("postSlot")?.addEventListener("click", async () => {
   const user = auth.currentUser;
   if (!user) return;
 
-  const tournament = document.getElementById("slotTournament").value.trim();
+  const tournamentName = document
+    .getElementById("slotTournament")
+    .value.trim();
+
   const prizePool = document.getElementById("slotPrize").value.trim();
   const stage = document.getElementById("slotStage").value.trim();
   const description = document.getElementById("slotDetails").value.trim();
   const contact = contactInput.value.trim();
 
   if (
-    !tournament ||
-    !prizePool ||
+    !tournamentName ||
     !stage ||
     !description ||
     contact.length !== 10
@@ -108,10 +110,10 @@ document.getElementById("postSlot")?.addEventListener("click", async () => {
         Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({
-        tournament,
-        prizePool,
+        tournamentName, // ✅ FIXED
+        prizePool,      // optional
         stage,
-        description, // ✅ slot details / team info / schedule
+        description,
         contact
       })
     });
@@ -220,4 +222,4 @@ async function fetchStats(token) {
   document.getElementById("totalUsers").innerText = data.totalUsers || 0;
   document.getElementById("activeTournaments").innerText = data.activeTournaments || 0;
   document.getElementById("totalAdmins").innerText = data.admins?.length || 0;
-}
+    }
