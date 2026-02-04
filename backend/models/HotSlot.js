@@ -43,8 +43,7 @@ const hotSlotSchema = new mongoose.Schema(
     },
 
     /* =========================
-       SLOT DETAILS (🔥 FIXED)
-       Text-based details, NOT count
+       SLOT DETAILS (TEXT)
     ========================= */
     slots: {
       type: String,
@@ -64,14 +63,14 @@ const hotSlotSchema = new mongoose.Schema(
        CREATOR META (LOCKED)
     ========================= */
     createdBy: {
-      type: String, // creator gmail
+      type: String,
       required: true,
       index: true,
       immutable: true,
     },
 
     /* =========================
-       ANALYTICS (READ-ONLY)
+       ANALYTICS
     ========================= */
     views: {
       type: Number,
@@ -86,12 +85,11 @@ const hotSlotSchema = new mongoose.Schema(
     },
 
     /* =========================
-       EXPIRY SYSTEM (AUTO – 1 DAY)
+       EXPIRY SYSTEM (24 HOURS)
     ========================= */
     expiresAt: {
       type: Date,
       required: true,
-      index: true,
     },
   },
   {
@@ -101,7 +99,7 @@ const hotSlotSchema = new mongoose.Schema(
 );
 
 /* =========================
-   INDEXES (PERFORMANCE SAFE)
+   INDEXES (SINGLE SOURCE)
 ========================= */
 hotSlotSchema.index({ createdBy: 1, createdAt: -1 });
 hotSlotSchema.index({ expiresAt: 1 });
