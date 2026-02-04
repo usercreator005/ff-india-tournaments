@@ -17,33 +17,24 @@ const { body, param, validationResult } = require("express-validator");
 const CREATOR_EMAIL = "jarahul989@gmail.com";
 
 /* =========================
-   CENTRAL CREATOR GUARD (C3.1)
+   CENTRAL CREATOR GUARD (C3)
 ========================= */
 const isCreator = (req, res, next) => {
   try {
-    if (!req.user || !req.user.email) {
-      return res.status(401).json({
-        success: false,
-        msg: "Unauthorized",
-      });
-    }
-
-    // Hard authority check (single source of truth)
-    if (req.user.email !== CREATOR_EMAIL) {
+    if (!req.user || req.user.email !== CREATOR_EMAIL) {
       return res.status(403).json({
         success: false,
         msg: "Creator access only",
       });
     }
 
-    // Force role consistency (defensive)
     req.role = "creator";
     next();
   } catch (err) {
     console.error("Creator guard error:", err);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
-      msg: "Security check failed",
+      msg: "Security failure",
     });
   }
 };
@@ -67,35 +58,46 @@ const validate = (req, res) => {
    VALIDATIONS
 ========================= */
 const validateCreateAdmin = [
-  body("name")
-    .trim()
-    .isLength({ min: 2 })
-    .withMessage("Name too short"),
-  body("email")
-    .isEmail()
-    .withMessage("Invalid email"),
+  body("name").trim().isLength({ min: 2 }).withMessage("Name too short"),
+  body("email").isEmail().withMessage("Invalid email"),
 ];
 
 const validateRemoveAdmin = [
-  param("email")
-    .isEmail()
-    .withMessage("Invalid email"),
+  param("email").isEmail().withMessage("Invalid email"),
 ];
 
+/* Hot Slot can be WEBSITE or EXTERNAL */
 const validateHotSlot = [
+  body("title")
+    .optional()
+    .trim()
+    .isLength({ min: 3 })
+    .withMessage("Title too short"),
+
+  body("description")
+    .optional()
+    .trim()
+    .isLength({ min: 5 })
+    .withMessage("Description too short"),
+
   body("tournament")
+    .optional()
     .isMongoId()
     .withMessage("Invalid tournament ID"),
+
   body("prizePool")
     .isInt({ min: 0 })
     .withMessage("Invalid prize pool"),
+
   body("stage")
     .trim()
     .isLength({ min: 2 })
     .withMessage("Stage too short"),
+
   body("slots")
     .isInt({ min: 1 })
     .withMessage("Invalid slot count"),
+
   body("contact")
     .trim()
     .isLength({ min: 3 })
@@ -105,38 +107,32 @@ const validateHotSlot = [
 /* =========================
    CREATOR DASHBOARD STATS
 ========================= */
-router.get(
-  "/stats",
-  apiLimiter,
-  auth,
-  isCreator,
-  async (req, res) => {
-    try {
-      const [totalUsers, admins, activeTournaments] = await Promise.all([
+router.get("/stats", apiLimiter, auth, isCreator, async (req, res) => {
+  try {
+    const [totalUsers, admins, activeTournaments, hotSlots] =
+      await Promise.all([
         User.countDocuments(),
         Admin.find().select("name email createdAt"),
         Tournament.countDocuments({ status: "upcoming" }),
+        HotSlot.countDocuments(),
       ]);
 
-      res.json({
-        success: true,
-        creator: CREATOR_EMAIL,
-        totalUsers,
-        activeTournaments,
-        admins,
-      });
-    } catch (err) {
-      console.error("Creator stats error:", err);
-      res.status(500).json({
-        success: false,
-        msg: "Server error",
-      });
-    }
+    res.json({
+      success: true,
+      creator: CREATOR_EMAIL,
+      totalUsers,
+      activeTournaments,
+      totalHotSlots: hotSlots,
+      admins,
+    });
+  } catch (err) {
+    console.error("Creator stats error:", err);
+    res.status(500).json({ success: false, msg: "Server error" });
   }
-);
+});
 
 /* =========================
-   CREATE ADMIN (CREATOR)
+   CREATE ADMIN
 ========================= */
 router.post(
   "/create-admin",
@@ -148,13 +144,12 @@ router.post(
     try {
       if (validate(req, res)) return;
 
-      const name = req.body.name.trim();
-      const email = req.body.email.toLowerCase();
+      const { name, email } = req.body;
 
-      if (email === CREATOR_EMAIL) {
+      if (email.toLowerCase() === CREATOR_EMAIL) {
         return res.status(400).json({
           success: false,
-          msg: "Creator cannot be added as admin",
+          msg: "Creator cannot be admin",
         });
       }
 
@@ -170,21 +165,18 @@ router.post(
 
       res.status(201).json({
         success: true,
-        msg: "Admin created successfully",
+        msg: "Admin created",
         admin,
       });
     } catch (err) {
       console.error("Create admin error:", err);
-      res.status(500).json({
-        success: false,
-        msg: "Server error",
-      });
+      res.status(500).json({ success: false, msg: "Server error" });
     }
   }
 );
 
 /* =========================
-   REMOVE ADMIN (CREATOR)
+   REMOVE ADMIN
 ========================= */
 router.delete(
   "/remove-admin/:email",
@@ -207,29 +199,23 @@ router.delete(
 
       const result = await Admin.deleteOne({ email });
 
-      if (result.deletedCount === 0) {
+      if (!result.deletedCount) {
         return res.status(404).json({
           success: false,
           msg: "Admin not found",
         });
       }
 
-      res.json({
-        success: true,
-        msg: "Admin removed successfully",
-      });
+      res.json({ success: true, msg: "Admin removed" });
     } catch (err) {
       console.error("Remove admin error:", err);
-      res.status(500).json({
-        success: false,
-        msg: "Server error",
-      });
+      res.status(500).json({ success: false, msg: "Server error" });
     }
   }
 );
 
 /* =========================
-   POST HOT SLOT (CREATOR)
+   POST HOT SLOT (PROMO)
 ========================= */
 router.post(
   "/hot-slot",
@@ -241,36 +227,47 @@ router.post(
     try {
       if (validate(req, res)) return;
 
-      const { tournament, prizePool, stage, slots, contact } = req.body;
-
-      const tournamentExists = await Tournament.findById(tournament);
-      if (!tournamentExists) {
-        return res.status(404).json({
-          success: false,
-          msg: "Tournament not found",
-        });
-      }
-
-      const slot = await HotSlot.create({
+      const {
         tournament,
+        title,
+        description,
         prizePool,
         stage,
         slots,
-        contact: `DM ME FOR DETAILS - ${contact}`,
+        contact,
+      } = req.body;
+
+      let tournamentRef = null;
+
+      if (tournament) {
+        const exists = await Tournament.findById(tournament);
+        if (!exists) {
+          return res
+            .status(404)
+            .json({ success: false, msg: "Tournament not found" });
+        }
+        tournamentRef = tournament;
+      }
+
+      const slot = await HotSlot.create({
+        tournament: tournamentRef,
+        title: title || "External Tournament",
+        description: description || "Promotional hot slot",
+        prizePool,
+        stage,
+        slots,
+        contact: `DM FOR DETAILS - ${contact}`,
         createdBy: CREATOR_EMAIL,
       });
 
       res.status(201).json({
         success: true,
-        msg: "Hot slot posted successfully",
+        msg: "Hot slot posted",
         slot,
       });
     } catch (err) {
       console.error("Hot slot error:", err);
-      res.status(500).json({
-        success: false,
-        msg: "Server error",
-      });
+      res.status(500).json({ success: false, msg: "Server error" });
     }
   }
 );
