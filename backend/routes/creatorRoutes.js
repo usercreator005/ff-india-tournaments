@@ -90,13 +90,22 @@ router.get("/stats", apiLimiter, auth, isCreator, async (req, res) => {
   try {
     const now = new Date();
 
-    const [totalUsers, admins, activeTournaments, activeHotSlots] =
-      await Promise.all([
-        User.countDocuments(),
-        Admin.find().select("name email createdAt"),
-        Tournament.countDocuments({ status: "upcoming" }),
-        HotSlot.countDocuments({ expiresAt: { $gt: now } }),
-      ]);
+    const [
+      totalUsers,
+      admins,
+      activeTournaments,
+      activeHotSlots,
+      totalHotSlots,
+    ] = await Promise.all([
+      User.countDocuments(),
+      Admin.find().select("name email createdAt"),
+      Tournament.countDocuments({ status: "upcoming" }),
+      HotSlot.countDocuments({
+        createdBy: CREATOR_EMAIL,
+        expiresAt: { $gt: now },
+      }),
+      HotSlot.countDocuments({ createdBy: CREATOR_EMAIL }),
+    ]);
 
     res.json({
       success: true,
@@ -104,6 +113,7 @@ router.get("/stats", apiLimiter, auth, isCreator, async (req, res) => {
       totalUsers,
       activeTournaments,
       activeHotSlots,
+      totalHotSlots,
       admins,
     });
   } catch (err) {
@@ -244,7 +254,7 @@ router.post(
         tournamentRef = tournament;
       }
 
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 1 day
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
       const slot = await HotSlot.create({
         tournament: tournamentRef,
@@ -265,6 +275,52 @@ router.post(
       });
     } catch (err) {
       console.error("Hot slot error:", err);
+      res.status(500).json({
+        success: false,
+        msg: "Server error",
+      });
+    }
+  }
+);
+
+/* =========================
+   CREATOR HOT SLOT ANALYTICS (READ ONLY)
+   Phase C4.3
+========================= */
+router.get(
+  "/hot-slots",
+  apiLimiter,
+  auth,
+  isCreator,
+  async (req, res) => {
+    try {
+      const now = new Date();
+
+      const slots = await HotSlot.find({ createdBy: CREATOR_EMAIL })
+        .sort({ createdAt: -1 })
+        .select(
+          "title prizePool stage slots views whatsappClicks createdAt expiresAt"
+        );
+
+      const data = slots.map((s) => ({
+        id: s._id,
+        title: s.title,
+        prizePool: s.prizePool,
+        stage: s.stage,
+        slots: s.slots,
+        views: s.views,
+        whatsappClicks: s.whatsappClicks,
+        createdAt: s.createdAt,
+        expired: s.expiresAt < now,
+      }));
+
+      res.json({
+        success: true,
+        total: data.length,
+        slots: data,
+      });
+    } catch (err) {
+      console.error("Hot slot analytics error:", err);
       res.status(500).json({
         success: false,
         msg: "Server error",
