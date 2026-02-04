@@ -17,7 +17,7 @@ const { body, param, validationResult } = require("express-validator");
 const CREATOR_EMAIL = "jarahul989@gmail.com";
 
 /* =========================
-   CENTRAL CREATOR GUARD (C3.1)
+   CENTRAL CREATOR GUARD
 ========================= */
 const isCreator = (req, res, next) => {
   try {
@@ -79,7 +79,13 @@ const validateHotSlot = [
   body("tournament").optional().isMongoId(),
   body("prizePool").isInt({ min: 0 }).withMessage("Invalid prize pool"),
   body("stage").trim().isLength({ min: 2 }).withMessage("Stage too short"),
-  body("slots").isInt({ min: 1 }).withMessage("Invalid slot count"),
+
+  // 🔥 FIX: slots is DETAILS (string), not count
+  body("slots")
+    .trim()
+    .isLength({ min: 5 })
+    .withMessage("Slot details required"),
+
   body("contact").trim().isLength({ min: 3 }).withMessage("Invalid contact"),
 ];
 
@@ -126,7 +132,7 @@ router.get("/stats", apiLimiter, auth, isCreator, async (req, res) => {
 });
 
 /* =========================
-   CREATE ADMIN (CREATOR)
+   CREATE ADMIN
 ========================= */
 router.post(
   "/create-admin",
@@ -174,7 +180,7 @@ router.post(
 );
 
 /* =========================
-   REMOVE ADMIN (CREATOR)
+   REMOVE ADMIN
 ========================= */
 router.delete(
   "/remove-admin/:email",
@@ -219,7 +225,7 @@ router.delete(
 );
 
 /* =========================
-   POST HOT SLOT (1 DAY EXPIRY)
+   POST HOT SLOT (AUTO 24H EXPIRY)
 ========================= */
 router.post(
   "/hot-slot",
@@ -254,7 +260,8 @@ router.post(
         tournamentRef = tournament;
       }
 
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      // ✅ 1 Day Expiry
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
       const slot = await HotSlot.create({
         tournament: tournamentRef,
@@ -262,7 +269,7 @@ router.post(
         description: description || "Promotional Hot Slot",
         prizePool,
         stage,
-        slots,
+        slots, // 🔥 details text
         contact: `DM ME FOR DETAILS - ${contact}`,
         createdBy: CREATOR_EMAIL,
         expiresAt,
@@ -284,8 +291,7 @@ router.post(
 );
 
 /* =========================
-   CREATOR HOT SLOT ANALYTICS (READ ONLY)
-   Phase C4.3
+   CREATOR HOT SLOT ANALYTICS
 ========================= */
 router.get(
   "/hot-slots",
