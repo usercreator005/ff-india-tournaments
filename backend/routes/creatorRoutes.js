@@ -73,14 +73,19 @@ const validateRemoveAdmin = [
   param("email").isEmail().withMessage("Invalid email"),
 ];
 
+/* 🔥 FIXED: prizePool OPTIONAL */
 const validateHotSlot = [
   body("title").optional().trim().isLength({ min: 3 }),
   body("description").optional().trim().isLength({ min: 5 }),
   body("tournament").optional().isMongoId(),
-  body("prizePool").isInt({ min: 0 }).withMessage("Invalid prize pool"),
+
+  body("prizePool")
+    .optional({ checkFalsy: true })
+    .isInt({ min: 0 })
+    .withMessage("Invalid prize pool"),
+
   body("stage").trim().isLength({ min: 2 }).withMessage("Stage too short"),
 
-  // 🔥 FIX: slots is DETAILS (string), not count
   body("slots")
     .trim()
     .isLength({ min: 5 })
@@ -237,7 +242,7 @@ router.post(
     try {
       if (validate(req, res)) return;
 
-      const {
+      let {
         tournament,
         title,
         description,
@@ -246,6 +251,9 @@ router.post(
         slots,
         contact,
       } = req.body;
+
+      // ✅ DEFAULT PRIZE POOL
+      prizePool = prizePool ? Number(prizePool) : 0;
 
       let tournamentRef = null;
 
@@ -260,7 +268,6 @@ router.post(
         tournamentRef = tournament;
       }
 
-      // ✅ 1 Day Expiry
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
       const slot = await HotSlot.create({
@@ -269,7 +276,7 @@ router.post(
         description: description || "Promotional Hot Slot",
         prizePool,
         stage,
-        slots, // 🔥 details text
+        slots,
         contact: `DM ME FOR DETAILS - ${contact}`,
         createdBy: CREATOR_EMAIL,
         expiresAt,
@@ -293,46 +300,40 @@ router.post(
 /* =========================
    CREATOR HOT SLOT ANALYTICS
 ========================= */
-router.get(
-  "/hot-slots",
-  apiLimiter,
-  auth,
-  isCreator,
-  async (req, res) => {
-    try {
-      const now = new Date();
+router.get("/hot-slots", apiLimiter, auth, isCreator, async (req, res) => {
+  try {
+    const now = new Date();
 
-      const slots = await HotSlot.find({ createdBy: CREATOR_EMAIL })
-        .sort({ createdAt: -1 })
-        .select(
-          "title prizePool stage slots views whatsappClicks createdAt expiresAt"
-        );
+    const slots = await HotSlot.find({ createdBy: CREATOR_EMAIL })
+      .sort({ createdAt: -1 })
+      .select(
+        "title prizePool stage slots views whatsappClicks createdAt expiresAt"
+      );
 
-      const data = slots.map((s) => ({
-        id: s._id,
-        title: s.title,
-        prizePool: s.prizePool,
-        stage: s.stage,
-        slots: s.slots,
-        views: s.views,
-        whatsappClicks: s.whatsappClicks,
-        createdAt: s.createdAt,
-        expired: s.expiresAt < now,
-      }));
+    const data = slots.map((s) => ({
+      id: s._id,
+      title: s.title,
+      prizePool: s.prizePool,
+      stage: s.stage,
+      slots: s.slots,
+      views: s.views,
+      whatsappClicks: s.whatsappClicks,
+      createdAt: s.createdAt,
+      expired: s.expiresAt < now,
+    }));
 
-      res.json({
-        success: true,
-        total: data.length,
-        slots: data,
-      });
-    } catch (err) {
-      console.error("Hot slot analytics error:", err);
-      res.status(500).json({
-        success: false,
-        msg: "Server error",
-      });
-    }
+    res.json({
+      success: true,
+      total: data.length,
+      slots: data,
+    });
+  } catch (err) {
+    console.error("Hot slot analytics error:", err);
+    res.status(500).json({
+      success: false,
+      msg: "Server error",
+    });
   }
-);
+});
 
 module.exports = router;
