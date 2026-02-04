@@ -38,8 +38,6 @@ onAuthStateChanged(auth, async (user) => {
       return;
     }
 
-    console.log("Creator verified:", data.email);
-
     fetchStats(token);
     fetchAdmins(token);
 
@@ -51,14 +49,10 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 /* =========================
-   LOGOUT (AVATAR CLICK)
+   LOGOUT
 ========================= */
-const avatar = document.getElementById("avatar");
-
-avatar?.addEventListener("click", async () => {
-  const ok = confirm("Logout from Creator Panel?");
-  if (!ok) return;
-
+document.getElementById("avatar")?.addEventListener("click", async () => {
+  if (!confirm("Logout from Creator Panel?")) return;
   await signOut(auth);
   window.location.href = "index.html";
 });
@@ -75,31 +69,29 @@ contactInput?.addEventListener("input", () => {
 
 dmNumber?.addEventListener("click", () => {
   const num = contactInput.value;
-  if (!num || num.length !== 10) return;
-  window.open(`https://wa.me/91${num}`, "_blank");
+  if (num.length === 10) {
+    window.open(`https://wa.me/91${num}`, "_blank");
+  }
 });
 
 /* =========================
-   POST HOT SLOT (CREATOR)
-   NOTE: Promo only (not tied to site tournaments)
+   POST HOT SLOT (FIXED)
 ========================= */
-const postBtn = document.getElementById("postSlot");
-
-postBtn?.addEventListener("click", async () => {
+document.getElementById("postSlot")?.addEventListener("click", async () => {
   const user = auth.currentUser;
   if (!user) return;
 
   const tournament = document.getElementById("slotTournament").value.trim();
   const prizePool = document.getElementById("slotPrize").value.trim();
   const stage = document.getElementById("slotStage").value.trim();
-  const details = document.getElementById("slotDetails").value.trim();
+  const description = document.getElementById("slotDetails").value.trim();
   const contact = contactInput.value.trim();
 
   if (
     !tournament ||
     !prizePool ||
     !stage ||
-    !details ||
+    !description ||
     contact.length !== 10
   ) {
     alert("Please fill all hot slot fields correctly");
@@ -116,10 +108,10 @@ postBtn?.addEventListener("click", async () => {
         Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({
-        tournament,     // promo name
-        prizePool,      // text
+        tournament,
+        prizePool,
         stage,
-        slots: details, // promo details (backend model will be aligned later)
+        description, // ✅ slot details / team info / schedule
         contact
       })
     });
@@ -133,6 +125,7 @@ postBtn?.addEventListener("click", async () => {
 
     alert("Hot Slot posted successfully");
 
+    // reset form
     document.getElementById("slotTournament").value = "";
     document.getElementById("slotPrize").value = "";
     document.getElementById("slotStage").value = "";
@@ -147,11 +140,9 @@ postBtn?.addEventListener("click", async () => {
 });
 
 /* =========================
-   CREATE ADMIN (CREATOR ONLY)
+   CREATE ADMIN
 ========================= */
-const addAdminBtn = document.getElementById("addAdmin");
-
-addAdminBtn?.addEventListener("click", async () => {
+document.getElementById("addAdmin")?.addEventListener("click", async () => {
   const name = document.getElementById("adminName").value.trim();
   const email = document.getElementById("adminEmail").value.trim();
 
@@ -172,94 +163,61 @@ addAdminBtn?.addEventListener("click", async () => {
       body: JSON.stringify({ name, email })
     });
 
-    const data = await res.json();
-
-    if (!res.ok) {
-      alert(data.msg || "Admin creation failed");
-      return;
-    }
-
-    alert("Admin created successfully");
+    if (!res.ok) throw new Error();
 
     document.getElementById("adminName").value = "";
     document.getElementById("adminEmail").value = "";
 
     fetchAdmins(token);
 
-  } catch (err) {
-    console.error("Create admin error:", err);
-    alert("Server error");
+  } catch {
+    alert("Admin creation failed");
   }
 });
 
 /* =========================
-   FETCH ADMINS (FROM STATS)
+   FETCH ADMINS
 ========================= */
 async function fetchAdmins(token) {
-  try {
-    const res = await fetch(`${BACKEND_URL}/creator/stats`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+  const res = await fetch(`${BACKEND_URL}/creator/stats`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
 
-    if (!res.ok) return;
+  if (!res.ok) return;
 
-    const data = await res.json();
-    const admins = data.admins || [];
+  const data = await res.json();
+  const list = document.getElementById("adminList");
+  list.innerHTML = "";
 
-    const list = document.getElementById("adminList");
-    list.innerHTML = "";
+  (data.admins || []).forEach((admin) => {
+    const li = document.createElement("li");
+    li.textContent = `${admin.email} ❌`;
 
-    admins.forEach((admin) => {
-      const li = document.createElement("li");
-      li.textContent = `${admin.email} ❌`;
-
-      li.addEventListener("click", async () => {
-        const ok = confirm(`Remove admin ${admin.email}?`);
-        if (!ok) return;
-
-        const del = await fetch(
-          `${BACKEND_URL}/creator/remove-admin/${admin.email}`,
-          {
-            method: "DELETE",
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        );
-
-        if (del.ok) fetchAdmins(token);
-        else alert("Failed to remove admin");
+    li.onclick = async () => {
+      if (!confirm(`Remove admin ${admin.email}?`)) return;
+      await fetch(`${BACKEND_URL}/creator/remove-admin/${admin.email}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
       });
+      fetchAdmins(token);
+    };
 
-      list.appendChild(li);
-    });
-
-  } catch (err) {
-    console.error("Fetch admins error:", err);
-  }
+    list.appendChild(li);
+  });
 }
 
 /* =========================
-   FETCH CREATOR STATS
+   FETCH STATS
 ========================= */
 async function fetchStats(token) {
-  try {
-    const res = await fetch(`${BACKEND_URL}/creator/stats`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+  const res = await fetch(`${BACKEND_URL}/creator/stats`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
 
-    if (!res.ok) return;
+  if (!res.ok) return;
+  const data = await res.json();
 
-    const data = await res.json();
-
-    document.getElementById("totalUsers").innerText =
-      data.totalUsers || 0;
-
-    document.getElementById("activeTournaments").innerText =
-      data.activeTournaments || 0;
-
-    document.getElementById("totalAdmins").innerText =
-      data.admins ? data.admins.length : 0;
-
-  } catch (err) {
-    console.error("Stats fetch error:", err);
-  }
+  document.getElementById("totalUsers").innerText = data.totalUsers || 0;
+  document.getElementById("activeTournaments").innerText = data.activeTournaments || 0;
+  document.getElementById("totalAdmins").innerText = data.admins?.length || 0;
 }
