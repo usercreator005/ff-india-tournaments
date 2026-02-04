@@ -72,12 +72,12 @@
 
   <!-- ===== HOT SLOT POST ===== -->
   <section class="card full">
-    <h3>🔥 Hot Slot Post</h3>
+    <h3>🔥 Post New Hot Slot</h3>
 
     <input
       type="text"
       id="slotTournament"
-      placeholder="Tournament Name"
+      placeholder="Tournament Name (Any Platform)"
     />
 
     <input
@@ -94,7 +94,7 @@
 
     <textarea
       id="slotDetails"
-      placeholder="Slot Details (Room, Time, Rules)"
+      placeholder="Slot Details (Room ID, Time, Rules, etc.)"
     ></textarea>
 
     <input
@@ -112,6 +112,30 @@
     </p>
   </section>
 
+  <!-- ===== MANAGE HOT SLOTS ===== -->
+  <section class="card full">
+    <h3>📋 My Posted Hot Slots</h3>
+
+    <div id="hotSlotEmpty" class="dm-text">
+      No hot slots posted yet.
+    </div>
+
+    <ul class="admin-list" id="hotSlotList">
+      <!-- 
+        Dynamic Hot Slots List
+        Example (JS will render):
+        <li>
+          <strong>₹5,000 Finals</strong><br>
+          Stage: Finals<br>
+          Contact: 9XXXXXXXXX
+          <div class="slot-actions">
+            ✏️ Edit | ❌ Delete
+          </div>
+        </li>
+      -->
+    </ul>
+  </section>
+
 </main>
 
 <!-- ================= FOOTER ================= -->
@@ -120,10 +144,7 @@
 </footer>
 
 <!-- ================= SCRIPTS ================= -->
-<!-- Firebase Core -->
 <script type="module" src="js/firebase.js"></script>
-
-<!-- Creator Logic -->
 <script type="module" src="js/creator.js"></script>
 
 </body>
