@@ -5,25 +5,40 @@ const HotSlot = require("../models/HotSlot");
 /* =========================
    PUBLIC HOT SLOTS
    Pagination + Expiry Safe
+   C5 IMPLEMENTATION
 ========================= */
 router.get("/", async (req, res) => {
   try {
-    // -------- Pagination params --------
-    const page = Math.max(parseInt(req.query.page) || 1, 1);
-    const limit = Math.min(parseInt(req.query.limit) || 10, 30); // max 30
+    /* =========================
+       PAGINATION (SAFE)
+    ========================= */
+    let page = parseInt(req.query.page, 10);
+    let limit = parseInt(req.query.limit, 10);
+
+    if (isNaN(page) || page < 1) page = 1;
+    if (isNaN(limit) || limit < 1) limit = 10;
+    if (limit > 30) limit = 30; // hard cap
+
     const skip = (page - 1) * limit;
 
-    // -------- Expiry filter --------
+    /* =========================
+       EXPIRY FILTER
+    ========================= */
     const now = new Date();
 
     const filter = {
-      expiresAt: { $gt: now }, // 🔥 expired slots hidden
+      expiresAt: { $gt: now }, // 🔥 only active hot slots
     };
 
-    // -------- Query --------
+    /* =========================
+       QUERY
+    ========================= */
     const [slots, total] = await Promise.all([
       HotSlot.find(filter)
-        .sort({ createdAt: -1 })
+        .select(
+          "title description prizePool stage slots contact createdBy createdAt expiresAt"
+        )
+        .sort({ createdAt: -1, _id: -1 }) // stable sort
         .skip(skip)
         .limit(limit)
         .lean(),
@@ -31,12 +46,15 @@ router.get("/", async (req, res) => {
       HotSlot.countDocuments(filter),
     ]);
 
-    res.json({
+    /* =========================
+       RESPONSE
+    ========================= */
+    res.status(200).json({
       success: true,
       page,
       limit,
       total,
-      totalPages: Math.ceil(total / limit),
+      totalPages: total === 0 ? 0 : Math.ceil(total / limit),
       slots,
     });
   } catch (err) {
