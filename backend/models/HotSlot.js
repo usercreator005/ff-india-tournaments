@@ -2,11 +2,31 @@ const mongoose = require("mongoose");
 
 const hotSlotSchema = new mongoose.Schema(
   {
+    /* =========================
+       OPTIONAL TOURNAMENT LINK
+    ========================= */
     tournament: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Tournament",
-      required: true,
+      required: false, // 🔥 External tournament allowed
       index: true,
+    },
+
+    /* =========================
+       BASIC INFO
+    ========================= */
+    title: {
+      type: String,
+      trim: true,
+      default: "External Tournament",
+      minlength: 3,
+    },
+
+    description: {
+      type: String,
+      trim: true,
+      default: "Promotional Hot Slot",
+      minlength: 5,
     },
 
     prizePool: {
@@ -34,6 +54,24 @@ const hotSlotSchema = new mongoose.Schema(
       trim: true,
       minlength: 3,
     },
+
+    /* =========================
+       CREATOR META
+    ========================= */
+    createdBy: {
+      type: String,
+      required: true, // creator gmail
+      index: true,
+    },
+
+    /* =========================
+       EXPIRY SYSTEM (1 DAY)
+    ========================= */
+    expiresAt: {
+      type: Date,
+      required: true,
+      index: true,
+    },
   },
   {
     timestamps: true,
@@ -42,8 +80,9 @@ const hotSlotSchema = new mongoose.Schema(
 );
 
 /* =========================
-   INDEXES
+   INDEXES (OPTIMIZED)
 ========================= */
-hotSlotSchema.index({ tournament: 1, createdAt: -1 });
+hotSlotSchema.index({ expiresAt: 1 });
+hotSlotSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model("HotSlot", hotSlotSchema);
