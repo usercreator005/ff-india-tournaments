@@ -8,7 +8,7 @@
   <!-- Creator CSS -->
   <link rel="stylesheet" href="css/creator.css" />
 
-  <!-- Basic Security -->
+  <!-- Security -->
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 </head>
 <body>
@@ -65,9 +65,7 @@
 
     <button id="addAdmin">➕ Create Admin</button>
 
-    <ul class="admin-list" id="adminList">
-      <!-- Dynamic Admin List -->
-    </ul>
+    <ul class="admin-list" id="adminList"></ul>
   </section>
 
   <!-- ===== HOT SLOT POST ===== -->
@@ -116,23 +114,12 @@
   <section class="card full">
     <h3>📋 My Posted Hot Slots</h3>
 
-    <div id="hotSlotEmpty" class="dm-text">
+    <div id="hotSlotEmpty" class="dm-text" style="display:none;">
       No hot slots posted yet.
     </div>
 
     <ul class="admin-list" id="hotSlotList">
-      <!-- 
-        Dynamic Hot Slots List
-        Example (JS will render):
-        <li>
-          <strong>₹5,000 Finals</strong><br>
-          Stage: Finals<br>
-          Contact: 9XXXXXXXXX
-          <div class="slot-actions">
-            ✏️ Edit | ❌ Delete
-          </div>
-        </li>
-      -->
+      <!-- JS will inject <li> items here -->
     </ul>
   </section>
 
