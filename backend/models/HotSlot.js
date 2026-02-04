@@ -8,7 +8,7 @@ const hotSlotSchema = new mongoose.Schema(
     tournament: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Tournament",
-      required: false, // External / off-platform tournaments allowed
+      required: false,
       index: true,
     },
 
@@ -42,10 +42,15 @@ const hotSlotSchema = new mongoose.Schema(
       minlength: 2,
     },
 
+    /* =========================
+       SLOT DETAILS (🔥 FIXED)
+       Text-based details, NOT count
+    ========================= */
     slots: {
-      type: Number,
+      type: String,
       required: true,
-      min: 1,
+      trim: true,
+      minlength: 5,
     },
 
     contact: {
