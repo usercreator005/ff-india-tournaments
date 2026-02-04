@@ -22,24 +22,17 @@ onAuthStateChanged(auth, async (user) => {
     const token = await getIdToken(user, true);
 
     const res = await fetch(`${BACKEND_URL}/auth/role`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+      headers: { Authorization: `Bearer ${token}` }
     });
 
-    if (!res.ok) throw new Error("Role check failed");
+    if (!res.ok) throw new Error();
 
     const data = await res.json();
-
-    if (data.role !== "creator") {
-      alert("Unauthorized access");
-      await signOut(auth);
-      window.location.href = "index.html";
-      return;
-    }
+    if (data.role !== "creator") throw new Error();
 
     fetchStats(token);
     fetchAdmins(token);
+    fetchMyHotSlots(token); // ✅ LOAD HOT SLOTS
 
   } catch (err) {
     console.error("Creator auth error:", err);
@@ -75,27 +68,19 @@ dmNumber?.addEventListener("click", () => {
 });
 
 /* =========================
-   POST HOT SLOT (ALIGNED)
+   POST HOT SLOT
 ========================= */
 document.getElementById("postSlot")?.addEventListener("click", async () => {
   const user = auth.currentUser;
   if (!user) return;
 
-  const tournamentName = document
-    .getElementById("slotTournament")
-    .value.trim();
-
+  const tournamentName = document.getElementById("slotTournament").value.trim();
   const prizePool = document.getElementById("slotPrize").value.trim();
   const stage = document.getElementById("slotStage").value.trim();
   const description = document.getElementById("slotDetails").value.trim();
   const contact = contactInput.value.trim();
 
-  if (
-    !tournamentName ||
-    !stage ||
-    !description ||
-    contact.length !== 10
-  ) {
+  if (!tournamentName || !stage || !description || contact.length !== 10) {
     alert("Please fill all hot slot fields correctly");
     return;
   }
@@ -110,16 +95,15 @@ document.getElementById("postSlot")?.addEventListener("click", async () => {
         Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({
-        tournamentName, // ✅ FIXED
-        prizePool,      // optional
+        title: tournamentName,
+        prizePool,
         stage,
-        description,
+        slots: description,
         contact
       })
     });
 
     const data = await res.json();
-
     if (!res.ok) {
       alert(data.msg || "Failed to post hot slot");
       return;
@@ -135,6 +119,8 @@ document.getElementById("postSlot")?.addEventListener("click", async () => {
     contactInput.value = "";
     dmNumber.innerText = "Not Set";
 
+    fetchMyHotSlots(token); // ✅ REFRESH LIST
+
   } catch (err) {
     console.error("Hot slot error:", err);
     alert("Server error while posting hot slot");
@@ -142,40 +128,45 @@ document.getElementById("postSlot")?.addEventListener("click", async () => {
 });
 
 /* =========================
-   CREATE ADMIN
+   FETCH MY HOT SLOTS
 ========================= */
-document.getElementById("addAdmin")?.addEventListener("click", async () => {
-  const name = document.getElementById("adminName").value.trim();
-  const email = document.getElementById("adminEmail").value.trim();
+async function fetchMyHotSlots(token) {
+  const list = document.getElementById("hotSlotList");
+  const empty = document.getElementById("hotSlotEmpty");
 
-  if (!name || !email) {
-    alert("Enter admin name and email");
+  list.innerHTML = "";
+
+  const res = await fetch(`${BACKEND_URL}/creator/hot-slots`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+
+  if (!res.ok) {
+    empty.style.display = "block";
     return;
   }
 
-  try {
-    const token = await getIdToken(auth.currentUser);
-
-    const res = await fetch(`${BACKEND_URL}/creator/create-admin`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ name, email })
-    });
-
-    if (!res.ok) throw new Error();
-
-    document.getElementById("adminName").value = "";
-    document.getElementById("adminEmail").value = "";
-
-    fetchAdmins(token);
-
-  } catch {
-    alert("Admin creation failed");
+  const data = await res.json();
+  if (!data.slots || data.slots.length === 0) {
+    empty.style.display = "block";
+    return;
   }
-});
+
+  empty.style.display = "none";
+
+  data.slots.forEach((slot) => {
+    const li = document.createElement("li");
+
+    li.innerHTML = `
+      <strong>${slot.title}</strong><br>
+      Prize: ₹${slot.prizePool}<br>
+      Stage: ${slot.stage}<br>
+      Views: ${slot.views}<br>
+      Status: ${slot.expired ? "❌ Expired" : "🟢 Active"}
+    `;
+
+    list.appendChild(li);
+  });
+}
 
 /* =========================
    FETCH ADMINS
@@ -222,4 +213,4 @@ async function fetchStats(token) {
   document.getElementById("totalUsers").innerText = data.totalUsers || 0;
   document.getElementById("activeTournaments").innerText = data.activeTournaments || 0;
   document.getElementById("totalAdmins").innerText = data.admins?.length || 0;
-    }
+        }
