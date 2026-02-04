@@ -25,14 +25,20 @@ onAuthStateChanged(auth, async (user) => {
       headers: { Authorization: `Bearer ${token}` }
     });
 
-    if (!res.ok) throw new Error();
+    if (!res.ok) throw new Error("Role check failed");
 
     const data = await res.json();
-    if (data.role !== "creator") throw new Error();
+
+    if (data.role !== "creator") {
+      alert("Unauthorized access");
+      await signOut(auth);
+      window.location.href = "index.html";
+      return;
+    }
 
     fetchStats(token);
     fetchAdmins(token);
-    fetchMyHotSlots(token); // ✅ LOAD HOT SLOTS
+    fetchHotSlots(token); // ✅ NEW
 
   } catch (err) {
     console.error("Creator auth error:", err);
@@ -61,7 +67,7 @@ contactInput?.addEventListener("input", () => {
 });
 
 dmNumber?.addEventListener("click", () => {
-  const num = contactInput.value;
+  const num = contactInput.value.trim();
   if (num.length === 10) {
     window.open(`https://wa.me/91${num}`, "_blank");
   }
@@ -95,23 +101,25 @@ document.getElementById("postSlot")?.addEventListener("click", async () => {
         Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({
-        title: tournamentName,
-        prizePool,
+        tournamentName,
+        prizePool: prizePool || 0,
         stage,
-        slots: description,
+        description,
         contact
       })
     });
 
     const data = await res.json();
+
     if (!res.ok) {
       alert(data.msg || "Failed to post hot slot");
       return;
     }
 
-    alert("Hot Slot posted successfully");
+    alert("Hot Slot posted");
 
-    // reset form
+    fetchHotSlots(token); // ✅ refresh list
+
     document.getElementById("slotTournament").value = "";
     document.getElementById("slotPrize").value = "";
     document.getElementById("slotStage").value = "";
@@ -119,54 +127,81 @@ document.getElementById("postSlot")?.addEventListener("click", async () => {
     contactInput.value = "";
     dmNumber.innerText = "Not Set";
 
-    fetchMyHotSlots(token); // ✅ REFRESH LIST
-
   } catch (err) {
-    console.error("Hot slot error:", err);
-    alert("Server error while posting hot slot");
+    console.error(err);
+    alert("Server error");
   }
 });
 
 /* =========================
-   FETCH MY HOT SLOTS
+   FETCH HOT SLOTS (NEW)
 ========================= */
-async function fetchMyHotSlots(token) {
-  const list = document.getElementById("hotSlotList");
-  const empty = document.getElementById("hotSlotEmpty");
-
-  list.innerHTML = "";
-
+async function fetchHotSlots(token) {
   const res = await fetch(`${BACKEND_URL}/creator/hot-slots`, {
     headers: { Authorization: `Bearer ${token}` }
   });
 
-  if (!res.ok) {
-    empty.style.display = "block";
-    return;
-  }
+  if (!res.ok) return;
 
   const data = await res.json();
-  if (!data.slots || data.slots.length === 0) {
-    empty.style.display = "block";
-    return;
-  }
+  const list = document.getElementById("hotSlotList");
+  if (!list) return;
 
-  empty.style.display = "none";
+  list.innerHTML = "";
 
-  data.slots.forEach((slot) => {
-    const li = document.createElement("li");
+  (data.slots || []).forEach((slot) => {
+    const div = document.createElement("div");
+    div.className = "hot-slot-item";
 
-    li.innerHTML = `
-      <strong>${slot.title}</strong><br>
-      Prize: ₹${slot.prizePool}<br>
-      Stage: ${slot.stage}<br>
-      Views: ${slot.views}<br>
-      Status: ${slot.expired ? "❌ Expired" : "🟢 Active"}
+    div.innerHTML = `
+      <h4>${slot.tournamentName}</h4>
+      <p>Stage: ${slot.stage}</p>
+      <p>Prize: ₹${slot.prizePool}</p>
+      <p>${slot.description}</p>
+      <small>📞 ${slot.contact}</small>
+      <button class="delete-slot">Delete</button>
     `;
 
-    list.appendChild(li);
+    div.querySelector(".delete-slot").onclick = async () => {
+      if (!confirm("Delete this hot slot?")) return;
+
+      await fetch(`${BACKEND_URL}/creator/hot-slot/${slot._id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      fetchHotSlots(token);
+    };
+
+    list.appendChild(div);
   });
 }
+
+/* =========================
+   CREATE ADMIN
+========================= */
+document.getElementById("addAdmin")?.addEventListener("click", async () => {
+  const name = document.getElementById("adminName").value.trim();
+  const email = document.getElementById("adminEmail").value.trim();
+
+  if (!name || !email) return alert("Enter admin details");
+
+  const token = await getIdToken(auth.currentUser);
+
+  await fetch(`${BACKEND_URL}/creator/create-admin`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({ name, email })
+  });
+
+  document.getElementById("adminName").value = "";
+  document.getElementById("adminEmail").value = "";
+
+  fetchAdmins(token);
+});
 
 /* =========================
    FETCH ADMINS
@@ -187,11 +222,13 @@ async function fetchAdmins(token) {
     li.textContent = `${admin.email} ❌`;
 
     li.onclick = async () => {
-      if (!confirm(`Remove admin ${admin.email}?`)) return;
+      if (!confirm(`Remove ${admin.email}?`)) return;
+
       await fetch(`${BACKEND_URL}/creator/remove-admin/${admin.email}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` }
       });
+
       fetchAdmins(token);
     };
 
@@ -208,9 +245,10 @@ async function fetchStats(token) {
   });
 
   if (!res.ok) return;
+
   const data = await res.json();
 
   document.getElementById("totalUsers").innerText = data.totalUsers || 0;
   document.getElementById("activeTournaments").innerText = data.activeTournaments || 0;
   document.getElementById("totalAdmins").innerText = data.admins?.length || 0;
-        }
+                               }
