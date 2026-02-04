@@ -1,16 +1,45 @@
+/* =================================================
+   FF INDIA TOURNAMENTS – CREATOR DASHBOARD
+   Premium++ Dark Professional UI
+================================================= */
+
 /* =========================
-   GLOBAL RESET & BASE
+   GLOBAL RESET & THEME
 ========================= */
+:root{
+  --bg-main:#0b0b0b;
+  --bg-card:#111111;
+  --bg-card-soft:#141414;
+  --bg-hover:#1c1c1c;
+  --border:#222;
+  --border-soft:#1f1f1f;
+
+  --accent:#ffb300;
+  --accent-soft:#ffcf4d;
+  --success:#00e676;
+  --danger:#ff5252;
+
+  --text-main:#ffffff;
+  --text-soft:#aaaaaa;
+  --text-muted:#777777;
+
+  --radius:12px;
+  --radius-sm:8px;
+
+  --shadow-soft:0 10px 30px rgba(0,0,0,.4);
+  --shadow-inset:inset 0 0 0 1px #1c1c1c;
+}
+
 *{
   margin:0;
   padding:0;
   box-sizing:border-box;
-  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-family:"Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
 body{
-  background:#0b0b0b;
-  color:#ffffff;
+  background:radial-gradient(circle at top, #121212, var(--bg-main));
+  color:var(--text-main);
   min-height:100vh;
   display:flex;
   flex-direction:column;
@@ -20,22 +49,23 @@ body{
    HEADER
 ========================= */
 .header{
-  height:55px;
-  background:#000000;
+  height:56px;
+  background:rgba(0,0,0,.7);
+  backdrop-filter:blur(8px);
   display:flex;
   justify-content:space-between;
   align-items:center;
-  padding:0 15px;
-  border-bottom:1px solid #222;
+  padding:0 16px;
+  border-bottom:1px solid var(--border);
   position:sticky;
   top:0;
-  z-index:10;
+  z-index:20;
 }
 
 .logo{
-  font-weight:700;
+  font-weight:800;
   font-size:14px;
-  letter-spacing:0.4px;
+  letter-spacing:.6px;
 }
 
 .icons{
@@ -45,37 +75,42 @@ body{
 }
 
 .switch{
-  background:#222;
-  color:#fff;
-  border:none;
-  padding:6px 10px;
-  border-radius:6px;
+  background:var(--bg-card);
+  color:var(--text-main);
+  border:1px solid var(--border);
+  padding:6px 12px;
+  border-radius:var(--radius-sm);
   font-size:12px;
   cursor:pointer;
-  transition:background 0.2s, transform 0.1s;
+  transition:.2s ease;
 }
 
 .switch:hover{
-  background:#333;
+  background:var(--bg-hover);
 }
 
 .switch:active{
-  transform:scale(0.95);
+  transform:scale(.95);
 }
 
 #avatar{
-  width:34px;
-  height:34px;
+  width:36px;
+  height:36px;
   border-radius:50%;
   cursor:pointer;
-  border:2px solid #222;
+  border:2px solid var(--border);
+  transition:.2s ease;
+}
+
+#avatar:hover{
+  border-color:var(--accent);
 }
 
 /* =========================
    MAIN LAYOUT
 ========================= */
 .main{
-  padding:15px;
+  padding:16px;
   flex:1;
 }
 
@@ -84,70 +119,80 @@ body{
 ========================= */
 .stats{
   display:grid;
-  grid-template-columns:repeat(3, 1fr);
-  gap:10px;
-  margin-bottom:15px;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+  margin-bottom:18px;
 }
 
-@media (max-width:600px){
+@media(max-width:700px){
   .stats{
     grid-template-columns:1fr;
   }
 }
 
-.card{
-  background:#111;
-  padding:15px;
-  border-radius:10px;
+.stats .card{
+  background:linear-gradient(145deg,#111,#0d0d0d);
+  border-radius:var(--radius);
+  padding:16px;
   text-align:center;
-  box-shadow:0 0 0 1px #1c1c1c inset;
+  box-shadow:var(--shadow-soft), var(--shadow-inset);
 }
 
-.card span{
+.stats .card span{
   display:block;
-  margin-top:5px;
-  font-size:20px;
-  font-weight:700;
+  margin-top:6px;
+  font-size:22px;
+  font-weight:800;
+  color:var(--accent);
 }
 
 /* =========================
-   FULL WIDTH SECTIONS
+   CARD SECTIONS
 ========================= */
+.card{
+  background:var(--bg-card);
+  border-radius:var(--radius);
+  padding:16px;
+  box-shadow:var(--shadow-soft), var(--shadow-inset);
+}
+
 .full{
-  margin-bottom:15px;
-  text-align:left;
+  margin-bottom:18px;
 }
 
 .card h3{
-  margin-bottom:10px;
+  margin-bottom:12px;
   font-size:15px;
-  font-weight:600;
+  font-weight:700;
+  letter-spacing:.3px;
 }
 
 /* =========================
-   FORMS
+   FORM ELEMENTS
 ========================= */
 .card input,
 .card textarea{
   width:100%;
-  margin:6px 0;
-  padding:9px;
-  background:#000;
-  border:1px solid #222;
-  color:#fff;
-  border-radius:6px;
+  margin:7px 0;
+  padding:10px 11px;
+  background:#0a0a0a;
+  border:1px solid var(--border);
+  color:var(--text-main);
+  border-radius:var(--radius-sm);
   font-size:13px;
+  transition:.2s ease;
 }
 
 .card input::placeholder,
 .card textarea::placeholder{
-  color:#777;
+  color:var(--text-muted);
 }
 
 .card input:focus,
 .card textarea:focus{
   outline:none;
-  border-color:#ffb300;
+  border-color:var(--accent);
+  box-shadow:0 0 0 1px rgba(255,179,0,.3);
 }
 
 textarea{
@@ -155,63 +200,96 @@ textarea{
   resize:vertical;
 }
 
+/* =========================
+   BUTTONS
+========================= */
 .card button{
   width:100%;
-  padding:10px;
-  background:#ffb300;
+  padding:11px;
+  background:linear-gradient(135deg,var(--accent),var(--accent-soft));
   border:none;
-  border-radius:6px;
-  font-weight:700;
+  border-radius:var(--radius-sm);
+  font-weight:800;
   font-size:14px;
-  margin-top:8px;
+  margin-top:10px;
   cursor:pointer;
-  transition:opacity 0.2s, transform 0.1s;
+  transition:.2s ease;
+  color:#000;
 }
 
 .card button:hover{
-  opacity:0.9;
+  transform:translateY(-1px);
+  box-shadow:0 8px 20px rgba(255,179,0,.35);
 }
 
 .card button:active{
-  transform:scale(0.97);
+  transform:scale(.97);
 }
 
 /* =========================
-   ADMIN LIST
+   ADMIN & HOT SLOT LIST
 ========================= */
 .admin-list{
   list-style:none;
-  margin-top:10px;
+  margin-top:12px;
 }
 
 .admin-list li{
-  padding:8px 6px;
-  border-bottom:1px solid #222;
+  padding:10px;
+  border-radius:var(--radius-sm);
+  background:var(--bg-card-soft);
+  border:1px solid var(--border-soft);
   font-size:13px;
   display:flex;
   justify-content:space-between;
   align-items:center;
   cursor:pointer;
-  transition:background 0.2s;
+  transition:.2s ease;
+  margin-bottom:8px;
 }
 
 .admin-list li:hover{
-  background:#1a1a1a;
+  background:var(--bg-hover);
+  border-color:var(--accent);
+}
+
+.slot-actions{
+  font-size:12px;
+  color:var(--text-soft);
+}
+
+.slot-actions span{
+  margin-left:8px;
+  cursor:pointer;
+}
+
+.slot-actions span:hover{
+  color:var(--accent);
 }
 
 /* =========================
-   HOT SLOT DM TEXT
+   HOT SLOT TEXT
 ========================= */
 .dm-text{
   margin-top:10px;
   font-size:13px;
-  color:#aaa;
+  color:var(--text-soft);
 }
 
 .dm-text span{
-  color:#00e676;
+  color:var(--success);
   cursor:pointer;
-  font-weight:600;
+  font-weight:700;
+}
+
+/* =========================
+   EMPTY STATES
+========================= */
+#hotSlotEmpty{
+  text-align:center;
+  padding:20px 10px;
+  color:var(--text-muted);
+  font-size:13px;
 }
 
 /* =========================
@@ -220,15 +298,15 @@ textarea{
 .footer{
   text-align:center;
   font-size:12px;
-  color:#888;
-  padding:10px;
-  border-top:1px solid #222;
-  background:#0b0b0b;
+  color:var(--text-muted);
+  padding:12px;
+  border-top:1px solid var(--border);
+  background:var(--bg-main);
 }
 
 /* =========================
-   UTILITY
+   UTILITIES
 ========================= */
 .hidden{
-  display:none;
+  display:none !important;
 }
