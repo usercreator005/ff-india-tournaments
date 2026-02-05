@@ -1,6 +1,6 @@
 // js/auth.js
 // Google Login + Backend Role Verification
-// FINAL • STABLE • NO /auth/login • RENDER SAFE
+// FIXED • PAGE-AWARE • NO REDIRECT LOOPS
 
 import { auth } from "./firebase.js";
 import {
@@ -15,6 +15,11 @@ import {
 ========================= */
 const BACKEND_URL = "https://ff-india-tournaments.onrender.com";
 let isRedirecting = false;
+
+/* =========================
+   PAGE DETECTION
+========================= */
+const CURRENT_PAGE = window.location.pathname.split("/").pop();
 
 /* =========================
    GOOGLE LOGIN BUTTON
@@ -36,8 +41,8 @@ if (googleBtn) {
       const user = result.user;
 
       const token = await user.getIdToken(true);
-
       const role = await fetchUserRole(token);
+
       redirectUser(role);
 
     } catch (err) {
@@ -52,9 +57,15 @@ if (googleBtn) {
 
 /* =========================
    AUTO SESSION LOGIN
+   (ONLY ON INDEX PAGE)
 ========================= */
 onAuthStateChanged(auth, async (user) => {
   if (!user || isRedirecting) return;
+
+  // 🚫 Prevent redirect on dashboards
+  if (CURRENT_PAGE !== "" && CURRENT_PAGE !== "index.html") {
+    return;
+  }
 
   try {
     const token = await user.getIdToken();
@@ -72,7 +83,6 @@ onAuthStateChanged(auth, async (user) => {
 ========================= */
 async function fetchUserRole(idToken) {
   const res = await fetch(`${BACKEND_URL}/auth/role`, {
-    method: "GET",
     headers: {
       Authorization: `Bearer ${idToken}`
     }
@@ -111,4 +121,4 @@ function redirectUser(role) {
       window.location.replace("user.html");
       break;
   }
-                                          }
+}
