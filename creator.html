@@ -49,19 +49,8 @@
   <section class="card full">
     <h3>Admin Management</h3>
 
-    <input
-      type="text"
-      id="adminName"
-      placeholder="Admin Username"
-      autocomplete="off"
-    />
-
-    <input
-      type="email"
-      id="adminEmail"
-      placeholder="Admin Gmail (Only Google Login)"
-      autocomplete="off"
-    />
+    <input type="text" id="adminName" placeholder="Admin Username" />
+    <input type="email" id="adminEmail" placeholder="Admin Gmail (Only Google Login)" />
 
     <button id="addAdmin">➕ Create Admin</button>
 
@@ -72,35 +61,13 @@
   <section class="card full">
     <h3>🔥 Post New Hot Slot</h3>
 
-    <input
-      type="text"
-      id="slotTournament"
-      placeholder="Tournament Name (Any Platform)"
-    />
+    <input type="text" id="slotTournament" placeholder="Tournament Name (Any Platform)" />
+    <input type="text" id="slotPrize" placeholder="Prize Pool (e.g. ₹5,000)" />
+    <input type="text" id="slotStage" placeholder="Stage (Qualifiers / Finals)" />
 
-    <input
-      type="text"
-      id="slotPrize"
-      placeholder="Prize Pool (e.g. ₹5,000)"
-    />
+    <textarea id="slotDetails" placeholder="Slot Details (Room ID, Time, Rules, etc.)"></textarea>
 
-    <input
-      type="text"
-      id="slotStage"
-      placeholder="Stage (Qualifiers / Finals)"
-    />
-
-    <textarea
-      id="slotDetails"
-      placeholder="Slot Details (Room ID, Time, Rules, etc.)"
-    ></textarea>
-
-    <input
-      type="tel"
-      id="contactNumber"
-      placeholder="Contact Number (India)"
-      maxlength="10"
-    />
+    <input type="tel" id="contactNumber" placeholder="Contact Number (India)" maxlength="10" />
 
     <button id="postSlot">🚀 Post Hot Slot</button>
 
@@ -114,16 +81,54 @@
   <section class="card full">
     <h3>📋 My Posted Hot Slots</h3>
 
-    <div id="hotSlotEmpty" class="dm-text" style="display:none;">
+    <div id="hotSlotEmpty" class="dm-text hidden">
       No hot slots posted yet.
     </div>
 
-    <ul class="admin-list" id="hotSlotList">
-      <!-- JS will inject <li> items here -->
-    </ul>
+    <ul class="admin-list" id="hotSlotList"></ul>
   </section>
 
 </main>
+
+<!-- ================= CREATOR SIDEBAR ================= -->
+<div class="creator-overlay hidden" id="creatorOverlay"></div>
+
+<aside class="creator-sidebar hidden" id="creatorSidebar">
+
+  <div class="creator-sidebar-header">
+    <img src="assets/default-avatar.png" alt="Creator" />
+    <div>
+      <strong id="creatorName">Creator</strong><br />
+      <small id="creatorEmail">creator@gmail.com</small>
+    </div>
+  </div>
+
+  <!-- ===== NOTIFICATIONS ===== -->
+  <div class="creator-sidebar-section">
+    <h4>🔔 Notifications</h4>
+
+    <div class="creator-notification">
+      No announcements yet.
+    </div>
+  </div>
+
+  <!-- ===== HOT SLOT HISTORY ===== -->
+  <div class="creator-sidebar-section">
+    <h4>🔥 Hot Slot History</h4>
+
+    <div class="creator-hotslot">
+      Your posted hot slots will appear here.
+    </div>
+  </div>
+
+  <!-- ===== LOGOUT ===== -->
+  <div class="creator-sidebar-footer">
+    <button class="creator-logout-btn" id="logoutBtn">
+      🚪 Logout
+    </button>
+  </div>
+
+</aside>
 
 <!-- ================= FOOTER ================= -->
 <footer class="footer">
@@ -135,4 +140,4 @@
 <script type="module" src="js/creator.js"></script>
 
 </body>
-</html>
+    </html>
