@@ -21,63 +21,6 @@ const creatorName = document.getElementById("creatorName");
 const creatorEmail = document.getElementById("creatorEmail");
 
 /* =========================
-   SIDEBAR STATE
-========================= */
-let sidebarOpen = false;
-
-/* =========================
-   SIDEBAR CONTROLS
-========================= */
-function openSidebar() {
-  if (!sidebar || !overlay) return;
-  sidebar.classList.remove("hidden");
-  overlay.classList.remove("hidden");
-  sidebarOpen = true;
-}
-
-function closeSidebar() {
-  if (!sidebar || !overlay) return;
-  sidebar.classList.add("hidden");
-  overlay.classList.add("hidden");
-  sidebarOpen = false;
-}
-
-function toggleSidebar(e) {
-  e.stopPropagation(); // 🔥 MOST IMPORTANT FIX
-  sidebarOpen ? closeSidebar() : openSidebar();
-}
-
-/* =========================
-   EVENT LISTENERS
-========================= */
-avatar?.addEventListener("click", toggleSidebar);
-
-// overlay click → close
-overlay?.addEventListener("click", () => {
-  if (sidebarOpen) closeSidebar();
-});
-
-// sidebar ke andar click → close na ho
-sidebar?.addEventListener("click", (e) => {
-  e.stopPropagation();
-});
-
-// ESC key support
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && sidebarOpen) closeSidebar();
-});
-
-/* =========================
-   LOGOUT (SIDEBAR)
-========================= */
-logoutBtn?.addEventListener("click", async (e) => {
-  e.stopPropagation();
-  if (!confirm("Logout from Creator Panel?")) return;
-  await signOut(auth);
-  window.location.href = "index.html";
-});
-
-/* =========================
    ROLE SWITCH
 ========================= */
 document.getElementById("switchUser")?.addEventListener("click", () => {
@@ -86,6 +29,37 @@ document.getElementById("switchUser")?.addEventListener("click", () => {
 
 document.getElementById("switchAdmin")?.addEventListener("click", () => {
   window.location.href = "admin.html";
+});
+
+/* =========================
+   SIDEBAR TOGGLE (FIXED)
+========================= */
+function openSidebar(e) {
+  e?.stopPropagation();
+  sidebar?.classList.add("active");
+  overlay?.classList.add("active");
+}
+
+function closeSidebar() {
+  sidebar?.classList.remove("active");
+  overlay?.classList.remove("active");
+}
+
+avatar?.addEventListener("click", openSidebar);
+
+overlay?.addEventListener("click", closeSidebar);
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeSidebar();
+});
+
+/* =========================
+   LOGOUT
+========================= */
+logoutBtn?.addEventListener("click", async () => {
+  if (!confirm("Logout from Creator Panel?")) return;
+  await signOut(auth);
+  window.location.href = "index.html";
 });
 
 /* =========================
@@ -98,8 +72,8 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   try {
-    creatorName.innerText = user.displayName || "Creator";
-    creatorEmail.innerText = user.email || "";
+    creatorName.textContent = user.displayName || "Creator";
+    creatorEmail.textContent = user.email || "";
 
     const token = await getIdToken(user, true);
 
@@ -136,7 +110,7 @@ const contactInput = document.getElementById("contactNumber");
 const dmNumber = document.getElementById("dmNumber");
 
 contactInput?.addEventListener("input", () => {
-  dmNumber.innerText = contactInput.value || "Not Set";
+  dmNumber.textContent = contactInput.value || "Not Set";
 });
 
 dmNumber?.addEventListener("click", () => {
@@ -196,13 +170,49 @@ document.getElementById("postSlot")?.addEventListener("click", async () => {
     document.getElementById("slotStage").value = "";
     document.getElementById("slotDetails").value = "";
     contactInput.value = "";
-    dmNumber.innerText = "Not Set";
+    dmNumber.textContent = "Not Set";
 
     fetchMyHotSlots(token);
 
   } catch (err) {
     console.error("Hot slot error:", err);
     alert("Server error while posting hot slot");
+  }
+});
+
+/* =========================
+   CREATE ADMIN
+========================= */
+document.getElementById("addAdmin")?.addEventListener("click", async () => {
+  const name = document.getElementById("adminName").value.trim();
+  const email = document.getElementById("adminEmail").value.trim();
+
+  if (!name || !email) {
+    alert("Enter admin name and email");
+    return;
+  }
+
+  try {
+    const token = await getIdToken(auth.currentUser);
+
+    const res = await fetch(`${BACKEND_URL}/creator/create-admin`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ name, email })
+    });
+
+    if (!res.ok) throw new Error();
+
+    document.getElementById("adminName").value = "";
+    document.getElementById("adminEmail").value = "";
+
+    fetchAdmins(token);
+
+  } catch {
+    alert("Admin creation failed");
   }
 });
 
@@ -287,7 +297,7 @@ async function fetchStats(token) {
   if (!res.ok) return;
 
   const data = await res.json();
-  document.getElementById("totalUsers").innerText = data.totalUsers || 0;
-  document.getElementById("activeTournaments").innerText = data.activeHotSlots || 0;
-  document.getElementById("totalAdmins").innerText = data.admins?.length || 0;
-}
+  document.getElementById("totalUsers").textContent = data.totalUsers || 0;
+  document.getElementById("activeTournaments").textContent = data.activeHotSlots || 0;
+  document.getElementById("totalAdmins").textContent = data.admins?.length || 0;
+    }
