@@ -1,6 +1,6 @@
 /* =================================================
    FF INDIA TOURNAMENTS – CREATOR DASHBOARD
-   Premium++ Dark Professional UI
+   Premium++ Dark Professional UI (Refined)
 ================================================= */
 
 /* =========================
@@ -9,25 +9,27 @@
 :root{
   --bg-main:#0b0b0b;
   --bg-card:#111111;
-  --bg-card-soft:#141414;
+  --bg-card-soft:#151515;
   --bg-hover:#1c1c1c;
-  --border:#222;
-  --border-soft:#1f1f1f;
+
+  --border:#242424;
+  --border-soft:#1e1e1e;
 
   --accent:#ffb300;
-  --accent-soft:#ffcf4d;
+  --accent-soft:#ffd76a;
   --success:#00e676;
   --danger:#ff5252;
 
   --text-main:#ffffff;
-  --text-soft:#aaaaaa;
-  --text-muted:#777777;
+  --text-soft:#b3b3b3;
+  --text-muted:#7a7a7a;
 
-  --radius:12px;
-  --radius-sm:8px;
+  --radius:14px;
+  --radius-sm:9px;
 
-  --shadow-soft:0 10px 30px rgba(0,0,0,.4);
-  --shadow-inset:inset 0 0 0 1px #1c1c1c;
+  --shadow-soft:0 12px 28px rgba(0,0,0,.55);
+  --shadow-card:0 6px 18px rgba(0,0,0,.45);
+  --shadow-inset:inset 0 0 0 1px rgba(255,255,255,.03);
 }
 
 *{
@@ -38,79 +40,84 @@
 }
 
 body{
-  background:radial-gradient(circle at top, #121212, var(--bg-main));
+  background:
+    radial-gradient(circle at top, #151515, var(--bg-main));
   color:var(--text-main);
   min-height:100vh;
   display:flex;
   flex-direction:column;
+  -webkit-font-smoothing:antialiased;
 }
 
 /* =========================
    HEADER
 ========================= */
 .header{
-  height:56px;
-  background:rgba(0,0,0,.7);
-  backdrop-filter:blur(8px);
+  height:58px;
+  background:rgba(10,10,10,.72);
+  backdrop-filter:blur(10px);
   display:flex;
   justify-content:space-between;
   align-items:center;
-  padding:0 16px;
+  padding:0 18px;
   border-bottom:1px solid var(--border);
   position:sticky;
   top:0;
-  z-index:20;
+  z-index:30;
 }
 
 .logo{
-  font-weight:800;
+  font-weight:900;
   font-size:14px;
-  letter-spacing:.6px;
+  letter-spacing:.8px;
+  text-transform:uppercase;
 }
 
 .icons{
   display:flex;
   align-items:center;
-  gap:8px;
+  gap:10px;
 }
 
 .switch{
-  background:var(--bg-card);
+  background:linear-gradient(145deg,#151515,#0f0f0f);
   color:var(--text-main);
   border:1px solid var(--border);
-  padding:6px 12px;
+  padding:7px 14px;
   border-radius:var(--radius-sm);
   font-size:12px;
   cursor:pointer;
-  transition:.2s ease;
+  transition:.25s ease;
 }
 
 .switch:hover{
   background:var(--bg-hover);
+  border-color:var(--accent);
 }
 
 .switch:active{
-  transform:scale(.95);
+  transform:scale(.96);
 }
 
 #avatar{
-  width:36px;
-  height:36px;
+  width:38px;
+  height:38px;
   border-radius:50%;
   cursor:pointer;
   border:2px solid var(--border);
-  transition:.2s ease;
+  transition:.25s ease;
 }
 
 #avatar:hover{
   border-color:var(--accent);
+  transform:scale(1.04);
 }
 
 /* =========================
    MAIN LAYOUT
 ========================= */
 .main{
-  padding:16px;
+  padding:18px;
   flex:1;
 }
 
@@ -120,8 +127,8 @@ body{
 .stats{
   display:grid;
   grid-template-columns:repeat(3,1fr);
-  gap:12px;
-  margin-bottom:18px;
+  gap:14px;
+  margin-bottom:22px;
 }
 
 @media(max-width:700px){
@@ -131,18 +138,26 @@ body{
 }
 
 .stats .card{
-  background:linear-gradient(145deg,#111,#0d0d0d);
+  background:
+    linear-gradient(160deg,#141414,#0e0e0e);
   border-radius:var(--radius);
-  padding:16px;
+  padding:18px 16px;
   text-align:center;
-  box-shadow:var(--shadow-soft), var(--shadow-inset);
+  box-shadow:var(--shadow-card), var(--shadow-inset);
+  border:1px solid var(--border-soft);
+}
+
+.stats .card small{
+  font-size:12px;
+  color:var(--text-muted);
+  letter-spacing:.3px;
 }
 
 .stats .card span{
   display:block;
-  margin-top:6px;
-  font-size:22px;
-  font-weight:800;
+  margin-top:8px;
+  font-size:24px;
+  font-weight:900;
   color:var(--accent);
 }
 
@@ -150,21 +165,22 @@ body{
    CARD SECTIONS
 ========================= */
 .card{
-  background:var(--bg-card);
+  background:linear-gradient(180deg,#121212,#0f0f0f);
   border-radius:var(--radius);
-  padding:16px;
+  padding:18px;
   box-shadow:var(--shadow-soft), var(--shadow-inset);
+  border:1px solid var(--border-soft);
 }
 
 .full{
-  margin-bottom:18px;
+  margin-bottom:22px;
 }
 
 .card h3{
-  margin-bottom:12px;
+  margin-bottom:14px;
   font-size:15px;
-  font-weight:700;
-  letter-spacing:.3px;
+  font-weight:800;
+  letter-spacing:.4px;
 }
 
 /* =========================
@@ -173,14 +189,14 @@ body{
 .card input,
 .card textarea{
   width:100%;
-  margin:7px 0;
-  padding:10px 11px;
-  background:#0a0a0a;
+  margin:8px 0;
+  padding:11px 12px;
+  background:#0c0c0c;
   border:1px solid var(--border);
   color:var(--text-main);
   border-radius:var(--radius-sm);
   font-size:13px;
-  transition:.2s ease;
+  transition:.25s ease;
 }
 
 .card input::placeholder,
@@ -192,11 +208,11 @@ body{
 .card textarea:focus{
   outline:none;
   border-color:var(--accent);
-  box-shadow:0 0 0 1px rgba(255,179,0,.3);
+  box-shadow:0 0 0 2px rgba(255,179,0,.18);
 }
 
 textarea{
-  min-height:90px;
+  min-height:100px;
   resize:vertical;
 }
 
@@ -205,25 +221,26 @@ textarea{
 ========================= */
 .card button{
   width:100%;
-  padding:11px;
-  background:linear-gradient(135deg,var(--accent),var(--accent-soft));
+  padding:12px;
+  background:
+    linear-gradient(135deg,var(--accent),var(--accent-soft));
   border:none;
   border-radius:var(--radius-sm);
-  font-weight:800;
+  font-weight:900;
   font-size:14px;
-  margin-top:10px;
+  margin-top:12px;
   cursor:pointer;
-  transition:.2s ease;
+  transition:.25s ease;
   color:#000;
 }
 
 .card button:hover{
-  transform:translateY(-1px);
-  box-shadow:0 8px 20px rgba(255,179,0,.35);
+  transform:translateY(-2px);
+  box-shadow:0 10px 26px rgba(255,179,0,.35);
 }
 
 .card button:active{
-  transform:scale(.97);
+  transform:scale(.96);
 }
 
 /* =========================
@@ -231,26 +248,27 @@ textarea{
 ========================= */
 .admin-list{
   list-style:none;
-  margin-top:12px;
+  margin-top:14px;
 }
 
 .admin-list li{
-  padding:10px;
+  padding:12px 12px;
   border-radius:var(--radius-sm);
-  background:var(--bg-card-soft);
+  background:linear-gradient(145deg,#161616,#121212);
   border:1px solid var(--border-soft);
   font-size:13px;
   display:flex;
   justify-content:space-between;
   align-items:center;
   cursor:pointer;
-  transition:.2s ease;
-  margin-bottom:8px;
+  transition:.25s ease;
+  margin-bottom:10px;
 }
 
 .admin-list li:hover{
   background:var(--bg-hover);
   border-color:var(--accent);
+  transform:translateY(-1px);
 }
 
 .slot-actions{
@@ -259,8 +277,9 @@ textarea{
 }
 
 .slot-actions span{
-  margin-left:8px;
+  margin-left:10px;
   cursor:pointer;
+  transition:.2s ease;
 }
 
 .slot-actions span:hover{
@@ -271,15 +290,16 @@ textarea{
    HOT SLOT TEXT
 ========================= */
 .dm-text{
-  margin-top:10px;
+  margin-top:12px;
   font-size:13px;
   color:var(--text-soft);
+  line-height:1.6;
 }
 
 .dm-text span{
   color:var(--success);
   cursor:pointer;
-  font-weight:700;
+  font-weight:800;
 }
 
 /* =========================
@@ -287,7 +307,7 @@ textarea{
 ========================= */
 #hotSlotEmpty{
   text-align:center;
-  padding:20px 10px;
+  padding:26px 12px;
   color:var(--text-muted);
   font-size:13px;
 }
@@ -299,9 +319,9 @@ textarea{
   text-align:center;
   font-size:12px;
   color:var(--text-muted);
-  padding:12px;
+  padding:14px;
   border-top:1px solid var(--border);
-  background:var(--bg-main);
+  background:#0c0c0c;
 }
 
 /* =========================
