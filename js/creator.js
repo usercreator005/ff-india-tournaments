@@ -21,7 +21,64 @@ const creatorName = document.getElementById("creatorName");
 const creatorEmail = document.getElementById("creatorEmail");
 
 /* =========================
-   ROLE SWITCH (USER / ADMIN)
+   SIDEBAR STATE
+========================= */
+let sidebarOpen = false;
+
+/* =========================
+   SIDEBAR CONTROLS
+========================= */
+function openSidebar() {
+  if (!sidebar || !overlay) return;
+  sidebar.classList.remove("hidden");
+  overlay.classList.remove("hidden");
+  sidebarOpen = true;
+}
+
+function closeSidebar() {
+  if (!sidebar || !overlay) return;
+  sidebar.classList.add("hidden");
+  overlay.classList.add("hidden");
+  sidebarOpen = false;
+}
+
+function toggleSidebar(e) {
+  e.stopPropagation(); // 🔥 MOST IMPORTANT FIX
+  sidebarOpen ? closeSidebar() : openSidebar();
+}
+
+/* =========================
+   EVENT LISTENERS
+========================= */
+avatar?.addEventListener("click", toggleSidebar);
+
+// overlay click → close
+overlay?.addEventListener("click", () => {
+  if (sidebarOpen) closeSidebar();
+});
+
+// sidebar ke andar click → close na ho
+sidebar?.addEventListener("click", (e) => {
+  e.stopPropagation();
+});
+
+// ESC key support
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && sidebarOpen) closeSidebar();
+});
+
+/* =========================
+   LOGOUT (SIDEBAR)
+========================= */
+logoutBtn?.addEventListener("click", async (e) => {
+  e.stopPropagation();
+  if (!confirm("Logout from Creator Panel?")) return;
+  await signOut(auth);
+  window.location.href = "index.html";
+});
+
+/* =========================
+   ROLE SWITCH
 ========================= */
 document.getElementById("switchUser")?.addEventListener("click", () => {
   window.location.href = "user.html";
@@ -29,35 +86,6 @@ document.getElementById("switchUser")?.addEventListener("click", () => {
 
 document.getElementById("switchAdmin")?.addEventListener("click", () => {
   window.location.href = "admin.html";
-});
-
-/* =========================
-   SIDEBAR TOGGLE
-========================= */
-function openSidebar() {
-  sidebar?.classList.remove("hidden");
-  overlay?.classList.remove("hidden");
-}
-
-function closeSidebar() {
-  sidebar?.classList.add("hidden");
-  overlay?.classList.add("hidden");
-}
-
-avatar?.addEventListener("click", openSidebar);
-overlay?.addEventListener("click", closeSidebar);
-
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") closeSidebar();
-});
-
-/* =========================
-   LOGOUT (SIDEBAR)
-========================= */
-logoutBtn?.addEventListener("click", async () => {
-  if (!confirm("Logout from Creator Panel?")) return;
-  await signOut(auth);
-  window.location.href = "index.html";
 });
 
 /* =========================
@@ -70,7 +98,6 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   try {
-    // Fill sidebar profile
     creatorName.innerText = user.displayName || "Creator";
     creatorEmail.innerText = user.email || "";
 
@@ -180,42 +207,6 @@ document.getElementById("postSlot")?.addEventListener("click", async () => {
 });
 
 /* =========================
-   CREATE ADMIN
-========================= */
-document.getElementById("addAdmin")?.addEventListener("click", async () => {
-  const name = document.getElementById("adminName").value.trim();
-  const email = document.getElementById("adminEmail").value.trim();
-
-  if (!name || !email) {
-    alert("Enter admin name and email");
-    return;
-  }
-
-  try {
-    const token = await getIdToken(auth.currentUser);
-
-    const res = await fetch(`${BACKEND_URL}/creator/create-admin`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ name, email })
-    });
-
-    if (!res.ok) throw new Error();
-
-    document.getElementById("adminName").value = "";
-    document.getElementById("adminEmail").value = "";
-
-    fetchAdmins(token);
-
-  } catch {
-    alert("Admin creation failed");
-  }
-});
-
-/* =========================
    FETCH ADMINS
 ========================= */
 async function fetchAdmins(token) {
@@ -273,7 +264,6 @@ async function fetchMyHotSlots(token) {
 
   slots.forEach((slot) => {
     const li = document.createElement("li");
-
     li.innerHTML = `
       <div>
         <strong>${slot.title || slot.tournamentName}</strong><br>
@@ -282,7 +272,6 @@ async function fetchMyHotSlots(token) {
         ${slot.expired ? "⛔ Expired" : "✅ Active"}
       </div>
     `;
-
     list.appendChild(li);
   });
 }
@@ -301,4 +290,4 @@ async function fetchStats(token) {
   document.getElementById("totalUsers").innerText = data.totalUsers || 0;
   document.getElementById("activeTournaments").innerText = data.activeHotSlots || 0;
   document.getElementById("totalAdmins").innerText = data.admins?.length || 0;
-      }
+}
