@@ -13,7 +13,7 @@ const BACKEND_URL = "https://ff-india-tournaments.onrender.com";
    ROLE SWITCH (USER / ADMIN)
 ========================= */
 document.getElementById("switchUser")?.addEventListener("click", () => {
-  window.location.href = "index.html"; // user side
+  window.location.href = "user.html"; // user side
 });
 
 document.getElementById("switchAdmin")?.addEventListener("click", () => {
