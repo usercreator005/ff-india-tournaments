@@ -32,21 +32,34 @@ document.getElementById("switchAdmin")?.addEventListener("click", () => {
 });
 
 /* =========================
-   SIDEBAR TOGGLE (FIXED)
+   SIDEBAR TOGGLE (FINAL FIX)
 ========================= */
 function openSidebar(e) {
   e?.stopPropagation();
-  sidebar?.classList.add("active");
-  overlay?.classList.add("active");
+
+  // 🔥 CRITICAL FIX
+  sidebar.classList.remove("hidden");
+  overlay.classList.remove("hidden");
+
+  // allow CSS transition
+  requestAnimationFrame(() => {
+    sidebar.classList.add("active");
+    overlay.classList.add("active");
+  });
 }
 
 function closeSidebar() {
-  sidebar?.classList.remove("active");
-  overlay?.classList.remove("active");
+  sidebar.classList.remove("active");
+  overlay.classList.remove("active");
+
+  // wait for animation then hide
+  setTimeout(() => {
+    sidebar.classList.add("hidden");
+    overlay.classList.add("hidden");
+  }, 300);
 }
 
 avatar?.addEventListener("click", openSidebar);
-
 overlay?.addEventListener("click", closeSidebar);
 
 document.addEventListener("keydown", (e) => {
@@ -300,4 +313,4 @@ async function fetchStats(token) {
   document.getElementById("totalUsers").textContent = data.totalUsers || 0;
   document.getElementById("activeTournaments").textContent = data.activeHotSlots || 0;
   document.getElementById("totalAdmins").textContent = data.admins?.length || 0;
-    }
+                        }
