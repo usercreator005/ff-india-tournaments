@@ -10,14 +10,54 @@ import {
 const BACKEND_URL = "https://ff-india-tournaments.onrender.com";
 
 /* =========================
+   DOM REFERENCES
+========================= */
+const avatar = document.getElementById("avatar");
+const sidebar = document.getElementById("creatorSidebar");
+const overlay = document.getElementById("creatorOverlay");
+const logoutBtn = document.getElementById("logoutBtn");
+
+const creatorName = document.getElementById("creatorName");
+const creatorEmail = document.getElementById("creatorEmail");
+
+/* =========================
    ROLE SWITCH (USER / ADMIN)
 ========================= */
 document.getElementById("switchUser")?.addEventListener("click", () => {
-  window.location.href = "user.html"; // user side
+  window.location.href = "user.html";
 });
 
 document.getElementById("switchAdmin")?.addEventListener("click", () => {
-  window.location.href = "admin.html"; // admin panel
+  window.location.href = "admin.html";
+});
+
+/* =========================
+   SIDEBAR TOGGLE
+========================= */
+function openSidebar() {
+  sidebar?.classList.remove("hidden");
+  overlay?.classList.remove("hidden");
+}
+
+function closeSidebar() {
+  sidebar?.classList.add("hidden");
+  overlay?.classList.add("hidden");
+}
+
+avatar?.addEventListener("click", openSidebar);
+overlay?.addEventListener("click", closeSidebar);
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeSidebar();
+});
+
+/* =========================
+   LOGOUT (SIDEBAR)
+========================= */
+logoutBtn?.addEventListener("click", async () => {
+  if (!confirm("Logout from Creator Panel?")) return;
+  await signOut(auth);
+  window.location.href = "index.html";
 });
 
 /* =========================
@@ -30,6 +70,10 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   try {
+    // Fill sidebar profile
+    creatorName.innerText = user.displayName || "Creator";
+    creatorEmail.innerText = user.email || "";
+
     const token = await getIdToken(user, true);
 
     const res = await fetch(`${BACKEND_URL}/auth/role`, {
@@ -56,15 +100,6 @@ onAuthStateChanged(auth, async (user) => {
     await signOut(auth);
     window.location.href = "index.html";
   }
-});
-
-/* =========================
-   LOGOUT
-========================= */
-document.getElementById("avatar")?.addEventListener("click", async () => {
-  if (!confirm("Logout from Creator Panel?")) return;
-  await signOut(auth);
-  window.location.href = "index.html";
 });
 
 /* =========================
@@ -244,7 +279,6 @@ async function fetchMyHotSlots(token) {
         <strong>${slot.title || slot.tournamentName}</strong><br>
         Stage: ${slot.stage}<br>
         Prize: ${slot.prizePool}<br>
-        ${slot.slots || ""}<br>
         ${slot.expired ? "⛔ Expired" : "✅ Active"}
       </div>
     `;
@@ -267,4 +301,4 @@ async function fetchStats(token) {
   document.getElementById("totalUsers").innerText = data.totalUsers || 0;
   document.getElementById("activeTournaments").innerText = data.activeHotSlots || 0;
   document.getElementById("totalAdmins").innerText = data.admins?.length || 0;
-}
+      }
