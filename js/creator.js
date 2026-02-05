@@ -10,6 +10,17 @@ import {
 const BACKEND_URL = "https://ff-india-tournaments.onrender.com";
 
 /* =========================
+   ROLE SWITCH (USER / ADMIN)
+========================= */
+document.getElementById("switchUser")?.addEventListener("click", () => {
+  window.location.href = "index.html"; // user side
+});
+
+document.getElementById("switchAdmin")?.addEventListener("click", () => {
+  window.location.href = "admin.html"; // admin panel
+});
+
+/* =========================
    CREATOR AUTH GUARD
 ========================= */
 onAuthStateChanged(auth, async (user) => {
@@ -101,7 +112,7 @@ document.getElementById("postSlot")?.addEventListener("click", async () => {
         Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({
-        tournamentName,   // ✅ FIXED (backend match)
+        tournamentName,
         prizePool,
         stage,
         description,
@@ -201,7 +212,7 @@ async function fetchAdmins(token) {
 }
 
 /* =========================
-   FETCH MY HOT SLOTS (FIXED)
+   FETCH MY HOT SLOTS
 ========================= */
 async function fetchMyHotSlots(token) {
   const res = await fetch(`${BACKEND_URL}/creator/hot-slots`, {
@@ -230,10 +241,10 @@ async function fetchMyHotSlots(token) {
 
     li.innerHTML = `
       <div>
-        <strong>${slot.title}</strong><br>
+        <strong>${slot.title || slot.tournamentName}</strong><br>
         Stage: ${slot.stage}<br>
         Prize: ${slot.prizePool}<br>
-        ${slot.slots}<br>
+        ${slot.slots || ""}<br>
         ${slot.expired ? "⛔ Expired" : "✅ Active"}
       </div>
     `;
