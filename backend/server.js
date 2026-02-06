@@ -1,6 +1,6 @@
 // backend/server.js
-// PHASE 1 – HARDENED & CLEAN SERVER ENTRY
-// Express • Security • Versioned API • Optional Self-Ping • Jobs Safe
+// PHASE 1 – HARDENED & CLEAN SERVER ENTRY (PRODUCTION FINAL)
+// Express • Security • Versioned API • Backward Compatible Auth • Jobs Safe
 
 const express = require("express");
 const cors = require("cors");
@@ -27,12 +27,12 @@ app.set("trust proxy", 1);
 connectDB();
 
 /* =======================
-   GLOBAL MIDDLEWARES
+   GLOBAL SECURITY
 ======================= */
 app.use(helmet());
 
 /* =======================
-   CORS (ENV SAFE)
+   CORS (VERCEL + LOCAL SAFE)
 ======================= */
 const allowedOrigins = [
   process.env.FRONTEND_URL || "https://ff-india-tournaments.vercel.app",
@@ -62,7 +62,9 @@ app.use(apiLimiter);
 /* =======================
    API ROUTES (VERSIONED)
 ======================= */
-app.use("/api/v1/auth", require("./routes/authRoutes"));
+const authRoutes = require("./routes/authRoutes");
+
+app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/user", require("./routes/userRoutes"));
 app.use("/api/v1/team", require("./routes/teamRoutes"));
 app.use("/api/v1/tournaments", require("./routes/tournamentRoutes"));
@@ -71,13 +73,20 @@ app.use("/api/v1/payments", require("./routes/paymentRoutes"));
 app.use("/api/v1/hot-slots", require("./routes/hotSlotRoutes"));
 app.use("/api/v1/notifications", require("./routes/notificationRoutes"));
 
+/* =====================================================
+   🔁 BACKWARD COMPATIBILITY (DO NOT REMOVE)
+   Fixes frontend calls like /auth/role
+===================================================== */
+app.use("/auth", authRoutes);
+
 /* =======================
    ROOT & HEALTH
 ======================= */
 app.get("/", (req, res) => {
   res.status(200).json({
     status: "OK",
-    service: "FF India Tournaments Backend"
+    service: "FF India Tournaments Backend",
+    version: "1.0.0"
   });
 });
 
@@ -113,7 +122,9 @@ function startHotSlotCleanup() {
 function startSelfPing() {
   if (process.env.ENABLE_SELF_PING !== "true") return;
 
-  const URL = process.env.BACKEND_HEALTH_URL || "http://localhost/health";
+  const URL =
+    process.env.BACKEND_HEALTH_URL ||
+    `http://localhost:${process.env.PORT || 5000}/health`;
 
   const ping = async () => {
     try {
