@@ -1,3 +1,7 @@
+// js/admin.js
+// ADMIN DASHBOARD – PHASE 1 STABILIZED
+// Secure Auth Guard • Central API • Fresh Token • Clean UX
+
 import { auth } from "./firebase.js";
 import {
   onAuthStateChanged,
@@ -5,116 +9,144 @@ import {
   getIdToken
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-const BACKEND_URL = "https://ff-india-tournaments.onrender.com";
-
 /* =========================
-   AUTH GUARD
+   CONFIG
 ========================= */
-onAuthStateChanged(auth, async (user) => {
-  if (!user) return location.href = "index.html";
-
-  const token = await getIdToken(user);
-  const res = await fetch(`${BACKEND_URL}/auth/role`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-
-  const data = await res.json();
-  if (data.role !== "admin") {
-    alert("Admin access only");
-    await signOut(auth);
-    location.href = "index.html";
-  }
-});
+const BACKEND_URL = "https://ff-india-tournaments.onrender.com";
+let sessionToken = null;
 
 /* =========================
-   UI
+   DOM
 ========================= */
 const avatar = document.getElementById("avatar");
 const sidebar = document.getElementById("sidebar");
 const logoutBtn = document.getElementById("logout");
 
-avatar.onclick = () => sidebar.classList.toggle("active");
-logoutBtn.onclick = async () => {
-  await signOut(auth);
-  location.href = "index.html";
-};
-
-/* =========================
-   TOGGLE SECTIONS
-========================= */
 const btnCreate = document.getElementById("btnCreate");
 const btnManage = document.getElementById("btnManage");
 const createForm = document.getElementById("createForm");
 const manageSection = document.getElementById("manageSection");
 
-btnCreate.onclick = () => {
-  createForm.classList.remove("hidden");
-  manageSection.classList.add("hidden");
-};
-
-btnManage.onclick = () => {
-  manageSection.classList.remove("hidden");
-  createForm.classList.add("hidden");
-  fetchTournaments();
-};
-
-/* =========================
-   PAID TOGGLE
-========================= */
 const entryType = document.getElementById("entryType");
 const paidBox = document.getElementById("paidBox");
 
-entryType.onchange = () => {
-  paidBox.classList.toggle("hidden", entryType.value !== "paid");
-};
+/* =========================
+   SIDEBAR
+========================= */
+avatar?.addEventListener("click", () => {
+  sidebar.classList.toggle("active");
+});
+
+logoutBtn?.addEventListener("click", async () => {
+  await signOut(auth);
+  window.location.replace("index.html");
+});
 
 /* =========================
-   CREATE TOURNAMENT ✅ FIXED
+   AUTH GUARD (ADMIN ONLY)
+========================= */
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    window.location.replace("index.html");
+    return;
+  }
+
+  try {
+    sessionToken = await getIdToken(user, true);
+
+    const role = await verifyAdmin(sessionToken);
+    if (role !== "admin") throw new Error("Unauthorized");
+
+    initAdminPanel();
+
+  } catch (err) {
+    console.error("Admin access denied:", err);
+    await signOut(auth);
+    window.location.replace("index.html");
+  }
+});
+
+/* =========================
+   VERIFY ROLE
+========================= */
+async function verifyAdmin(token) {
+  const res = await fetch(`${BACKEND_URL}/auth/role`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+
+  if (!res.ok) throw new Error("Role check failed");
+  const data = await res.json();
+  return data.role;
+}
+
+/* =========================
+   API HELPER
+========================= */
+async function api(path, options = {}) {
+  const res = await fetch(`${BACKEND_URL}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${sessionToken}`,
+      ...(options.headers || {})
+    }
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.msg || "API error");
+  return data;
+}
+
+/* =========================
+   INIT
+========================= */
+function initAdminPanel() {
+  btnCreate.onclick = () => {
+    createForm.classList.remove("hidden");
+    manageSection.classList.add("hidden");
+  };
+
+  btnManage.onclick = () => {
+    manageSection.classList.remove("hidden");
+    createForm.classList.add("hidden");
+    fetchTournaments();
+  };
+
+  entryType.onchange = () => {
+    paidBox.classList.toggle("hidden", entryType.value !== "paid");
+  };
+}
+
+/* =========================
+   CREATE TOURNAMENT
 ========================= */
 createForm.onsubmit = async (e) => {
   e.preventDefault();
 
-  const token = await getIdToken(auth.currentUser);
-
-  const name = tournamentName.value.trim();
-  const slotCount = Number(slots.value);
-  const prize = prizePool.value.trim();
-  const type = entryType.value;
-
-  if (!name || !slotCount || !prize || !type) {
-    return alert("Please fill all required fields");
-  }
-
-  if (type === "paid") {
-    if (!entryFee.value || !upiId.value.trim()) {
-      return alert("Entry fee & UPI ID required for paid tournament");
-    }
-  }
-
-  // 🔥 BACKEND-COMPATIBLE PAYLOAD
   const body = {
-    name,
-    slots: slotCount,
-    prizePool: prize,
-    entryType: type,
-    entryFee: type === "paid" ? Number(entryFee.value) : 0,
-    upiId: type === "paid" ? upiId.value.trim() : undefined
+    name: tournamentName.value.trim(),
+    slots: Number(slots.value),
+    prizePool: prizePool.value.trim(),
+    entryType: entryType.value,
+    entryFee: entryType.value === "paid" ? Number(entryFee.value) : 0,
+    upiId: entryType.value === "paid" ? upiId.value.trim() : undefined
   };
 
+  if (!body.name || !body.slots || !body.prizePool) {
+    return alert("Fill all required fields");
+  }
+
+  if (body.entryType === "paid" && (!body.entryFee || !body.upiId)) {
+    return alert("Paid tournament needs fee & UPI");
+  }
+
   try {
-    const res = await fetch(`${BACKEND_URL}/tournaments/create`, {
+    await api("/tournaments/create", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
       body: JSON.stringify(body)
     });
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.msg || "Create failed");
-
-    alert("Tournament created successfully ✅");
+    alert("Tournament created ✅");
     createForm.reset();
     paidBox.classList.add("hidden");
 
@@ -124,19 +156,14 @@ createForm.onsubmit = async (e) => {
 };
 
 /* =========================
-   FETCH TOURNAMENTS ✅ FIXED
+   FETCH TOURNAMENTS
 ========================= */
 async function fetchTournaments() {
   const list = document.getElementById("tournamentList");
   list.innerHTML = "Loading...";
 
   try {
-    const token = await getIdToken(auth.currentUser);
-    const res = await fetch(`${BACKEND_URL}/tournaments/admin/upcoming`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-
-    const data = await res.json();
+    const data = await api("/tournaments/admin/upcoming");
     const tournaments = data.tournaments || [];
 
     if (!tournaments.length) {
@@ -153,7 +180,7 @@ async function fetchTournaments() {
       </div>
     `).join("");
 
-  } catch (err) {
+  } catch {
     list.innerHTML = "<p>Error loading tournaments</p>";
   }
-}
+    }
