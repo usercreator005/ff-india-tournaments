@@ -1,6 +1,6 @@
 // js/creator.js
 // CREATOR DASHBOARD – FINAL PRODUCTION BUILD
-// No Dummy UI • Role Locked • Pre-Launch Safe
+// Versioned API • Role Locked • Crash Safe
 
 import { auth } from "./firebase.js";
 import {
@@ -9,7 +9,10 @@ import {
   getIdToken
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-const BACKEND_URL = "https://ff-india-tournaments.onrender.com";
+/* =========================
+   CONFIG
+========================= */
+const BACKEND_URL = "https://ff-india-tournaments.onrender.com/api/v1";
 let sessionToken = null;
 
 /* =========================
@@ -47,26 +50,15 @@ const totalAdmins = document.getElementById("totalAdmins");
 /* =========================
    SIDEBAR
 ========================= */
-function openSidebar() {
+avatar?.addEventListener("click", () => {
   sidebar.classList.remove("hidden");
   overlay.classList.remove("hidden");
-  requestAnimationFrame(() => {
-    sidebar.classList.add("active");
-    overlay.classList.add("active");
-  });
-}
+});
 
-function closeSidebar() {
-  sidebar.classList.remove("active");
-  overlay.classList.remove("active");
-  setTimeout(() => {
-    sidebar.classList.add("hidden");
-    overlay.classList.add("hidden");
-  }, 300);
-}
-
-avatar?.addEventListener("click", openSidebar);
-overlay?.addEventListener("click", closeSidebar);
+overlay?.addEventListener("click", () => {
+  sidebar.classList.add("hidden");
+  overlay.classList.add("hidden");
+});
 
 /* =========================
    LOGOUT
@@ -81,34 +73,31 @@ logoutBtn?.addEventListener("click", async () => {
    AUTH GUARD
 ========================= */
 onAuthStateChanged(auth, async user => {
-  if (!user) return location.href = "index.html";
+  if (!user) return (location.href = "index.html");
 
   try {
     sessionToken = await getIdToken(user, true);
-    const role = await verifyRole(sessionToken);
-    if (role !== "creator") throw new Error("Unauthorized");
+
+    const res = await fetch(`${BACKEND_URL}/auth/role`, {
+      headers: { Authorization: `Bearer ${sessionToken}` }
+    });
+
+    const data = await res.json();
+    if (data.role !== "creator") throw new Error("Unauthorized");
 
     creatorName.textContent = user.displayName || "Creator";
     creatorEmail.textContent = user.email || "";
 
     init();
-  } catch {
+  } catch (err) {
+    console.error("Creator auth failed", err);
     await signOut(auth);
     location.href = "index.html";
   }
 });
 
-async function verifyRole(token) {
-  const res = await fetch(`${BACKEND_URL}/auth/role`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error();
-  return data.role;
-}
-
 /* =========================
-   API
+   SAFE API WRAPPER
 ========================= */
 async function api(path, options = {}) {
   const res = await fetch(`${BACKEND_URL}${path}`, {
@@ -118,8 +107,20 @@ async function api(path, options = {}) {
       Authorization: `Bearer ${sessionToken}`
     }
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.msg || "API Error");
+
+  const text = await res.text();
+
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error("Server returned invalid response");
+  }
+
+  if (!res.ok) {
+    throw new Error(data.msg || "API Error");
+  }
+
   return data;
 }
 
@@ -143,8 +144,6 @@ contactInput.oninput = () => {
    POST HOT SLOT
 ========================= */
 postSlotBtn.onclick = async () => {
-  postSlotBtn.disabled = true;
-
   const payload = {
     tournamentName: slotTournament.value.trim(),
     prizePool: slotPrize.value.trim(),
@@ -153,59 +152,44 @@ postSlotBtn.onclick = async () => {
     contact: contactInput.value.trim()
   };
 
-  if (!payload.tournamentName || !payload.stage || payload.contact.length !== 10) {
-    alert("Fill all fields correctly");
-    postSlotBtn.disabled = false;
-    return;
+  if (!payload.tournamentName || payload.contact.length !== 10) {
+    return alert("Fill all fields correctly");
   }
 
-  try {
-    await api("/creator/hot-slot", {
-      method: "POST",
-      body: JSON.stringify(payload)
-    });
+  await api("/creator/hot-slot", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
 
-    slotTournament.value = slotPrize.value =
-    slotStage.value = slotDetails.value = "";
-    contactInput.value = "";
-    dmNumber.textContent = "Not Set";
+  slotTournament.value =
+    slotPrize.value =
+    slotStage.value =
+    slotDetails.value =
+      "";
+  contactInput.value = "";
+  dmNumber.textContent = "Not Set";
 
-    fetchMyHotSlots();
-  } catch (e) {
-    alert(e.message);
-  }
-
-  postSlotBtn.disabled = false;
+  fetchMyHotSlots();
 };
 
 /* =========================
    CREATE ADMIN
 ========================= */
 addAdminBtn.onclick = async () => {
-  addAdminBtn.disabled = true;
-
   if (!adminName.value || !adminEmail.value) {
-    alert("Enter admin details");
-    addAdminBtn.disabled = false;
-    return;
+    return alert("Enter admin details");
   }
 
-  try {
-    await api("/creator/create-admin", {
-      method: "POST",
-      body: JSON.stringify({
-        name: adminName.value.trim(),
-        email: adminEmail.value.trim()
-      })
-    });
+  await api("/creator/create-admin", {
+    method: "POST",
+    body: JSON.stringify({
+      name: adminName.value.trim(),
+      email: adminEmail.value.trim()
+    })
+  });
 
-    adminName.value = adminEmail.value = "";
-    fetchAdmins();
-  } catch (e) {
-    alert(e.message);
-  }
-
-  addAdminBtn.disabled = false;
+  adminName.value = adminEmail.value = "";
+  fetchAdmins();
 };
 
 /* =========================
@@ -214,7 +198,8 @@ addAdminBtn.onclick = async () => {
 async function fetchAdmins() {
   const data = await api("/creator/stats");
   adminList.innerHTML = "";
-  (data.admins || []).forEach(a => {
+
+  data.admins.forEach(a => {
     const li = document.createElement("li");
     li.textContent = `${a.email} ❌`;
     li.onclick = async () => {
@@ -233,7 +218,7 @@ async function fetchMyHotSlots() {
   const data = await api("/creator/hot-slots");
   hotSlotList.innerHTML = "";
 
-  if (!data.slots?.length) {
+  if (!data.slots.length) {
     hotSlotEmpty.classList.remove("hidden");
     return;
   }
@@ -259,5 +244,5 @@ async function fetchStats() {
   const data = await api("/creator/stats");
   totalUsers.textContent = data.totalUsers || 0;
   activeTournaments.textContent = data.activeHotSlots || 0;
-  totalAdmins.textContent = data.admins?.length || 0;
+  totalAdmins.textContent = data.admins.length || 0;
 }
