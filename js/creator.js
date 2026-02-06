@@ -1,274 +1,126 @@
-// js/creator.js
-// CREATOR DASHBOARD – PHASE 1 STABILIZED
-// Secure Auth Guard • Clean API Layer • No Role Escapes
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Creator Dashboard | FF INDIA TOURNAMENTS</title>
 
-import { auth } from "./firebase.js";
-import {
-  onAuthStateChanged,
-  signOut,
-  getIdToken
-} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Creator Control Panel – FF India Tournaments" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 
-/* =========================
-   CONFIG
-========================= */
-const BACKEND_URL = "https://ff-india-tournaments.onrender.com";
-let sessionToken = null;
+  <!-- Creator CSS -->
+  <link rel="stylesheet" href="css/creator.css" />
+</head>
 
-/* =========================
-   DOM REFERENCES
-========================= */
-const avatar = document.getElementById("avatar");
-const sidebar = document.getElementById("creatorSidebar");
-const overlay = document.getElementById("creatorOverlay");
-const logoutBtn = document.getElementById("logoutBtn");
+<body>
 
-const creatorName = document.getElementById("creatorName");
-const creatorEmail = document.getElementById("creatorEmail");
+<!-- ================= HEADER ================= -->
+<header class="header">
+  <div class="logo">FF INDIA TOURNAMENTS</div>
 
-/* =========================
-   SIDEBAR TOGGLE
-========================= */
-function openSidebar(e) {
-  e?.stopPropagation();
-  sidebar.classList.remove("hidden");
-  overlay.classList.remove("hidden");
-  requestAnimationFrame(() => {
-    sidebar.classList.add("active");
-    overlay.classList.add("active");
-  });
-}
+  <div class="icons">
+    <img
+      src="assets/default-avatar.png"
+      id="avatar"
+      alt="Creator Avatar"
+      title="Open Profile"
+    />
+  </div>
+</header>
 
-function closeSidebar() {
-  sidebar.classList.remove("active");
-  overlay.classList.remove("active");
-  setTimeout(() => {
-    sidebar.classList.add("hidden");
-    overlay.classList.add("hidden");
-  }, 300);
-}
+<!-- ================= MAIN ================= -->
+<main class="main">
 
-avatar?.addEventListener("click", openSidebar);
-overlay?.addEventListener("click", closeSidebar);
-document.addEventListener("keydown", e => {
-  if (e.key === "Escape") closeSidebar();
-});
+  <!-- ===== STATS ===== -->
+  <section class="stats">
+    <div class="card">
+      👥 Total Users<br />
+      <span id="totalUsers">0</span>
+    </div>
 
-/* =========================
-   LOGOUT
-========================= */
-logoutBtn?.addEventListener("click", async () => {
-  if (!confirm("Logout from Creator Panel?")) return;
-  await signOut(auth);
-  window.location.replace("index.html");
-});
+    <div class="card">
+      🏆 Active Tournaments<br />
+      <span id="activeTournaments">0</span>
+    </div>
 
-/* =========================
-   AUTH GUARD (CREATOR ONLY)
-========================= */
-onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    window.location.replace("index.html");
-    return;
-  }
+    <div class="card">
+      🛡️ Total Admins<br />
+      <span id="totalAdmins">0</span>
+    </div>
+  </section>
 
-  try {
-    sessionToken = await getIdToken(user, true);
+  <!-- ===== ADMIN MANAGEMENT ===== -->
+  <section class="card full">
+    <h3>Admin Management</h3>
 
-    const role = await verifyCreator(sessionToken);
-    if (role !== "creator") throw new Error("Unauthorized");
+    <input type="text" id="adminName" placeholder="Admin Username" />
+    <input type="email" id="adminEmail" placeholder="Admin Gmail (Google Login Only)" />
 
-    creatorName.textContent = user.displayName || "Creator";
-    creatorEmail.textContent = user.email || "";
+    <button id="addAdmin">➕ Create Admin</button>
 
-    initCreatorPanel();
+    <ul class="admin-list" id="adminList"></ul>
+  </section>
 
-  } catch (err) {
-    console.error("Creator access denied:", err);
-    await signOut(auth);
-    window.location.replace("index.html");
-  }
-});
+  <!-- ===== HOT SLOT POST ===== -->
+  <section class="card full">
+    <h3>🔥 Post New Hot Slot</h3>
 
-/* =========================
-   VERIFY ROLE
-========================= */
-async function verifyCreator(token) {
-  const res = await fetch(`${BACKEND_URL}/auth/role`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
+    <input type="text" id="slotTournament" placeholder="Tournament Name" />
+    <input type="text" id="slotPrize" placeholder="Prize Pool (e.g. ₹5,000)" />
+    <input type="text" id="slotStage" placeholder="Stage (Qualifiers / Finals)" />
 
-  if (!res.ok) throw new Error("Role check failed");
-  const data = await res.json();
-  return data.role;
-}
+    <textarea id="slotDetails" placeholder="Slot Details (Room ID, Time, Rules, etc.)"></textarea>
 
-/* =========================
-   INIT DASHBOARD
-========================= */
-function initCreatorPanel() {
-  fetchStats();
-  fetchAdmins();
-  fetchMyHotSlots();
-}
+    <input type="tel" id="contactNumber" placeholder="Contact Number (10 digit)" maxlength="10" />
 
-/* =========================
-   API HELPER
-========================= */
-async function api(path, options = {}) {
-  const res = await fetch(`${BACKEND_URL}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${sessionToken}`,
-      ...(options.headers || {})
-    }
-  });
+    <button id="postSlot">🚀 Post Hot Slot</button>
 
-  if (!res.ok) {
-    const msg = await res.text();
-    throw new Error(msg || "API error");
-  }
+    <p class="dm-text">
+      DM ME FOR DETAILS :
+      <span id="dmNumber">Not Set</span>
+    </p>
+  </section>
 
-  return res.json();
-}
+  <!-- ===== MANAGE HOT SLOTS ===== -->
+  <section class="card full">
+    <h3>📋 My Posted Hot Slots</h3>
 
-/* =========================
-   HOT SLOT UI
-========================= */
-const contactInput = document.getElementById("contactNumber");
-const dmNumber = document.getElementById("dmNumber");
+    <div id="hotSlotEmpty" class="dm-text hidden">
+      No hot slots posted yet.
+    </div>
 
-contactInput?.addEventListener("input", () => {
-  dmNumber.textContent = contactInput.value || "Not Set";
-});
+    <ul class="admin-list" id="hotSlotList"></ul>
+  </section>
 
-dmNumber?.addEventListener("click", () => {
-  if (contactInput.value.length === 10) {
-    window.open(`https://wa.me/91${contactInput.value}`, "_blank");
-  }
-});
+</main>
 
-/* =========================
-   POST HOT SLOT
-========================= */
-document.getElementById("postSlot")?.addEventListener("click", async () => {
-  const payload = {
-    tournamentName: slotTournament.value.trim(),
-    prizePool: slotPrize.value.trim(),
-    stage: slotStage.value.trim(),
-    description: slotDetails.value.trim(),
-    contact: contactInput.value.trim()
-  };
+<!-- ================= SIDEBAR ================= -->
+<div class="creator-overlay hidden" id="creatorOverlay"></div>
 
-  if (!payload.tournamentName || !payload.stage || payload.contact.length !== 10) {
-    alert("Fill all fields correctly");
-    return;
-  }
+<aside class="creator-sidebar hidden" id="creatorSidebar">
+  <div class="creator-sidebar-header">
+    <img src="assets/default-avatar.png" alt="Creator" />
+    <div>
+      <strong id="creatorName">Creator</strong><br />
+      <small id="creatorEmail">creator@gmail.com</small>
+    </div>
+  </div>
 
-  try {
-    await api("/creator/hot-slot", {
-      method: "POST",
-      body: JSON.stringify(payload)
-    });
+  <div class="creator-sidebar-footer">
+    <button class="creator-logout-btn" id="logoutBtn">
+      🚪 Logout
+    </button>
+  </div>
+</aside>
 
-    alert("Hot slot posted");
-    slotTournament.value = slotPrize.value = slotStage.value = slotDetails.value = "";
-    contactInput.value = "";
-    dmNumber.textContent = "Not Set";
+<!-- ================= FOOTER ================= -->
+<footer class="footer">
+  © 2026 FF INDIA TOURNAMENTS • Creator Panel
+</footer>
 
-    fetchMyHotSlots();
+<!-- ================= SCRIPTS ================= -->
+<script type="module" src="js/firebase.js"></script>
+<script type="module" src="js/creator.js"></script>
 
-  } catch {
-    alert("Failed to post hot slot");
-  }
-});
-
-/* =========================
-   CREATE ADMIN
-========================= */
-document.getElementById("addAdmin")?.addEventListener("click", async () => {
-  const name = adminName.value.trim();
-  const email = adminEmail.value.trim();
-  if (!name || !email) return alert("Enter admin details");
-
-  try {
-    await api("/creator/create-admin", {
-      method: "POST",
-      body: JSON.stringify({ name, email })
-    });
-
-    adminName.value = adminEmail.value = "";
-    fetchAdmins();
-
-  } catch {
-    alert("Admin creation failed");
-  }
-});
-
-/* =========================
-   FETCH ADMINS
-========================= */
-async function fetchAdmins() {
-  try {
-    const data = await api("/creator/stats");
-    const list = document.getElementById("adminList");
-    list.innerHTML = "";
-
-    (data.admins || []).forEach(admin => {
-      const li = document.createElement("li");
-      li.textContent = `${admin.email} ❌`;
-
-      li.onclick = async () => {
-        if (!confirm(`Remove ${admin.email}?`)) return;
-        await api(`/creator/remove-admin/${admin.email}`, { method: "DELETE" });
-        fetchAdmins();
-      };
-
-      list.appendChild(li);
-    });
-  } catch {}
-}
-
-/* =========================
-   FETCH HOT SLOTS
-========================= */
-async function fetchMyHotSlots() {
-  try {
-    const data = await api("/creator/hot-slots");
-    const list = document.getElementById("hotSlotList");
-    const empty = document.getElementById("hotSlotEmpty");
-
-    list.innerHTML = "";
-
-    if (!data.slots?.length) {
-      empty.style.display = "block";
-      return;
-    }
-
-    empty.style.display = "none";
-
-    data.slots.forEach(slot => {
-      const li = document.createElement("li");
-      li.innerHTML = `
-        <strong>${slot.tournamentName}</strong><br>
-        Stage: ${slot.stage}<br>
-        Prize: ${slot.prizePool}<br>
-        ${slot.expired ? "⛔ Expired" : "✅ Active"}
-      `;
-      list.appendChild(li);
-    });
-  } catch {}
-}
-
-/* =========================
-   FETCH STATS
-========================= */
-async function fetchStats() {
-  try {
-    const data = await api("/creator/stats");
-    totalUsers.textContent = data.totalUsers || 0;
-    activeTournaments.textContent = data.activeHotSlots || 0;
-    totalAdmins.textContent = data.admins?.length || 0;
-  } catch {}
-  }
+</body>
+</html>
