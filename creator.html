@@ -3,14 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <title>Creator Dashboard | FF INDIA TOURNAMENTS</title>
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Creator Control Panel – FF India Tournaments" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 
   <!-- Creator CSS -->
   <link rel="stylesheet" href="css/creator.css" />
-
-  <!-- Security -->
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 </head>
+
 <body>
 
 <!-- ================= HEADER ================= -->
@@ -18,9 +19,21 @@
   <div class="logo">FF INDIA TOURNAMENTS</div>
 
   <div class="icons">
-    <button class="switch" id="switchUser">User</button>
-    <button class="switch" id="switchAdmin">Admin</button>
-    <img src="assets/default-avatar.png" id="avatar" alt="Creator Avatar" />
+    <!-- Role Switch (JS controlled – no dummy) -->
+    <button class="switch" id="switchUser" title="Switch to User Panel">
+      User
+    </button>
+
+    <button class="switch" id="switchAdmin" title="Switch to Admin Panel">
+      Admin
+    </button>
+
+    <img
+      src="assets/default-avatar.png"
+      id="avatar"
+      alt="Creator Avatar"
+      title="Open Profile"
+    />
   </div>
 </header>
 
@@ -29,6 +42,7 @@
 
   <!-- ===== STATS ===== -->
   <section class="stats">
+
     <div class="card">
       👥 Total Users<br />
       <span id="totalUsers">0</span>
@@ -43,33 +57,78 @@
       🛡️ Total Admins<br />
       <span id="totalAdmins">0</span>
     </div>
+
   </section>
 
   <!-- ===== ADMIN MANAGEMENT ===== -->
   <section class="card full">
     <h3>Admin Management</h3>
 
-    <input type="text" id="adminName" placeholder="Admin Username" />
-    <input type="email" id="adminEmail" placeholder="Admin Gmail (Only Google Login)" />
+    <input
+      type="text"
+      id="adminName"
+      placeholder="Admin Username"
+      autocomplete="off"
+    />
 
-    <button id="addAdmin">➕ Create Admin</button>
+    <input
+      type="email"
+      id="adminEmail"
+      placeholder="Admin Gmail (Google Login Only)"
+      autocomplete="off"
+    />
 
-    <ul class="admin-list" id="adminList"></ul>
+    <button id="addAdmin">
+      ➕ Create Admin
+    </button>
+
+    <!-- Dynamic List -->
+    <ul class="admin-list" id="adminList">
+      <!-- Injected via JS -->
+    </ul>
   </section>
 
   <!-- ===== HOT SLOT POST ===== -->
   <section class="card full">
     <h3>🔥 Post New Hot Slot</h3>
 
-    <input type="text" id="slotTournament" placeholder="Tournament Name (Any Platform)" />
-    <input type="text" id="slotPrize" placeholder="Prize Pool (e.g. ₹5,000)" />
-    <input type="text" id="slotStage" placeholder="Stage (Qualifiers / Finals)" />
+    <input
+      type="text"
+      id="slotTournament"
+      placeholder="Tournament Name"
+      autocomplete="off"
+    />
 
-    <textarea id="slotDetails" placeholder="Slot Details (Room ID, Time, Rules, etc.)"></textarea>
+    <input
+      type="text"
+      id="slotPrize"
+      placeholder="Prize Pool (e.g. ₹5,000)"
+      autocomplete="off"
+    />
 
-    <input type="tel" id="contactNumber" placeholder="Contact Number (India)" maxlength="10" />
+    <input
+      type="text"
+      id="slotStage"
+      placeholder="Stage (Qualifiers / Finals)"
+      autocomplete="off"
+    />
 
-    <button id="postSlot">🚀 Post Hot Slot</button>
+    <textarea
+      id="slotDetails"
+      placeholder="Slot Details (Room ID, Time, Rules, etc.)"
+    ></textarea>
+
+    <input
+      type="tel"
+      id="contactNumber"
+      placeholder="Contact Number (10 digit)"
+      maxlength="10"
+      autocomplete="off"
+    />
+
+    <button id="postSlot">
+      🚀 Post Hot Slot
+    </button>
 
     <p class="dm-text">
       DM ME FOR DETAILS :
@@ -85,7 +144,9 @@
       No hot slots posted yet.
     </div>
 
-    <ul class="admin-list" id="hotSlotList"></ul>
+    <ul class="admin-list" id="hotSlotList">
+      <!-- Injected via JS -->
+    </ul>
   </section>
 
 </main>
@@ -96,7 +157,11 @@
 <aside class="creator-sidebar hidden" id="creatorSidebar">
 
   <div class="creator-sidebar-header">
-    <img src="assets/default-avatar.png" alt="Creator" />
+    <img
+      src="assets/default-avatar.png"
+      alt="Creator Avatar"
+    />
+
     <div>
       <strong id="creatorName">Creator</strong><br />
       <small id="creatorEmail">creator@gmail.com</small>
@@ -107,7 +172,7 @@
   <div class="creator-sidebar-section">
     <h4>🔔 Notifications</h4>
 
-    <div class="creator-notification">
+    <div id="creatorNotifications" class="creator-notification">
       No announcements yet.
     </div>
   </div>
@@ -116,7 +181,7 @@
   <div class="creator-sidebar-section">
     <h4>🔥 Hot Slot History</h4>
 
-    <div class="creator-hotslot">
+    <div id="creatorHotSlotHistory" class="creator-hotslot">
       Your posted hot slots will appear here.
     </div>
   </div>
@@ -140,4 +205,4 @@
 <script type="module" src="js/creator.js"></script>
 
 </body>
-    </html>
+</html>
