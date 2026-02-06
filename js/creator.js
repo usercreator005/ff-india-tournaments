@@ -48,17 +48,30 @@ const activeTournaments = document.getElementById("activeTournaments");
 const totalAdmins = document.getElementById("totalAdmins");
 
 /* =========================
-   SIDEBAR
+   SIDEBAR (FIXED)
 ========================= */
 avatar?.addEventListener("click", () => {
   sidebar.classList.remove("hidden");
   overlay.classList.remove("hidden");
+
+  requestAnimationFrame(() => {
+    sidebar.classList.add("active");
+    overlay.classList.add("active");
+  });
 });
 
-overlay?.addEventListener("click", () => {
-  sidebar.classList.add("hidden");
-  overlay.classList.add("hidden");
-});
+overlay?.addEventListener("click", closeSidebar);
+logoutBtn?.addEventListener("click", closeSidebar);
+
+function closeSidebar() {
+  sidebar.classList.remove("active");
+  overlay.classList.remove("active");
+
+  setTimeout(() => {
+    sidebar.classList.add("hidden");
+    overlay.classList.add("hidden");
+  }, 300); // must match CSS transition
+}
 
 /* =========================
    LOGOUT
@@ -114,7 +127,7 @@ async function api(path, options = {}) {
   try {
     data = JSON.parse(text);
   } catch {
-    throw new Error("Server returned invalid response");
+    throw new Error("Invalid server response");
   }
 
   if (!res.ok) {
@@ -136,14 +149,14 @@ function init() {
 /* =========================
    HOT SLOT UI
 ========================= */
-contactInput.oninput = () => {
+contactInput?.addEventListener("input", () => {
   dmNumber.textContent = contactInput.value || "Not Set";
-};
+});
 
 /* =========================
    POST HOT SLOT
 ========================= */
-postSlotBtn.onclick = async () => {
+postSlotBtn?.addEventListener("click", async () => {
   const payload = {
     tournamentName: slotTournament.value.trim(),
     prizePool: slotPrize.value.trim(),
@@ -170,12 +183,12 @@ postSlotBtn.onclick = async () => {
   dmNumber.textContent = "Not Set";
 
   fetchMyHotSlots();
-};
+});
 
 /* =========================
    CREATE ADMIN
 ========================= */
-addAdminBtn.onclick = async () => {
+addAdminBtn?.addEventListener("click", async () => {
   if (!adminName.value || !adminEmail.value) {
     return alert("Enter admin details");
   }
@@ -188,9 +201,10 @@ addAdminBtn.onclick = async () => {
     })
   });
 
-  adminName.value = adminEmail.value = "";
+  adminName.value = "";
+  adminEmail.value = "";
   fetchAdmins();
-};
+});
 
 /* =========================
    FETCH ADMINS
@@ -245,4 +259,4 @@ async function fetchStats() {
   totalUsers.textContent = data.totalUsers || 0;
   activeTournaments.textContent = data.activeHotSlots || 0;
   totalAdmins.textContent = data.admins.length || 0;
-}
+  }
