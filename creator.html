@@ -19,15 +19,6 @@
   <div class="logo">FF INDIA TOURNAMENTS</div>
 
   <div class="icons">
-    <!-- Role Switch (JS controlled – no dummy) -->
-    <button class="switch" id="switchUser" title="Switch to User Panel">
-      User
-    </button>
-
-    <button class="switch" id="switchAdmin" title="Switch to Admin Panel">
-      Admin
-    </button>
-
     <img
       src="assets/default-avatar.png"
       id="avatar"
@@ -78,14 +69,9 @@
       autocomplete="off"
     />
 
-    <button id="addAdmin">
-      ➕ Create Admin
-    </button>
+    <button id="addAdmin">➕ Create Admin</button>
 
-    <!-- Dynamic List -->
-    <ul class="admin-list" id="adminList">
-      <!-- Injected via JS -->
-    </ul>
+    <ul class="admin-list" id="adminList"></ul>
   </section>
 
   <!-- ===== HOT SLOT POST ===== -->
@@ -126,9 +112,7 @@
       autocomplete="off"
     />
 
-    <button id="postSlot">
-      🚀 Post Hot Slot
-    </button>
+    <button id="postSlot">🚀 Post Hot Slot</button>
 
     <p class="dm-text">
       DM ME FOR DETAILS :
@@ -144,9 +128,7 @@
       No hot slots posted yet.
     </div>
 
-    <ul class="admin-list" id="hotSlotList">
-      <!-- Injected via JS -->
-    </ul>
+    <ul class="admin-list" id="hotSlotList"></ul>
   </section>
 
 </main>
@@ -157,32 +139,11 @@
 <aside class="creator-sidebar hidden" id="creatorSidebar">
 
   <div class="creator-sidebar-header">
-    <img
-      src="assets/default-avatar.png"
-      alt="Creator Avatar"
-    />
+    <img src="assets/default-avatar.png" alt="Creator Avatar" />
 
     <div>
       <strong id="creatorName">Creator</strong><br />
       <small id="creatorEmail">creator@gmail.com</small>
-    </div>
-  </div>
-
-  <!-- ===== NOTIFICATIONS ===== -->
-  <div class="creator-sidebar-section">
-    <h4>🔔 Notifications</h4>
-
-    <div id="creatorNotifications" class="creator-notification">
-      No announcements yet.
-    </div>
-  </div>
-
-  <!-- ===== HOT SLOT HISTORY ===== -->
-  <div class="creator-sidebar-section">
-    <h4>🔥 Hot Slot History</h4>
-
-    <div id="creatorHotSlotHistory" class="creator-hotslot">
-      Your posted hot slots will appear here.
     </div>
   </div>
 
