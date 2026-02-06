@@ -1,3 +1,7 @@
+// backend/server.js
+// PHASE 1 – HARDENED & CLEAN SERVER ENTRY
+// Express • Security • Versioned API • Optional Self-Ping • Jobs Safe
+
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -7,9 +11,8 @@ const connectDB = require("./config/db");
 const apiLimiter = require("./middleware/rateLimiter");
 const errorHandler = require("./middleware/errorHandler");
 
-const HotSlot = require("./models/HotSlot"); // 🔥 C5.3
-
-const axios = require("axios"); // ✅ Self-Ping
+const HotSlot = require("./models/HotSlot");
+const axios = require("axios");
 
 const app = express();
 
@@ -19,61 +22,62 @@ const app = express();
 app.set("trust proxy", 1);
 
 /* =======================
-   Database Connection
+   DATABASE
 ======================= */
 connectDB();
 
 /* =======================
-   Global Middlewares
+   GLOBAL MIDDLEWARES
 ======================= */
 app.use(helmet());
 
 /* =======================
-   CORS (🔥 PATCH FIXED)
+   CORS (ENV SAFE)
 ======================= */
-const corsOptions = {
-  origin: [
-    "https://ff-india-tournaments.vercel.app",
-    "http://localhost:3000"
-  ],
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true
-};
+const allowedOrigins = [
+  process.env.FRONTEND_URL || "https://ff-india-tournaments.vercel.app",
+  "http://localhost:3000"
+];
 
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+app.use(
+  cors({
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
+  })
+);
 
 /* =======================
-   Body Parsers
+   BODY PARSERS
 ======================= */
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 /* =======================
-   Rate Limiting
+   RATE LIMITING
 ======================= */
 app.use(apiLimiter);
 
 /* =======================
-   Routes
+   API ROUTES (VERSIONED)
 ======================= */
-app.use("/auth", require("./routes/authRoutes"));
-app.use("/user", require("./routes/userRoutes"));
-app.use("/team", require("./routes/teamRoutes"));
-app.use("/tournaments", require("./routes/tournamentRoutes"));
-app.use("/creator", require("./routes/creatorRoutes"));
-app.use("/payments", require("./routes/paymentRoutes"));
-app.use("/hot-slots", require("./routes/hotSlotRoutes"));
-app.use("/notifications", require("./routes/notificationRoutes"));
+app.use("/api/v1/auth", require("./routes/authRoutes"));
+app.use("/api/v1/user", require("./routes/userRoutes"));
+app.use("/api/v1/team", require("./routes/teamRoutes"));
+app.use("/api/v1/tournaments", require("./routes/tournamentRoutes"));
+app.use("/api/v1/creator", require("./routes/creatorRoutes"));
+app.use("/api/v1/payments", require("./routes/paymentRoutes"));
+app.use("/api/v1/hot-slots", require("./routes/hotSlotRoutes"));
+app.use("/api/v1/notifications", require("./routes/notificationRoutes"));
 
 /* =======================
-   Health & Root
+   ROOT & HEALTH
 ======================= */
 app.get("/", (req, res) => {
   res.status(200).json({
     status: "OK",
-    message: "FF India Tournaments Backend Running"
+    service: "FF India Tournaments Backend"
   });
 });
 
@@ -82,65 +86,60 @@ app.get("/health", (req, res) => {
 });
 
 /* =======================
-   🔥 C5.3 AUTO CLEANUP JOB
-   Expired Hot Slots
+   🔥 HOT SLOT CLEANUP JOB
 ======================= */
-const startHotSlotCleanup = () => {
+function startHotSlotCleanup() {
   const ONE_HOUR = 60 * 60 * 1000;
 
   setInterval(async () => {
     try {
       const now = new Date();
-
       const result = await HotSlot.deleteMany({
         expiresAt: { $lte: now }
       });
 
       if (result.deletedCount > 0) {
-        console.log(
-          `🧹 HotSlot Cleanup: ${result.deletedCount} expired slots removed`
-        );
+        console.log(`🧹 HotSlot cleanup: ${result.deletedCount} removed`);
       }
     } catch (err) {
-      console.error("❌ HotSlot Cleanup Error:", err.message);
+      console.error("❌ HotSlot cleanup error:", err.message);
     }
   }, ONE_HOUR);
-};
+}
 
 /* =======================
-   🔥 SELF-PING FUNCTION
-   Keep backend awake
+   🔁 OPTIONAL SELF-PING
 ======================= */
-const startSelfPing = () => {
-  const BACKEND_URL = "https://ff-india-tournaments.onrender.com/health";
+function startSelfPing() {
+  if (process.env.ENABLE_SELF_PING !== "true") return;
 
-  const pingBackend = async () => {
+  const URL = process.env.BACKEND_HEALTH_URL || "http://localhost/health";
+
+  const ping = async () => {
     try {
-      const res = await axios.get(BACKEND_URL, { timeout: 15000 });
-      console.log("✅ Self ping successful at", new Date().toLocaleTimeString(), "Status:", res.status);
+      await axios.get(URL, { timeout: 15000 });
+      console.log("✅ Self-ping OK", new Date().toLocaleTimeString());
     } catch (err) {
-      console.log("❌ Self ping failed at", new Date().toLocaleTimeString(), err.message);
+      console.log("❌ Self-ping failed:", err.message);
     }
   };
 
-  // Ping immediately
-  pingBackend();
-
-  // Ping every 10 minutes
-  setInterval(pingBackend, 10 * 60 * 1000);
-};
+  ping();
+  setInterval(ping, 10 * 60 * 1000);
+}
 
 /* =======================
-   Error Handler (LAST)
+   ERROR HANDLER (LAST)
 ======================= */
 app.use(errorHandler);
 
 /* =======================
-   Server
+   SERVER START
 ======================= */
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => {
   console.log(`🔥 Server running on port ${PORT}`);
-  startHotSlotCleanup(); // ✅ START CLEANUP AFTER SERVER START
-  startSelfPing();       // ✅ START SELF-PING AFTER SERVER START
+  startHotSlotCleanup();
+  startSelfPing();
 });
