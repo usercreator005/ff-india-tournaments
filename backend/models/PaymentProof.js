@@ -16,16 +16,21 @@ const paymentProofSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    amount: {
+      type: Number,
+      required: true,
+    },
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],
       default: "pending",
     },
+    verifiedAt: Date,
+    verifiedBy: String,
   },
   { timestamps: true }
 );
 
-// Prevent duplicate proof
 paymentProofSchema.index({ tournamentId: 1, userEmail: 1 }, { unique: true });
 
 module.exports = mongoose.model("PaymentProof", paymentProofSchema);
