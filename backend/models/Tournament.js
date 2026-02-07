@@ -14,6 +14,13 @@ const tournamentSchema = new mongoose.Schema(
       min: 1
     },
 
+    // Tracks confirmed joins (prevents race-condition overfill later)
+    filledSlots: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+
     prizePool: {
       type: String,
       required: true,
@@ -54,7 +61,6 @@ const tournamentSchema = new mongoose.Schema(
       default: [],
       validate: {
         validator: function (arr) {
-          // prevent duplicate joins
           return arr.length === new Set(arr).size;
         },
         message: "Duplicate players not allowed"
@@ -78,15 +84,20 @@ const tournamentSchema = new mongoose.Schema(
 );
 
 /* =========================
+   INDEXES
+========================= */
+
+// Faster filtering by status
+tournamentSchema.index({ status: 1, createdAt: -1 });
+
+/* =========================
    VIRTUALS
 ========================= */
 
-// remaining slots (read-only)
 tournamentSchema.virtual("slotsLeft").get(function () {
-  return Math.max(this.slots - this.players.length, 0);
+  return Math.max(this.slots - this.filledSlots, 0);
 });
 
-// ensure virtuals appear in JSON
 tournamentSchema.set("toJSON", { virtuals: true });
 tournamentSchema.set("toObject", { virtuals: true });
 
