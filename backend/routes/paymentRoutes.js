@@ -1,12 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const PaymentProof = require("../models/PaymentProof");
+const Tournament = require("../models/Tournament");
 const auth = require("../middleware/authMiddleware");
 const { body, param, validationResult } = require("express-validator");
 
-/* =========================
-   HELPERS
-========================= */
 const validate = (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -17,7 +15,7 @@ const validate = (req, res) => {
 };
 
 /* =========================
-   USER UPLOAD
+   USER SUBMITS PAYMENT PROOF
 ========================= */
 router.post(
   "/upload",
@@ -31,6 +29,11 @@ router.post(
       }
 
       if (validate(req, res)) return;
+
+      const tournament = await Tournament.findById(req.body.tournamentId);
+      if (!tournament || tournament.entryType !== "paid") {
+        return res.status(400).json({ success: false, msg: "Invalid tournament" });
+      }
 
       const exists = await PaymentProof.findOne({
         tournamentId: req.body.tournamentId,
@@ -48,18 +51,19 @@ router.post(
         tournamentId: req.body.tournamentId,
         userEmail: req.user.email,
         screenshotUrl: req.body.screenshotUrl,
-        status: "pending",
+        amount: tournament.entryFee,
       });
 
-      res.json({ success: true, msg: "Proof submitted", proof });
+      res.json({ success: true, msg: "Proof submitted for review", proof });
     } catch (err) {
+      console.error(err);
       res.status(500).json({ success: false, msg: "Server error" });
     }
   }
 );
 
 /* =========================
-   ADMIN VIEW
+   ADMIN VIEW PROOFS
 ========================= */
 router.get("/admin/:tournamentId", auth, async (req, res) => {
   if (req.role !== "admin") {
@@ -74,28 +78,34 @@ router.get("/admin/:tournamentId", auth, async (req, res) => {
 });
 
 /* =========================
-   ADMIN UPDATE STATUS
+   ADMIN APPROVE / REJECT
 ========================= */
 router.patch(
   "/status/:id",
   auth,
   body("status").isIn(["approved", "rejected"]),
   async (req, res) => {
-    if (req.role !== "admin") {
-      return res.status(403).json({ success: false, msg: "Admin only" });
+    try {
+      if (req.role !== "admin") {
+        return res.status(403).json({ success: false, msg: "Admin only" });
+      }
+
+      if (validate(req, res)) return;
+
+      const proof = await PaymentProof.findById(req.params.id);
+      if (!proof) {
+        return res.status(404).json({ success: false, msg: "Not found" });
+      }
+
+      proof.status = req.body.status;
+      proof.verifiedAt = new Date();
+      proof.verifiedBy = req.user.email;
+      await proof.save();
+
+      res.json({ success: true, msg: "Status updated", proof });
+    } catch (err) {
+      res.status(500).json({ success: false, msg: "Server error" });
     }
-
-    if (validate(req, res)) return;
-
-    const proof = await PaymentProof.findById(req.params.id);
-    if (!proof) {
-      return res.status(404).json({ success: false, msg: "Not found" });
-    }
-
-    proof.status = req.body.status;
-    await proof.save();
-
-    res.json({ success: true, msg: "Status updated", proof });
   }
 );
 
