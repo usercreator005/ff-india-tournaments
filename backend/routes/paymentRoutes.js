@@ -22,6 +22,7 @@ router.post(
   auth,
   body("tournamentId").isMongoId(),
   body("screenshotUrl").isString().notEmpty(),
+  body("transactionNote").optional().isString().trim(),
   async (req, res) => {
     try {
       if (req.role !== "user") {
@@ -30,33 +31,50 @@ router.post(
 
       if (validate(req, res)) return;
 
-      const tournament = await Tournament.findById(req.body.tournamentId);
-      if (!tournament || tournament.entryType !== "paid") {
-        return res.status(400).json({ success: false, msg: "Invalid tournament" });
+      const { tournamentId, screenshotUrl, transactionNote } = req.body;
+
+      const tournament = await Tournament.findById(tournamentId);
+      if (!tournament) {
+        return res.status(404).json({ success: false, msg: "Tournament not found" });
       }
 
-      const exists = await PaymentProof.findOne({
-        tournamentId: req.body.tournamentId,
+      if (tournament.entryType !== "paid") {
+        return res.status(400).json({ success: false, msg: "This tournament is free" });
+      }
+
+      if (tournament.status !== "upcoming") {
+        return res.status(400).json({ success: false, msg: "Tournament is closed" });
+      }
+
+      const existingProof = await PaymentProof.findOne({
+        tournamentId,
         userEmail: req.user.email,
       });
 
-      if (exists) {
+      if (existingProof) {
+        if (existingProof.status === "approved") {
+          return res.status(400).json({
+            success: false,
+            msg: "Payment already verified",
+          });
+        }
         return res.status(400).json({
           success: false,
-          msg: "Payment already submitted",
+          msg: "Payment proof already submitted and under review",
         });
       }
 
       const proof = await PaymentProof.create({
-        tournamentId: req.body.tournamentId,
+        tournamentId,
         userEmail: req.user.email,
-        screenshotUrl: req.body.screenshotUrl,
-        amount: tournament.entryFee,
+        screenshotUrl,
+        transactionNote: transactionNote || null,
+        amount: tournament.entryFee, // Locked from DB
       });
 
-      res.json({ success: true, msg: "Proof submitted for review", proof });
+      res.json({ success: true, msg: "Proof submitted for admin review", proof });
     } catch (err) {
-      console.error(err);
+      console.error("Payment upload error:", err);
       res.status(500).json({ success: false, msg: "Server error" });
     }
   }
@@ -65,17 +83,28 @@ router.post(
 /* =========================
    ADMIN VIEW PROOFS
 ========================= */
-router.get("/admin/:tournamentId", auth, async (req, res) => {
-  if (req.role !== "admin") {
-    return res.status(403).json({ success: false, msg: "Admin only" });
+router.get(
+  "/admin/:tournamentId",
+  auth,
+  param("tournamentId").isMongoId(),
+  async (req, res) => {
+    try {
+      if (req.role !== "admin") {
+        return res.status(403).json({ success: false, msg: "Admin only" });
+      }
+
+      if (validate(req, res)) return;
+
+      const proofs = await PaymentProof.find({
+        tournamentId: req.params.tournamentId,
+      }).sort({ createdAt: -1 });
+
+      res.json({ success: true, proofs });
+    } catch (err) {
+      res.status(500).json({ success: false, msg: "Server error" });
+    }
   }
-
-  const proofs = await PaymentProof.find({
-    tournamentId: req.params.tournamentId,
-  });
-
-  res.json({ success: true, proofs });
-});
+);
 
 /* =========================
    ADMIN APPROVE / REJECT
@@ -83,6 +112,7 @@ router.get("/admin/:tournamentId", auth, async (req, res) => {
 router.patch(
   "/status/:id",
   auth,
+  param("id").isMongoId(),
   body("status").isIn(["approved", "rejected"]),
   async (req, res) => {
     try {
@@ -94,16 +124,18 @@ router.patch(
 
       const proof = await PaymentProof.findById(req.params.id);
       if (!proof) {
-        return res.status(404).json({ success: false, msg: "Not found" });
+        return res.status(404).json({ success: false, msg: "Payment proof not found" });
       }
 
       proof.status = req.body.status;
       proof.verifiedAt = new Date();
       proof.verifiedBy = req.user.email;
+
       await proof.save();
 
-      res.json({ success: true, msg: "Status updated", proof });
+      res.json({ success: true, msg: `Payment ${req.body.status}`, proof });
     } catch (err) {
+      console.error("Admin payment update error:", err);
       res.status(500).json({ success: false, msg: "Server error" });
     }
   }
