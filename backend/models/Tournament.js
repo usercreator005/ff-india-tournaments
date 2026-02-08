@@ -18,7 +18,13 @@ const tournamentSchema = new mongoose.Schema(
     filledSlots: {
       type: Number,
       default: 0,
-      min: 0
+      min: 0,
+      validate: {
+        validator: function (v) {
+          return v <= this.slots;
+        },
+        message: "Filled slots cannot exceed total slots"
+      }
     },
 
     prizePool: {
@@ -70,7 +76,8 @@ const tournamentSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: ["upcoming", "ongoing", "past", "cancelled"],
-      default: "upcoming"
+      default: "upcoming",
+      index: true
     },
 
     // 👤 Admin who created this tournament
@@ -78,13 +85,16 @@ const tournamentSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Admin",
       required: true,
+      immutable: true,
       index: true
     },
 
     // 🔐 Organization isolation (ties tournament to one admin’s org)
     organizationId: {
       type: mongoose.Schema.Types.ObjectId,
+      ref: "Organization",
       required: true,
+      immutable: true,
       index: true
     }
   },
@@ -94,11 +104,14 @@ const tournamentSchema = new mongoose.Schema(
 );
 
 /* =========================
-   INDEXES
+   COMPOUND INDEXES
 ========================= */
 
-// Faster filtering by status within org
+// Faster filtering by org + status (Admin panel)
 tournamentSchema.index({ organizationId: 1, status: 1, createdAt: -1 });
+
+// Prevent same admin from creating tournaments with identical name at same time
+tournamentSchema.index({ createdByAdmin: 1, name: 1, createdAt: -1 });
 
 /* =========================
    VIRTUALS
