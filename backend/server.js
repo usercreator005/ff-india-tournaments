@@ -70,6 +70,7 @@ app.use(apiLimiter);
 const authRoutes = require("./routes/authRoutes");
 
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/admin/tournaments", require("./routes/adminTournamentManageRoutes"));
 app.use("/api/v1/user", require("./routes/userRoutes"));
 app.use("/api/v1/team", require("./routes/teamRoutes"));
 app.use("/api/v1/tournaments", require("./routes/tournamentRoutes"));
