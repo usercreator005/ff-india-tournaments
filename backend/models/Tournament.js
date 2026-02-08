@@ -2,19 +2,49 @@ const mongoose = require("mongoose");
 
 const tournamentSchema = new mongoose.Schema(
   {
+    /* =========================
+       BASIC INFO
+    ========================= */
     name: {
       type: String,
       required: true,
       trim: true
     },
 
+    game: {
+      type: String,
+      required: true,
+      trim: true,
+      default: "Free Fire"
+    },
+
+    mode: {
+      type: String,
+      required: true,
+      trim: true // Solo / Duo / Squad
+    },
+
+    map: {
+      type: String,
+      required: true,
+      trim: true // Bermuda / Purgatory / Kalahari etc
+    },
+
+    startTime: {
+      type: Date,
+      required: true,
+      index: true
+    },
+
+    /* =========================
+       SLOT CONTROL
+    ========================= */
     slots: {
       type: Number,
       required: true,
       min: 1
     },
 
-    // Tracks confirmed joins (prevents race-condition overfill later)
     filledSlots: {
       type: Number,
       default: 0,
@@ -27,6 +57,9 @@ const tournamentSchema = new mongoose.Schema(
       }
     },
 
+    /* =========================
+       PRIZE & ENTRY
+    ========================= */
     prizePool: {
       type: String,
       required: true,
@@ -73,6 +106,9 @@ const tournamentSchema = new mongoose.Schema(
       }
     },
 
+    /* =========================
+       STATUS FLOW
+    ========================= */
     status: {
       type: String,
       enum: ["upcoming", "ongoing", "past", "cancelled"],
@@ -98,14 +134,14 @@ const tournamentSchema = new mongoose.Schema(
 );
 
 /* =========================
-   COMPOUND INDEXES
+   INDEXES
 ========================= */
 
-// Faster filtering in admin panel
-tournamentSchema.index({ adminId: 1, status: 1, createdAt: -1 });
+// Admin dashboard fast filtering
+tournamentSchema.index({ adminId: 1, status: 1, startTime: 1 });
 
-// Prevent same admin from creating tournaments with same name repeatedly
-tournamentSchema.index({ adminId: 1, name: 1 });
+// Prevent duplicate tournament names under same admin at same time
+tournamentSchema.index({ adminId: 1, name: 1, startTime: 1 });
 
 /* =========================
    VIRTUALS
