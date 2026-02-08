@@ -108,14 +108,10 @@ router.post(
         upiId: entryType === "paid" ? upiId : null,
         qrImage: entryType === "paid" ? qrImage || null : null,
         status: "upcoming",
-        adminId: req.adminId, // 🔐 Phase 1 Data Boundary
+        adminId: req.adminId, // 🔐 PHASE 1 ISOLATION
       });
 
-      res.status(201).json({
-        success: true,
-        msg: "Tournament created",
-        tournament,
-      });
+      res.status(201).json({ success: true, msg: "Tournament created", tournament });
     } catch (err) {
       console.error("Create tournament error:", err);
       res.status(500).json({ success: false, msg: "Server error" });
@@ -145,10 +141,17 @@ router.patch(
         return res.status(404).json({ success: false, msg: "Tournament not found" });
       }
 
-      const lockedFields = ["entryFee", "prizePool", "slots", "entryType"];
+      // Fields that become locked once users join
+      const lockedAfterJoin = [
+        "entryFee",
+        "prizePool",
+        "slots",
+        "entryType",
+        "startTime",
+      ];
 
       if (tournament.players.length > 0) {
-        for (const field of lockedFields) {
+        for (const field of lockedAfterJoin) {
           if (req.body[field] !== undefined && req.body[field] !== tournament[field]) {
             return res.status(403).json({
               success: false,
@@ -157,6 +160,12 @@ router.patch(
           }
         }
       }
+
+      // Never allow changing core system fields
+      delete req.body.adminId;
+      delete req.body.filledSlots;
+      delete req.body.players;
+      delete req.body.status;
 
       Object.assign(tournament, req.body);
       await tournament.save();
@@ -289,7 +298,7 @@ router.get("/my", apiLimiter, auth, async (req, res) => {
 
     const tournaments = await Tournament.find({
       players: req.user.email,
-    }).sort({ createdAt: -1 });
+    }).sort({ startTime: 1 });
 
     res.json({ success: true, tournaments });
   } catch (err) {
