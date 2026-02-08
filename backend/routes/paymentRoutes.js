@@ -5,6 +5,9 @@ const Tournament = require("../models/Tournament");
 const auth = require("../middleware/authMiddleware");
 const { body, param, validationResult } = require("express-validator");
 
+/* =========================
+   HELPERS
+========================= */
 const validate = (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -12,6 +15,13 @@ const validate = (req, res) => {
     return true;
   }
   return false;
+};
+
+const adminOnly = (req, res, next) => {
+  if (req.role !== "admin" && !req.isSuperAdmin) {
+    return res.status(403).json({ success: false, msg: "Admin only" });
+  }
+  next();
 };
 
 /* =========================
@@ -33,7 +43,10 @@ router.post(
 
       const { tournamentId, screenshotUrl, transactionNote } = req.body;
 
-      const tournament = await Tournament.findById(tournamentId);
+      const tournament = await Tournament.findById(tournamentId).select(
+        "_id entryType entryFee status adminId"
+      );
+
       if (!tournament) {
         return res.status(404).json({ success: false, msg: "Tournament not found" });
       }
@@ -66,10 +79,11 @@ router.post(
 
       const proof = await PaymentProof.create({
         tournamentId,
+        adminId: tournament.adminId, // 🔐 PHASE 1 DATA ISOLATION
         userEmail: req.user.email,
         screenshotUrl,
         transactionNote: transactionNote || null,
-        amount: tournament.entryFee, // Locked from DB
+        amount: tournament.entryFee, // Snapshot for audit safety
       });
 
       res.json({ success: true, msg: "Proof submitted for admin review", proof });
@@ -81,22 +95,30 @@ router.post(
 );
 
 /* =========================
-   ADMIN VIEW PROOFS
+   ADMIN VIEW PROOFS (Scoped)
 ========================= */
 router.get(
   "/admin/:tournamentId",
   auth,
+  adminOnly,
   param("tournamentId").isMongoId(),
   async (req, res) => {
     try {
-      if (req.role !== "admin") {
-        return res.status(403).json({ success: false, msg: "Admin only" });
+      if (validate(req, res)) return;
+
+      const tournament = await Tournament.findById(req.params.tournamentId).select("adminId");
+      if (!tournament) {
+        return res.status(404).json({ success: false, msg: "Tournament not found" });
       }
 
-      if (validate(req, res)) return;
+      // 🔐 Admin can only see proofs for their own tournament
+      if (!req.isSuperAdmin && tournament.adminId.toString() !== req.adminId) {
+        return res.status(403).json({ success: false, msg: "Access denied" });
+      }
 
       const proofs = await PaymentProof.find({
         tournamentId: req.params.tournamentId,
+        adminId: tournament.adminId,
       }).sort({ createdAt: -1 });
 
       res.json({ success: true, proofs });
@@ -112,14 +134,11 @@ router.get(
 router.patch(
   "/status/:id",
   auth,
+  adminOnly,
   param("id").isMongoId(),
   body("status").isIn(["approved", "rejected"]),
   async (req, res) => {
     try {
-      if (req.role !== "admin") {
-        return res.status(403).json({ success: false, msg: "Admin only" });
-      }
-
       if (validate(req, res)) return;
 
       const proof = await PaymentProof.findById(req.params.id);
@@ -127,9 +146,21 @@ router.patch(
         return res.status(404).json({ success: false, msg: "Payment proof not found" });
       }
 
+      // 🔐 Ensure admin owns this proof
+      if (!req.isSuperAdmin && proof.adminId.toString() !== req.adminId) {
+        return res.status(403).json({ success: false, msg: "Access denied" });
+      }
+
+      if (proof.status !== "pending") {
+        return res.status(400).json({
+          success: false,
+          msg: "Payment proof already processed",
+        });
+      }
+
       proof.status = req.body.status;
       proof.verifiedAt = new Date();
-      proof.verifiedBy = req.user.email;
+      proof.verifiedBy = req.adminId;
 
       await proof.save();
 
