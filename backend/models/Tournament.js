@@ -69,13 +69,23 @@ const tournamentSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["upcoming", "ongoing", "past"],
+      enum: ["upcoming", "ongoing", "past", "cancelled"],
       default: "upcoming"
     },
 
-    createdBy: {
-      type: String,
-      required: true
+    // 👤 Admin who created this tournament
+    createdByAdmin: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Admin",
+      required: true,
+      index: true
+    },
+
+    // 🔐 Organization isolation (ties tournament to one admin’s org)
+    organizationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      index: true
     }
   },
   {
@@ -87,8 +97,8 @@ const tournamentSchema = new mongoose.Schema(
    INDEXES
 ========================= */
 
-// Faster filtering by status
-tournamentSchema.index({ status: 1, createdAt: -1 });
+// Faster filtering by status within org
+tournamentSchema.index({ organizationId: 1, status: 1, createdAt: -1 });
 
 /* =========================
    VIRTUALS
