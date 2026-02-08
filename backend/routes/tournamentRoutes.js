@@ -30,6 +30,10 @@ const validate = (req, res) => {
 ========================= */
 const validateCreateTournament = [
   body("name").trim().isLength({ min: 3 }),
+  body("game").trim().notEmpty(),
+  body("mode").trim().notEmpty(),
+  body("map").trim().notEmpty(),
+  body("startTime").isISO8601().withMessage("Valid start time required"),
   body("slots").isInt({ min: 1 }),
   body("prizePool").notEmpty(),
   body("entryType").isIn(["free", "paid"]),
@@ -45,6 +49,10 @@ const validateStatusParam = [
 const validateEditTournament = [
   param("id").isMongoId(),
   body("name").optional().trim().isLength({ min: 3 }),
+  body("game").optional().trim().notEmpty(),
+  body("mode").optional().trim().notEmpty(),
+  body("map").optional().trim().notEmpty(),
+  body("startTime").optional().isISO8601(),
   body("slots").optional().isInt({ min: 1 }),
   body("prizePool").optional().notEmpty(),
   body("entryType").optional().isIn(["free", "paid"]),
@@ -66,8 +74,19 @@ router.post(
     try {
       if (validate(req, res)) return;
 
-      const { name, slots, prizePool, entryType, entryFee = 0, upiId, qrImage } =
-        req.body;
+      const {
+        name,
+        game,
+        mode,
+        map,
+        startTime,
+        slots,
+        prizePool,
+        entryType,
+        entryFee = 0,
+        upiId,
+        qrImage,
+      } = req.body;
 
       if (entryType === "paid" && (!upiId || entryFee <= 0)) {
         return res.status(400).json({
@@ -78,6 +97,10 @@ router.post(
 
       const tournament = await Tournament.create({
         name,
+        game,
+        mode,
+        map,
+        startTime,
         slots,
         prizePool,
         entryType,
@@ -85,12 +108,14 @@ router.post(
         upiId: entryType === "paid" ? upiId : null,
         qrImage: entryType === "paid" ? qrImage || null : null,
         status: "upcoming",
-        createdByAdmin: req.adminId, // 🔐 Phase 1 isolation boundary
+        adminId: req.adminId, // 🔐 Phase 1 Data Boundary
       });
 
-      res
-        .status(201)
-        .json({ success: true, msg: "Tournament created", tournament });
+      res.status(201).json({
+        success: true,
+        msg: "Tournament created",
+        tournament,
+      });
     } catch (err) {
       console.error("Create tournament error:", err);
       res.status(500).json({ success: false, msg: "Server error" });
@@ -113,23 +138,18 @@ router.patch(
 
       const filter = req.isSuperAdmin
         ? { _id: req.params.id }
-        : { _id: req.params.id, createdByAdmin: req.adminId };
+        : { _id: req.params.id, adminId: req.adminId };
 
       const tournament = await Tournament.findOne(filter);
       if (!tournament) {
-        return res
-          .status(404)
-          .json({ success: false, msg: "Tournament not found" });
+        return res.status(404).json({ success: false, msg: "Tournament not found" });
       }
 
       const lockedFields = ["entryFee", "prizePool", "slots", "entryType"];
 
       if (tournament.players.length > 0) {
         for (const field of lockedFields) {
-          if (
-            req.body[field] !== undefined &&
-            req.body[field] !== tournament[field]
-          ) {
+          if (req.body[field] !== undefined && req.body[field] !== tournament[field]) {
             return res.status(403).json({
               success: false,
               msg: `Cannot change ${field} after players have joined`,
@@ -162,36 +182,24 @@ router.post(
       if (validate(req, res)) return;
 
       if (req.role !== "user") {
-        return res
-          .status(403)
-          .json({ success: false, msg: "Only users can join tournaments" });
+        return res.status(403).json({ success: false, msg: "Only users can join tournaments" });
       }
 
       const tournament = await Tournament.findById(req.params.id);
       if (!tournament) {
-        return res
-          .status(404)
-          .json({ success: false, msg: "Tournament not found" });
+        return res.status(404).json({ success: false, msg: "Tournament not found" });
       }
 
       if (tournament.status !== "upcoming") {
-        return res.status(400).json({
-          success: false,
-          msg: "Tournament is not open for joining",
-        });
+        return res.status(400).json({ success: false, msg: "Tournament is not open for joining" });
       }
 
       if (tournament.players.includes(req.user.email)) {
-        return res.status(400).json({
-          success: false,
-          msg: "You have already joined this tournament",
-        });
+        return res.status(400).json({ success: false, msg: "You have already joined this tournament" });
       }
 
       if (tournament.filledSlots >= tournament.slots) {
-        return res
-          .status(400)
-          .json({ success: false, msg: "Tournament slots are full" });
+        return res.status(400).json({ success: false, msg: "Tournament slots are full" });
       }
 
       if (tournament.entryType === "paid") {
@@ -252,7 +260,7 @@ router.patch(
 
       const filter = req.isSuperAdmin
         ? { _id: req.params.id }
-        : { _id: req.params.id, createdByAdmin: req.adminId };
+        : { _id: req.params.id, adminId: req.adminId };
 
       const tournament = await Tournament.findOne(filter);
       if (!tournament) {
@@ -276,10 +284,7 @@ router.patch(
 router.get("/my", apiLimiter, auth, async (req, res) => {
   try {
     if (req.role !== "user") {
-      return res.status(403).json({
-        success: false,
-        msg: "Only users can access their tournaments",
-      });
+      return res.status(403).json({ success: false, msg: "Only users can access their tournaments" });
     }
 
     const tournaments = await Tournament.find({
@@ -303,10 +308,7 @@ router.get("/public/:status", apiLimiter, async (req, res) => {
       return res.status(400).json({ success: false, msg: "Invalid status" });
     }
 
-    const tournaments = await Tournament.find({
-      status: req.params.status,
-    }).sort({ createdAt: -1 });
-
+    const tournaments = await Tournament.find({ status: req.params.status }).sort({ startTime: 1 });
     res.json({ success: true, tournaments });
   } catch (err) {
     res.status(500).json({ success: false, msg: "Server error" });
@@ -325,9 +327,9 @@ router.get("/admin/:status", apiLimiter, auth, adminOnly, async (req, res) => {
 
     const filter = req.isSuperAdmin
       ? { status: req.params.status }
-      : { status: req.params.status, createdByAdmin: req.adminId };
+      : { status: req.params.status, adminId: req.adminId };
 
-    const tournaments = await Tournament.find(filter).sort({ createdAt: -1 });
+    const tournaments = await Tournament.find(filter).sort({ startTime: 1 });
     res.json({ success: true, tournaments });
   } catch (err) {
     res.status(500).json({ success: false, msg: "Server error" });
