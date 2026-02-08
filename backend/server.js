@@ -1,6 +1,5 @@
 // backend/server.js
-// PHASE 1 – HARDENED & CLEAN SERVER ENTRY (PRODUCTION FINAL)
-// Express • Security • Versioned API • Backward Compatible Auth • Jobs Safe
+// PHASE 1–3 – HARDENED & CLEAN SERVER ENTRY (PRODUCTION SAFE)
 
 const express = require("express");
 const cors = require("cors");
@@ -17,7 +16,7 @@ const axios = require("axios");
 const app = express();
 
 /* =======================
-   TRUST PROXY (Render)
+   TRUST PROXY (Render/Cloud)
 ======================= */
 app.set("trust proxy", 1);
 
@@ -29,10 +28,10 @@ connectDB();
 /* =======================
    GLOBAL SECURITY
 ======================= */
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: false }));
 
 /* =======================
-   CORS (VERCEL + LOCAL SAFE)
+   CORS (FRONTEND SAFE)
 ======================= */
 const allowedOrigins = [
   process.env.FRONTEND_URL || "https://ff-india-tournaments.vercel.app",
@@ -41,7 +40,13 @@ const allowedOrigins = [
 
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS not allowed"));
+      }
+    },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true
@@ -52,7 +57,7 @@ app.use(
    BODY PARSERS
 ======================= */
 app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 /* =======================
    RATE LIMITING
@@ -73,9 +78,11 @@ app.use("/api/v1/payments", require("./routes/paymentRoutes"));
 app.use("/api/v1/hot-slots", require("./routes/hotSlotRoutes"));
 app.use("/api/v1/notifications", require("./routes/notificationRoutes"));
 
+/* 🆕 PHASE 3 — MATCH ROOM SYSTEM */
+app.use("/api/v1/rooms", require("./routes/matchRoomRoutes"));
+
 /* =====================================================
    🔁 BACKWARD COMPATIBILITY (DO NOT REMOVE)
-   Fixes frontend calls like /auth/role
 ===================================================== */
 app.use("/auth", authRoutes);
 
@@ -86,7 +93,7 @@ app.get("/", (req, res) => {
   res.status(200).json({
     status: "OK",
     service: "FF India Tournaments Backend",
-    version: "1.0.0"
+    version: "1.2.0"
   });
 });
 
