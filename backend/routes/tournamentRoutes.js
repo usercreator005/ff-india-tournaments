@@ -129,7 +129,7 @@ router.patch("/edit/:id", apiLimiter, auth, adminOnly, validateEditTournament, a
 });
 
 /* =========================
-   JOIN TOURNAMENT (USER)
+   JOIN TOURNAMENT (USER SAFE)
 ========================= */
 router.post("/join/:id", apiLimiter, auth, param("id").isMongoId(), async (req, res) => {
   try {
@@ -152,7 +152,7 @@ router.post("/join/:id", apiLimiter, auth, param("id").isMongoId(), async (req, 
       return res.status(400).json({ success: false, msg: "You have already joined this tournament" });
     }
 
-    if (tournament.players.length >= tournament.slots) {
+    if (tournament.filledSlots >= tournament.slots) {
       return res.status(400).json({ success: false, msg: "Tournament slots are full" });
     }
 
@@ -171,10 +171,23 @@ router.post("/join/:id", apiLimiter, auth, param("id").isMongoId(), async (req, 
       }
     }
 
-    await Tournament.findByIdAndUpdate(tournament._id, {
-      $addToSet: { players: req.user.email },
-      $inc: { filledSlots: 1 }
-    });
+    // 🔒 Atomic update prevents race-condition overfill
+    const updated = await Tournament.findOneAndUpdate(
+      {
+        _id: tournament._id,
+        filledSlots: { $lt: tournament.slots },
+        players: { $ne: req.user.email }
+      },
+      {
+        $addToSet: { players: req.user.email },
+        $inc: { filledSlots: 1 }
+      },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(400).json({ success: false, msg: "Slots just filled. Try another tournament." });
+    }
 
     res.json({ success: true, msg: "Successfully joined tournament" });
   } catch (err) {
