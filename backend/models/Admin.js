@@ -19,14 +19,15 @@ const adminSchema = new mongoose.Schema(
       match: [/^\S+@\S+\.\S+$/, "Invalid email format"],
     },
 
-    // 🔐 Organization isolation (Multi-tenant support)
+    // 🔐 Each admin has their OWN organization space
     organizationId: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
+      unique: true, // ensures one admin = one organization
       index: true,
     },
 
-    // 👑 Role system (future Super Admin control)
+    // 👑 Role control
     role: {
       type: String,
       enum: ["ADMIN", "SUPER_ADMIN"],
