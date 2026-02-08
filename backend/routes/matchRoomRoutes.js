@@ -36,11 +36,12 @@ router.post(
   body("tournamentId").isMongoId(),
   body("roomId").trim().notEmpty(),
   body("roomPassword").trim().notEmpty(),
+  body("round").optional().isInt({ min: 1 }),
   async (req, res) => {
     try {
       if (validate(req, res)) return;
 
-      const { tournamentId, roomId, roomPassword } = req.body;
+      const { tournamentId, roomId, roomPassword, round = 1 } = req.body;
 
       // Ensure tournament belongs to this admin
       const filter = req.isSuperAdmin
@@ -56,11 +57,18 @@ router.post(
         tournamentId,
         roomId,
         roomPassword,
+        round,
         adminId: req.adminId,
       });
 
       res.status(201).json({ success: true, msg: "Room created", room });
     } catch (err) {
+      if (err.code === 11000) {
+        return res.status(400).json({
+          success: false,
+          msg: "Room for this round already exists",
+        });
+      }
       console.error("Create room error:", err);
       res.status(500).json({ success: false, msg: "Server error" });
     }
@@ -89,13 +97,49 @@ router.patch(
         return res.status(404).json({ success: false, msg: "Room not found" });
       }
 
+      if (room.isPublished) {
+        return res.status(400).json({ success: false, msg: "Room already published" });
+      }
+
       room.isPublished = true;
-      room.publishedAt = new Date();
       await room.save();
 
-      res.json({ success: true, msg: "Room published", room });
+      res.json({ success: true, msg: "Room published", publishedAt: room.publishedAt });
     } catch (err) {
       console.error("Publish room error:", err);
+      res.status(500).json({ success: false, msg: "Server error" });
+    }
+  }
+);
+
+/* =========================
+   UNPUBLISH / DISABLE ROOM (ADMIN SAFE CONTROL)
+========================= */
+router.patch(
+  "/disable/:id",
+  apiLimiter,
+  auth,
+  adminOnly,
+  param("id").isMongoId(),
+  async (req, res) => {
+    try {
+      if (validate(req, res)) return;
+
+      const filter = req.isSuperAdmin
+        ? { _id: req.params.id }
+        : { _id: req.params.id, adminId: req.adminId };
+
+      const room = await MatchRoom.findOne(filter);
+      if (!room) {
+        return res.status(404).json({ success: false, msg: "Room not found" });
+      }
+
+      room.isActive = false;
+      await room.save();
+
+      res.json({ success: true, msg: "Room disabled" });
+    } catch (err) {
+      console.error("Disable room error:", err);
       res.status(500).json({ success: false, msg: "Server error" });
     }
   }
@@ -118,7 +162,9 @@ router.get(
         ? { tournamentId: req.params.tournamentId }
         : { tournamentId: req.params.tournamentId, adminId: req.adminId };
 
-      const rooms = await MatchRoom.find(filter).sort({ round: 1 });
+      const rooms = await MatchRoom.find(filter)
+        .select("+roomPassword")
+        .sort({ round: 1 });
 
       res.json({ success: true, rooms });
     } catch (err) {
@@ -143,10 +189,24 @@ router.get(
 
       if (validate(req, res)) return;
 
+      // Ensure user actually joined this tournament
+      const tournament = await Tournament.findOne({
+        _id: req.params.tournamentId,
+        players: req.user.email,
+      });
+
+      if (!tournament) {
+        return res.status(403).json({
+          success: false,
+          msg: "You are not a participant of this tournament",
+        });
+      }
+
       const room = await MatchRoom.findOne({
         tournamentId: req.params.tournamentId,
         isPublished: true,
-      });
+        isActive: true,
+      }).select("+roomPassword");
 
       if (!room) {
         return res.status(404).json({
@@ -159,6 +219,7 @@ router.get(
         success: true,
         roomId: room.roomId,
         roomPassword: room.roomPassword,
+        round: room.round,
         publishedAt: room.publishedAt,
       });
     } catch (err) {
