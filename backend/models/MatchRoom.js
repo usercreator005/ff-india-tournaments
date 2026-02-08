@@ -25,12 +25,13 @@ const matchRoomSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      select: false, // 🔒 Hidden unless explicitly requested
     },
 
     /* =========================
        ROUND SUPPORT (FUTURE SAFE)
        Phase 3 = Single round
-       Later we can support qualifiers/finals
+       Future = Multi-stage tournaments
     ========================= */
     round: {
       type: Number,
@@ -54,8 +55,17 @@ const matchRoomSchema = new mongoose.Schema(
     },
 
     /* =========================
-       SECURITY BOUNDARY
-       Same isolation as Tournament
+       AUTO VISIBILITY FLAG
+       Helps frontend know if room can be shown
+    ========================= */
+    isActive: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
+
+    /* =========================
+       🔐 ADMIN DATA BOUNDARY
     ========================= */
     adminId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -77,10 +87,25 @@ const matchRoomSchema = new mongoose.Schema(
 // Fast lookup of rooms per tournament
 matchRoomSchema.index({ tournamentId: 1, round: 1 });
 
-// One room per round per tournament (Phase 3 logic)
+// One room per round per tournament
 matchRoomSchema.index(
   { tournamentId: 1, round: 1 },
   { unique: true }
 );
+
+// Fast admin dashboard filtering
+matchRoomSchema.index({ adminId: 1, isPublished: 1 });
+
+/* =========================
+   MIDDLEWARE
+========================= */
+
+// Auto-set publishedAt when published
+matchRoomSchema.pre("save", function (next) {
+  if (this.isModified("isPublished") && this.isPublished && !this.publishedAt) {
+    this.publishedAt = new Date();
+  }
+  next();
+});
 
 module.exports = mongoose.model("MatchRoom", matchRoomSchema);
