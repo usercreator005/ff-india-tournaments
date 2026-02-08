@@ -19,38 +19,37 @@ const adminSchema = new mongoose.Schema(
       match: [/^\S+@\S+\.\S+$/, "Invalid email format"],
     },
 
-    // 👑 Role control
+    // 👑 Role control (Creator = SUPER_ADMIN)
     role: {
       type: String,
       enum: ["ADMIN", "SUPER_ADMIN"],
       default: "ADMIN",
     },
 
-    // 🏢 Organization Scope (Only for normal ADMIN)
-    organizationId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Organization",
-      required: function () {
-        return this.role === "ADMIN"; // SUPER_ADMIN doesn't need org
-      },
-      index: true,
+    /* =========================
+       OPTIONAL BRAND NAME
+       Used in tournament banner footer
+       "Presented by {orgName}"
+    ========================= */
+    orgName: {
+      type: String,
+      trim: true,
+      maxlength: 50,
+      default: null,
     },
+
+    /* =========================
+       ACCOUNT STATUS
+       Future control (suspend/disable)
+    ========================= */
+    isActive: {
+      type: Boolean,
+      default: true,
+    }
   },
   {
     timestamps: true,
     versionKey: false,
-  }
-);
-
-/* =========================
-   UNIQUE ORG ADMIN RULE
-   One organization → One admin
-========================= */
-adminSchema.index(
-  { organizationId: 1 },
-  {
-    unique: true,
-    partialFilterExpression: { role: "ADMIN" }, // applies only to ADMIN
   }
 );
 
