@@ -1,7 +1,3 @@
-// backend/middleware/authMiddleware.js
-// PHASE 1 – HARDENED AUTH MIDDLEWARE
-// Firebase Token Verify • Single Creator Lock • DB Admins • Org Isolation
-
 const admin = require("../config/firebaseAdmin");
 const User = require("../models/User");
 const Admin = require("../models/Admin");
@@ -17,7 +13,7 @@ const CREATOR_EMAIL = "jarahul989@gmail.com".toLowerCase();
 const authMiddleware = async (req, res, next) => {
   try {
     /* =========================
-       AUTH HEADER
+       AUTH HEADER CHECK
     ========================= */
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith("Bearer ")) {
@@ -49,13 +45,13 @@ const authMiddleware = async (req, res, next) => {
     let role = "user";
     let adminDoc = null;
 
-    // 👑 SUPER ADMIN (CREATOR ONLY)
+    // 👑 CREATOR → SUPER ADMIN
     if (email === CREATOR_EMAIL) {
-      role = "creator";
+      role = "SUPER_ADMIN";
     } else {
       // 🧑‍💼 ADMIN (DB BASED)
-      adminDoc = await Admin.findOne({ email }).lean();
-      if (adminDoc) role = "admin";
+      adminDoc = await Admin.findOne({ email, isActive: true });
+      if (adminDoc) role = "ADMIN";
     }
 
     /* =========================
@@ -68,10 +64,10 @@ const authMiddleware = async (req, res, next) => {
         uid: decoded.uid,
         name: decoded.name || "Player",
         email,
-        role,
+        role: role === "ADMIN" ? "admin" : "user",
       });
     } else {
-      // 🚨 CREATOR ROLE LOCK
+      // Prevent privilege escalation via DB tampering
       if (user.role === "creator" && email !== CREATOR_EMAIL) {
         return res.status(403).json({
           success: false,
@@ -79,8 +75,12 @@ const authMiddleware = async (req, res, next) => {
         });
       }
 
-      if (user.role !== role) {
-        user.role = role;
+      const expectedUserRole =
+        role === "SUPER_ADMIN" ? "creator" :
+        role === "ADMIN" ? "admin" : "user";
+
+      if (user.role !== expectedUserRole) {
+        user.role = expectedUserRole;
         await user.save();
       }
     }
@@ -94,31 +94,23 @@ const authMiddleware = async (req, res, next) => {
       name: decoded.name || user.name,
     };
 
-    req.role = role;
     req.userId = user._id;
+    req.role = role;
 
     /* =========================
-       🏢 ORGANIZATION ISOLATION
+       🔐 ADMIN DATA ISOLATION
+       (PHASE 1 CORE RULE)
     ========================= */
-
-    if (role === "admin") {
-      if (!adminDoc?.organizationId) {
-        return res.status(403).json({
-          success: false,
-          msg: "Admin is not linked to any organization",
-        });
-      }
-
-      req.organizationId = adminDoc.organizationId;
-      req.adminId = adminDoc._id;
+    if (role === "ADMIN") {
+      req.adminId = adminDoc._id;      // 🔑 MAIN DATA BOUNDARY
+      req.orgName = adminDoc.orgName;  // 🎨 Branding only
     }
 
     /* =========================
        👑 SUPER ADMIN BYPASS
     ========================= */
-    if (role === "creator") {
+    if (role === "SUPER_ADMIN") {
       req.isSuperAdmin = true;
-      req.role = "SUPER_ADMIN"; // explicit internal elevation
     }
 
     next();
