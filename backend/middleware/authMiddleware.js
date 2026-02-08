@@ -41,7 +41,7 @@ const authMiddleware = async (req, res, next) => {
       });
     }
 
-    const email = decoded.email.toLowerCase();
+    const email = decoded.email.toLowerCase().trim();
 
     /* =========================
        ROLE RESOLUTION (SOURCE OF TRUTH)
@@ -49,7 +49,7 @@ const authMiddleware = async (req, res, next) => {
     let role = "user";
     let adminDoc = null;
 
-    // 👑 SUPER ADMIN (CREATOR)
+    // 👑 SUPER ADMIN (CREATOR ONLY)
     if (email === CREATOR_EMAIL) {
       role = "creator";
     } else {
@@ -97,15 +97,28 @@ const authMiddleware = async (req, res, next) => {
     req.role = role;
     req.userId = user._id;
 
-    // 🔐 Attach organization scope for ADMIN only
-    if (role === "admin" && adminDoc) {
+    /* =========================
+       🏢 ORGANIZATION ISOLATION
+    ========================= */
+
+    if (role === "admin") {
+      if (!adminDoc?.organizationId) {
+        return res.status(403).json({
+          success: false,
+          msg: "Admin is not linked to any organization",
+        });
+      }
+
       req.organizationId = adminDoc.organizationId;
       req.adminId = adminDoc._id;
     }
 
-    // 👑 Super Admin bypass (full access)
+    /* =========================
+       👑 SUPER ADMIN BYPASS
+    ========================= */
     if (role === "creator") {
       req.isSuperAdmin = true;
+      req.role = "SUPER_ADMIN"; // explicit internal elevation
     }
 
     next();
