@@ -1,14 +1,16 @@
 const mongoose = require("mongoose");
 
 /**
- * 🔐 ADMIN ORGANIZATION SCOPE MIDDLEWARE
+ * 🔐 ADMIN DATA SCOPE MIDDLEWARE (PHASE 1)
  *
- * Ensures an Admin can only access resources belonging to their organization.
- * Creator (Super Admin) bypasses all restrictions.
+ * Ensures an Admin can only access resources created by THEM
+ * using adminId as the security boundary.
+ *
+ * SUPER_ADMIN bypasses all restrictions.
  *
  * Supports:
  * - ID based access  → /route/:id
- * - Query scoping    → Model.find() auto-filter by organization
+ * - Query scoping    → Model.find() auto-filter by adminId
  *
  * Usage:
  * router.get("/:id", auth, checkAdminScope(Model), controller)
@@ -18,19 +20,20 @@ const mongoose = require("mongoose");
 const checkAdminScope = (Model, options = {}) => {
   return async (req, res, next) => {
     try {
-      /* =========================
-         ROLE & ORG CONTEXT
-      ========================= */
       const role = req.role;
-      const orgId = req.organizationId;
+      const adminId = req.adminId;
 
-      // 👑 CREATOR → Full access
-      if (role === "creator" || req.isSuperAdmin) {
+      /* =========================
+         👑 SUPER ADMIN → FULL ACCESS
+      ========================= */
+      if (req.isSuperAdmin || role === "SUPER_ADMIN") {
         return next();
       }
 
-      // 🚫 Only admins should reach here
-      if (role !== "admin" || !orgId) {
+      /* =========================
+         🚫 ONLY ADMINS ALLOWED
+      ========================= */
+      if (role !== "ADMIN" || !adminId) {
         return res.status(403).json({
           success: false,
           msg: "Access denied",
@@ -38,16 +41,16 @@ const checkAdminScope = (Model, options = {}) => {
       }
 
       /* =========================
-         QUERY SCOPING MODE
+         🔎 QUERY SCOPING MODE
       ========================= */
       if (options.query) {
-        // Attach org filter to request for controller usage
-        req.orgFilter = { organizationId: orgId };
+        // Controllers will use: Model.find(req.adminFilter)
+        req.adminFilter = { adminId };
         return next();
       }
 
       /* =========================
-         RESOURCE ID MODE
+         📌 RESOURCE ID MODE
       ========================= */
       const resourceId = req.params.id;
 
@@ -58,7 +61,8 @@ const checkAdminScope = (Model, options = {}) => {
         });
       }
 
-      const resource = await Model.findById(resourceId).select("organizationId");
+      // Only fetch minimal field for security check
+      const resource = await Model.findById(resourceId).select("adminId");
 
       if (!resource) {
         return res.status(404).json({
@@ -67,19 +71,19 @@ const checkAdminScope = (Model, options = {}) => {
         });
       }
 
-      if (resource.organizationId.toString() !== orgId.toString()) {
+      if (resource.adminId.toString() !== adminId.toString()) {
         return res.status(403).json({
           success: false,
-          msg: "Access denied: Not your organization data",
+          msg: "Access denied: Not your data",
         });
       }
 
-      // Attach resource for downstream reuse (optional optimization)
+      // Optional reuse in controller
       req.resource = resource;
 
       next();
     } catch (error) {
-      console.error("Organization scope check failed:", error);
+      console.error("Admin scope check failed:", error);
       res.status(500).json({
         success: false,
         msg: "Server error",
