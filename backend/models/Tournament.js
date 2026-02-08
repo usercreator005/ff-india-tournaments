@@ -80,19 +80,13 @@ const tournamentSchema = new mongoose.Schema(
       index: true
     },
 
-    // 👤 Admin who created this tournament
-    createdByAdmin: {
+    /* =================================================
+       🔐 PHASE 1 CORE SECURITY — ADMIN DATA BOUNDARY
+       Each tournament belongs ONLY to ONE admin
+    ================================================= */
+    adminId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Admin",
-      required: true,
-      immutable: true,
-      index: true
-    },
-
-    // 🔐 Organization isolation (ties tournament to one admin’s org)
-    organizationId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Organization",
       required: true,
       immutable: true,
       index: true
@@ -107,11 +101,11 @@ const tournamentSchema = new mongoose.Schema(
    COMPOUND INDEXES
 ========================= */
 
-// Faster filtering by org + status (Admin panel)
-tournamentSchema.index({ organizationId: 1, status: 1, createdAt: -1 });
+// Faster filtering in admin panel
+tournamentSchema.index({ adminId: 1, status: 1, createdAt: -1 });
 
-// Prevent same admin from creating tournaments with identical name at same time
-tournamentSchema.index({ createdByAdmin: 1, name: 1, createdAt: -1 });
+// Prevent same admin from creating tournaments with same name repeatedly
+tournamentSchema.index({ adminId: 1, name: 1 });
 
 /* =========================
    VIRTUALS
