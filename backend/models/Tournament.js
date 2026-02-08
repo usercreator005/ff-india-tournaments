@@ -39,15 +39,16 @@ const tournamentSchema = new mongoose.Schema(
     },
 
     /* =========================
-       SLOT CONTROL
+       SLOT CONTROL (TEAM BASED)
     ========================= */
     slots: {
       type: Number,
       required: true,
       min: 1,
-      max: 100 // Safety cap (can adjust later)
+      max: 100 // Max number of teams allowed
     },
 
+    // Now represents number of TEAMS joined
     filledSlots: {
       type: Number,
       default: 0,
@@ -96,16 +97,17 @@ const tournamentSchema = new mongoose.Schema(
     },
 
     /* =========================
-       JOIN SYSTEM
+       TEAM JOIN SYSTEM (PHASE 5 READY)
     ========================= */
-    players: {
-      type: [String], // user emails
+    teams: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: "Team",
       default: [],
       validate: {
         validator: function (arr) {
-          return arr.length === new Set(arr).size;
+          return arr.length === new Set(arr.map(String)).size;
         },
-        message: "Duplicate players not allowed"
+        message: "Duplicate teams not allowed"
       }
     },
 
@@ -139,7 +141,10 @@ const tournamentSchema = new mongoose.Schema(
    INDEXES
 ========================= */
 
+// Fast admin filtering
 tournamentSchema.index({ adminId: 1, status: 1, startTime: 1 });
+
+// Prevent duplicate tournaments at same time for same admin
 tournamentSchema.index({ adminId: 1, name: 1, startTime: 1 });
 
 /* =========================
