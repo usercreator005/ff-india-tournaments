@@ -18,16 +18,18 @@ const tournamentSchema = new mongoose.Schema(
       default: "Free Fire"
     },
 
+    // 🔒 Platform supports ONLY Squad
     mode: {
       type: String,
-      required: true,
-      trim: true // Solo / Duo / Squad
+      enum: ["Squad"],
+      default: "Squad",
+      immutable: true
     },
 
     map: {
       type: String,
       required: true,
-      trim: true // Bermuda / Purgatory / Kalahari etc
+      trim: true
     },
 
     startTime: {
@@ -42,7 +44,8 @@ const tournamentSchema = new mongoose.Schema(
     slots: {
       type: Number,
       required: true,
-      min: 1
+      min: 1,
+      max: 100 // Safety cap (can adjust later)
     },
 
     filledSlots: {
@@ -118,7 +121,6 @@ const tournamentSchema = new mongoose.Schema(
 
     /* =================================================
        🔐 PHASE 1 CORE SECURITY — ADMIN DATA BOUNDARY
-       Each tournament belongs ONLY to ONE admin
     ================================================= */
     adminId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -137,10 +139,7 @@ const tournamentSchema = new mongoose.Schema(
    INDEXES
 ========================= */
 
-// Admin dashboard fast filtering
 tournamentSchema.index({ adminId: 1, status: 1, startTime: 1 });
-
-// Prevent duplicate tournament names under same admin at same time
 tournamentSchema.index({ adminId: 1, name: 1, startTime: 1 });
 
 /* =========================
