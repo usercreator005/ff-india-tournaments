@@ -1,6 +1,6 @@
 // backend/middleware/authMiddleware.js
 // PHASE 1 – HARDENED AUTH MIDDLEWARE
-// Firebase Token Verify • Single Creator Lock • DB Admins • Safe User Sync
+// Firebase Token Verify • Single Creator Lock • DB Admins • Org Isolation
 
 const admin = require("../config/firebaseAdmin");
 const User = require("../models/User");
@@ -10,7 +10,7 @@ const Admin = require("../models/Admin");
  * ============================
  * 🔒 HARD LOCKED CREATOR
  * ============================
- * Only this email can EVER be creator
+ * Only this email can EVER be SUPER ADMIN
  */
 const CREATOR_EMAIL = "jarahul989@gmail.com".toLowerCase();
 
@@ -47,14 +47,15 @@ const authMiddleware = async (req, res, next) => {
        ROLE RESOLUTION (SOURCE OF TRUTH)
     ========================= */
     let role = "user";
+    let adminDoc = null;
 
-    // 🔒 CREATOR (EMAIL ONLY, DB CAN'T OVERRIDE)
+    // 👑 SUPER ADMIN (CREATOR)
     if (email === CREATOR_EMAIL) {
       role = "creator";
     } else {
-      // ADMIN (DB BASED)
-      const isAdmin = await Admin.findOne({ email }).lean();
-      if (isAdmin) role = "admin";
+      // 🧑‍💼 ADMIN (DB BASED)
+      adminDoc = await Admin.findOne({ email }).lean();
+      if (adminDoc) role = "admin";
     }
 
     /* =========================
@@ -70,8 +71,7 @@ const authMiddleware = async (req, res, next) => {
         role,
       });
     } else {
-      // 🚨 SECURITY GUARANTEE
-      // DB can NEVER assign creator to anyone else
+      // 🚨 CREATOR ROLE LOCK
       if (user.role === "creator" && email !== CREATOR_EMAIL) {
         return res.status(403).json({
           success: false,
@@ -79,7 +79,6 @@ const authMiddleware = async (req, res, next) => {
         });
       }
 
-      // Sync role if needed (except creator lock)
       if (user.role !== role) {
         user.role = role;
         await user.save();
@@ -97,6 +96,17 @@ const authMiddleware = async (req, res, next) => {
 
     req.role = role;
     req.userId = user._id;
+
+    // 🔐 Attach organization scope for ADMIN only
+    if (role === "admin" && adminDoc) {
+      req.organizationId = adminDoc.organizationId;
+      req.adminId = adminDoc._id;
+    }
+
+    // 👑 Super Admin bypass (full access)
+    if (role === "creator") {
+      req.isSuperAdmin = true;
+    }
 
     next();
   } catch (error) {
