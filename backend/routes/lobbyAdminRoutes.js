@@ -46,7 +46,7 @@ router.post(
       const { tournamentId, teamId, slotNumber } = req.body;
 
       /* =========================
-         VERIFY TOURNAMENT
+         VERIFY TOURNAMENT (ADMIN BOUNDARY SAFE)
       ========================= */
       const tournamentFilter = req.isSuperAdmin
         ? { _id: tournamentId }
@@ -66,7 +66,7 @@ router.post(
       }
 
       /* =========================
-         VERIFY TEAM
+         VERIFY TEAM (SAME ADMIN)
       ========================= */
       const teamFilter = req.isSuperAdmin
         ? { _id: teamId }
@@ -78,32 +78,65 @@ router.post(
       }
 
       /* =========================
+         PREVENT DUPLICATE TEAM ENTRY
+      ========================= */
+      const existingTeamEntry = await Lobby.findOne({
+        tournamentId,
+        teamId,
+      });
+
+      if (existingTeamEntry) {
+        return res.status(400).json({
+          success: false,
+          msg: "Team already assigned in this tournament",
+        });
+      }
+
+      /* =========================
          CREATE LOBBY ENTRY
       ========================= */
       const lobbyEntry = await Lobby.create({
         tournamentId,
         teamId,
         slotNumber,
-        adminId: req.adminId
+        adminId: tournament.adminId, // always follow tournament owner
       });
 
-      // Update filled slots count safely
-      tournament.filledSlots += 1;
-      await tournament.save();
+      /* =========================
+         SAFE SLOT COUNT INCREMENT
+      ========================= */
+      const updatedTournament = await Tournament.findOneAndUpdate(
+        {
+          _id: tournament._id,
+          filledSlots: { $lt: tournament.slots },
+        },
+        { $inc: { filledSlots: 1 } },
+        { new: true }
+      );
+
+      if (!updatedTournament) {
+        // rollback lobby entry if slots became full in race condition
+        await Lobby.deleteOne({ _id: lobbyEntry._id });
+
+        return res.status(400).json({
+          success: false,
+          msg: "Tournament slots are full",
+        });
+      }
 
       res.status(201).json({
         success: true,
         msg: "Team assigned to slot successfully",
-        lobby: lobbyEntry
+        lobby: lobbyEntry,
       });
     } catch (err) {
       console.error("Assign team error:", err);
 
-      // Handle duplicate slot or duplicate team join
+      // Duplicate slot OR duplicate team (index safety)
       if (err.code === 11000) {
         return res.status(400).json({
           success: false,
-          msg: "Slot already taken or team already joined"
+          msg: "Slot already taken or team already joined",
         });
       }
 
