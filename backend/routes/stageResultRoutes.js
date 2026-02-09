@@ -12,7 +12,7 @@ const adminAuth = require("../middleware/adminAuth");
 /* =======================================================
    🎯 PHASE 9 — STAGE RESULT MANAGEMENT (ADMIN)
    Base Path: /api/v1/stage-results
-   🔐 Admin boundary enforced
+   🔐 Admin data boundary enforced via adminAuth
 ======================================================= */
 
 /* 📊 Generate Stage Leaderboard from multiple matches
@@ -20,8 +20,14 @@ const adminAuth = require("../middleware/adminAuth");
 */
 router.post("/generate", adminAuth, generateStageResults);
 
-/* 🏆 Get Stage Leaderboard */
-router.get("/:tournamentId/:stageNumber", adminAuth, getStageLeaderboard);
+/* 🏆 Get Stage Leaderboard for a Stage
+   Params: tournamentId, stageNumber
+*/
+router.get(
+  "/:tournamentId/stage/:stageNumber",
+  adminAuth,
+  getStageLeaderboard
+);
 
 /* 🎯 Mark Qualified Teams
    Body: { tournamentId, stageNumber, qualifyCount }
