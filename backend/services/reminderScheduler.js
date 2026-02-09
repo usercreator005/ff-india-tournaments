@@ -1,98 +1,88 @@
 const Reminder = require("../models/Reminder");
 const Tournament = require("../models/Tournament");
-const MatchRoom = require("../models/MatchRoom");
+const Lobby = require("../models/Lobby");
+const Team = require("../models/Team");
 
 /* =======================================================
-   ⏰ REMINDER PROCESSOR (RUNS EVERY MINUTE)
-   Phase 7: Automated tournament reminders
-   Phase 11: Will plug into Notification system
+   🔔 MANUAL REMINDER SERVICE (PHASE 7 UPDATED)
+   Triggered by Admin/Staff button click
+   No automatic time-based scheduler anymore
 ======================================================= */
 
-const BATCH_SIZE = 50;
-
-const processReminders = async () => {
+/* =======================================================
+   SEND MANUAL REMINDER TO ALL PARTICIPATING TEAMS
+   type = "match_starting" | "room_live"
+======================================================= */
+const sendManualReminder = async ({ tournamentId, adminId, type }) => {
   try {
-    const now = new Date();
-
-    // Fetch due reminders safely (oldest first)
-    const reminders = await Reminder.find({
-      status: "pending",
-      scheduledFor: { $lte: now },
-    })
-      .sort({ scheduledFor: 1 })
-      .limit(BATCH_SIZE);
-
-    if (!reminders.length) return;
-
-    for (const reminder of reminders) {
-      try {
-        /* =========================
-           LOAD RELATED DATA
-        ========================= */
-        const tournament = await Tournament.findById(reminder.tournamentId).lean();
-        const matchRoom = reminder.matchRoomId
-          ? await MatchRoom.findById(reminder.matchRoomId).lean()
-          : null;
-
-        if (!tournament) {
-          reminder.status = "failed";
-          reminder.error = "Tournament not found";
-          await reminder.save();
-          continue;
-        }
-
-        /* =========================
-           REMINDER TYPES
-        ========================= */
-        switch (reminder.type) {
-          case "match_starting":
-            console.log(
-              `🔔 [MATCH STARTING] Tournament "${tournament.name}" begins at ${tournament.startTime}`
-            );
-            break;
-
-          case "room_published":
-            if (matchRoom) {
-              console.log(
-                `🏠 [ROOM LIVE] Tournament "${tournament.name}" | Room ID: ${matchRoom.roomId}`
-              );
-            } else {
-              console.log(
-                `🏠 [ROOM LIVE] Tournament "${tournament.name}" | Room info missing`
-              );
-            }
-            break;
-
-          default:
-            console.log("⚠ Unknown reminder type:", reminder.type);
-        }
-
-        /* =========================
-           FUTURE HOOK (Phase 11)
-           sendNotification(reminder)
-        ========================= */
-
-        reminder.status = "sent";
-        reminder.sentAt = new Date();
-        await reminder.save();
-      } catch (err) {
-        console.error("❌ Reminder processing failed:", err);
-        reminder.status = "failed";
-        reminder.error = err.message;
-        await reminder.save();
-      }
+    if (!["match_starting", "room_live"].includes(type)) {
+      throw new Error("Invalid reminder type");
     }
+
+    /* =========================
+       VERIFY TOURNAMENT OWNERSHIP
+    ========================= */
+    const tournament = await Tournament.findOne({
+      _id: tournamentId,
+      adminId,
+    }).lean();
+
+    if (!tournament) {
+      throw new Error("Tournament not found or access denied");
+    }
+
+    /* =========================
+       FETCH PARTICIPATING TEAMS
+    ========================= */
+    const lobbyEntries = await Lobby.find({ tournamentId })
+      .populate("teamId", "name members")
+      .lean();
+
+    if (!lobbyEntries.length) {
+      throw new Error("No teams joined this tournament yet");
+    }
+
+    /* =========================
+       COLLECT UNIQUE PLAYER CONTACTS
+       (Future notification system hook)
+    ========================= */
+    const recipients = new Set();
+
+    lobbyEntries.forEach(entry => {
+      if (entry.teamId?.members?.length) {
+        entry.teamId.members.forEach(email => recipients.add(email));
+      }
+    });
+
+    /* =========================
+       STORE REMINDER LOG (AUDIT TRAIL)
+    ========================= */
+    await Reminder.create({
+      tournamentId,
+      adminId,
+      type,
+      scheduledFor: new Date(), // manual trigger time
+      status: "sent",
+    });
+
+    /* =========================
+       FUTURE PHASE 11 INTEGRATION POINT
+       sendNotification([...recipients], message)
+    ========================= */
+    console.log("🔔 Manual Reminder Triggered:", {
+      tournament: tournament.name,
+      type,
+      recipients: recipients.size,
+    });
+
+    return {
+      success: true,
+      recipients: recipients.size,
+    };
   } catch (err) {
-    console.error("🚨 Reminder scheduler fatal error:", err);
+    console.error("❌ Manual reminder failed:", err.message);
+    return { success: false, error: err.message };
   }
 };
 
-/* =======================================================
-   START SCHEDULER LOOP
-======================================================= */
-const startReminderScheduler = () => {
-  console.log("⏰ Reminder Scheduler Started...");
-  setInterval(processReminders, 60 * 1000);
-};
-
-module.exports = { startReminderScheduler };
+module.exports = { sendManualReminder };
