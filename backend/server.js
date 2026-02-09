@@ -81,7 +81,7 @@ app.use("/api/v1/creator", require("./routes/creatorRoutes"));
 app.use("/api/v1/payments", require("./routes/paymentRoutes"));
 app.use("/api/v1/hot-slots", require("./routes/hotSlotRoutes"));
 app.use("/api/v1/notifications", require("./routes/notificationRoutes"));
-
+app.use("/api/v1/results", require("./routes/resultRoutes"));
 /* 🆕 PHASE 3 — MATCH ROOM SYSTEM */
 app.use("/api/v1/rooms", require("./routes/matchRoomRoutes"));
 
