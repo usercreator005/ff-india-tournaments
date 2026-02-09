@@ -8,14 +8,18 @@ const Staff = require("../models/Staff");
 ======================================================= */
 exports.staffLogin = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ message: "Email and password required" });
     }
 
+    // Normalize email
+    email = email.toLowerCase().trim();
+
     const staff = await Staff.findOne({ email }).select("+password");
 
+    // Generic response to avoid email probing
     if (!staff || !staff.isActive) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
@@ -30,7 +34,6 @@ exports.staffLogin = async (req, res) => {
         id: staff._id,
         role: "staff",
         adminId: staff.adminId,
-        permissions: staff.permissions,
       },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
