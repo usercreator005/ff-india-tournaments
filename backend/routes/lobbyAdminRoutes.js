@@ -6,7 +6,7 @@ const Tournament = require("../models/Tournament");
 const Team = require("../models/Team");
 const auth = require("../middleware/authMiddleware");
 const apiLimiter = require("../middleware/rateLimiter");
-const { body, validationResult } = require("express-validator");
+const { body, param, validationResult } = require("express-validator");
 
 /* =========================
    HELPERS
@@ -30,7 +30,6 @@ const validate = (req, res) => {
 
 /* =======================================================
    ASSIGN TEAM TO TOURNAMENT SLOT (PHASE 5 SAFE)
-   POST /api/lobby/assign
 ======================================================= */
 router.post(
   "/assign",
@@ -47,21 +46,16 @@ router.post(
     try {
       if (validate(req, res)) {
         await session.abortTransaction();
-        session.endSession();
-        return;
+        return session.endSession();
       }
 
       const { tournamentId, teamId, slotNumber } = req.body;
 
-      /* =========================
-         VERIFY TOURNAMENT
-      ========================= */
       const tournamentFilter = req.isSuperAdmin
         ? { _id: tournamentId }
         : { _id: tournamentId, adminId: req.adminId };
 
       const tournament = await Tournament.findOne(tournamentFilter).session(session);
-
       if (!tournament) {
         await session.abortTransaction();
         session.endSession();
@@ -86,9 +80,6 @@ router.post(
         return res.status(400).json({ success: false, msg: "Tournament slots already full" });
       }
 
-      /* =========================
-         VERIFY TEAM
-      ========================= */
       const teamFilter = req.isSuperAdmin
         ? { _id: teamId }
         : { _id: teamId, adminId: req.adminId };
@@ -100,24 +91,11 @@ router.post(
         return res.status(404).json({ success: false, msg: "Team not found" });
       }
 
-      /* =========================
-         CREATE LOBBY ENTRY
-      ========================= */
       const lobbyEntry = await Lobby.create(
-        [
-          {
-            tournamentId,
-            teamId,
-            slotNumber,
-            adminId: tournament.adminId, // ensure correct boundary
-          },
-        ],
+        [{ tournamentId, teamId, slotNumber, adminId: tournament.adminId }],
         { session }
       );
 
-      /* =========================
-         SAFE SLOT INCREMENT
-      ========================= */
       tournament.filledSlots += 1;
       await tournament.save({ session });
 
@@ -133,8 +111,6 @@ router.post(
       await session.abortTransaction();
       session.endSession();
 
-      console.error("Assign team error:", err);
-
       if (err.code === 11000) {
         return res.status(400).json({
           success: false,
@@ -142,6 +118,82 @@ router.post(
         });
       }
 
+      console.error("Assign team error:", err);
+      res.status(500).json({ success: false, msg: "Server error" });
+    }
+  }
+);
+
+/* =======================================================
+   VIEW LOBBY FOR A TOURNAMENT (ADMIN)
+======================================================= */
+router.get(
+  "/tournament/:tournamentId",
+  apiLimiter,
+  auth,
+  adminOnly,
+  param("tournamentId").isMongoId(),
+  async (req, res) => {
+    try {
+      if (validate(req, res)) return;
+
+      const filter = req.isSuperAdmin
+        ? { tournamentId: req.params.tournamentId }
+        : { tournamentId: req.params.tournamentId, adminId: req.adminId };
+
+      const lobby = await Lobby.find(filter)
+        .populate("teamId", "name players")
+        .sort({ slotNumber: 1 });
+
+      res.json({ success: true, count: lobby.length, lobby });
+    } catch (err) {
+      console.error("Fetch lobby error:", err);
+      res.status(500).json({ success: false, msg: "Server error" });
+    }
+  }
+);
+
+/* =======================================================
+   REMOVE TEAM FROM LOBBY SLOT (ADMIN FIX TOOL)
+======================================================= */
+router.delete(
+  "/remove/:lobbyId",
+  apiLimiter,
+  auth,
+  adminOnly,
+  param("lobbyId").isMongoId(),
+  async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      const filter = req.isSuperAdmin
+        ? { _id: req.params.lobbyId }
+        : { _id: req.params.lobbyId, adminId: req.adminId };
+
+      const lobbyEntry = await Lobby.findOne(filter).session(session);
+      if (!lobbyEntry) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(404).json({ success: false, msg: "Lobby entry not found" });
+      }
+
+      const tournament = await Tournament.findById(lobbyEntry.tournamentId).session(session);
+      if (tournament && tournament.filledSlots > 0) {
+        tournament.filledSlots -= 1;
+        await tournament.save({ session });
+      }
+
+      await lobbyEntry.deleteOne({ session });
+
+      await session.commitTransaction();
+      session.endSession();
+
+      res.json({ success: true, msg: "Team removed from slot" });
+    } catch (err) {
+      await session.abortTransaction();
+      session.endSession();
+      console.error("Remove team error:", err);
       res.status(500).json({ success: false, msg: "Server error" });
     }
   }
