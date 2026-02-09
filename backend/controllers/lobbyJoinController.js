@@ -61,11 +61,7 @@ exports.joinTournamentLobby = async (req, res) => {
     /* =========================
        PREVENT DOUBLE JOIN
     ========================= */
-    const existingEntry = await Lobby.findOne({
-      tournamentId,
-      teamId,
-    }).session(session);
-
+    const existingEntry = await Lobby.findOne({ tournamentId, teamId }).session(session);
     if (existingEntry) {
       await session.abortTransaction();
       session.endSession();
@@ -76,28 +72,44 @@ exports.joinTournamentLobby = async (req, res) => {
     }
 
     /* =========================
-       SAFE SLOT ASSIGNMENT
-       (prevents race conditions)
+       ATOMIC SLOT RESERVATION
+       Prevents race condition when many teams join at same time
     ========================= */
-    const nextSlotNumber = tournament.filledSlots + 1;
+    const updatedTournament = await Tournament.findOneAndUpdate(
+      {
+        _id: tournamentId,
+        status: "upcoming",
+        filledSlots: { $lt: tournament.slots },
+      },
+      {
+        $inc: { filledSlots: 1 },
+        $addToSet: { teams: teamId }, // supportive cache sync
+      },
+      { new: true, session }
+    );
 
+    if (!updatedTournament) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({ success: false, msg: "Tournament full or unavailable" });
+    }
+
+    const slotNumber = updatedTournament.filledSlots;
+
+    /* =========================
+       CREATE LOBBY ENTRY
+    ========================= */
     const lobbyEntry = await Lobby.create(
       [
         {
           tournamentId,
           teamId,
-          slotNumber: nextSlotNumber,
-          adminId: tournament.adminId, // 🔐 Phase 1 data boundary
+          slotNumber,
+          adminId: updatedTournament.adminId, // 🔐 Admin boundary
         },
       ],
       { session }
     );
-
-    /* =========================
-       UPDATE TOURNAMENT COUNT
-    ========================= */
-    tournament.filledSlots = nextSlotNumber;
-    await tournament.save({ session });
 
     await session.commitTransaction();
     session.endSession();
@@ -105,9 +117,9 @@ exports.joinTournamentLobby = async (req, res) => {
     res.status(201).json({
       success: true,
       msg: "Team joined successfully",
-      slotNumber: nextSlotNumber,
+      slotNumber,
       lobbyEntry: lobbyEntry[0],
-      slotsLeft: tournament.slots - tournament.filledSlots,
+      slotsLeft: updatedTournament.slots - updatedTournament.filledSlots,
     });
   } catch (err) {
     await session.abortTransaction();
