@@ -1,15 +1,23 @@
 const Result = require("../models/Result");
 const MatchRoom = require("../models/MatchRoom");
-const Tournament = require("../models/Tournament");
 
 /* =======================================================
-   📌 UPLOAD / UPDATE TEAM RESULT
-   Admin enters kills, position, points
+   📌 UPSERT TEAM RESULT
+   Admin enters position & kills
+   Points auto-calculated (placement + kills)
 ======================================================= */
 exports.upsertTeamResult = async (req, res) => {
   try {
-    const adminId = req.admin._id; // from auth middleware
-    const { matchRoomId, teamId, position, kills, points } = req.body;
+    const adminId = req.admin._id;
+    const {
+      matchRoomId,
+      teamId,
+      position,
+      kills = 0,
+      placementPoints = 0,
+      killPoints = 0,
+      notes = ""
+    } = req.body;
 
     if (!matchRoomId || !teamId || position == null) {
       return res.status(400).json({ message: "Missing required fields" });
@@ -20,11 +28,14 @@ exports.upsertTeamResult = async (req, res) => {
       return res.status(404).json({ message: "Match room not found" });
     }
 
-    // Check if result already locked
     const existing = await Result.findOne({ matchRoomId, teamId, adminId });
+
     if (existing && existing.isLocked) {
       return res.status(400).json({ message: "Result already locked" });
     }
+
+    // Auto-calc total points
+    const totalPoints = Number(placementPoints) + Number(killPoints);
 
     const result = await Result.findOneAndUpdate(
       { matchRoomId, teamId, adminId },
@@ -33,9 +44,12 @@ exports.upsertTeamResult = async (req, res) => {
         matchRoomId,
         teamId,
         position,
-        kills: kills || 0,
-        points: points || 0,
-        adminId,
+        kills,
+        placementPoints,
+        killPoints,
+        points: totalPoints,
+        notes,
+        adminId
       },
       { new: true, upsert: true, setDefaultsOnInsert: true }
     );
@@ -49,7 +63,7 @@ exports.upsertTeamResult = async (req, res) => {
 
 /* =======================================================
    🔒 LOCK RESULTS FOR A MATCH
-   Prevents further edits
+   Prevents further edits + adds audit info
 ======================================================= */
 exports.lockMatchResults = async (req, res) => {
   try {
@@ -57,13 +71,20 @@ exports.lockMatchResults = async (req, res) => {
     const { matchRoomId } = req.params;
 
     const results = await Result.find({ matchRoomId, adminId });
+
     if (!results.length) {
       return res.status(404).json({ message: "No results found to lock" });
     }
 
     await Result.updateMany(
       { matchRoomId, adminId },
-      { $set: { isLocked: true } }
+      {
+        $set: {
+          isLocked: true,
+          lockedAt: new Date(),
+          verifiedBy: adminId
+        }
+      }
     );
 
     res.json({ success: true, message: "Results locked successfully" });
@@ -75,7 +96,7 @@ exports.lockMatchResults = async (req, res) => {
 
 /* =======================================================
    📊 GET MATCH LEADERBOARD
-   Sorted by points desc, then kills desc
+   Sorted by total points, then kills
 ======================================================= */
 exports.getMatchLeaderboard = async (req, res) => {
   try {
@@ -94,7 +115,7 @@ exports.getMatchLeaderboard = async (req, res) => {
 };
 
 /* =======================================================
-   🗑 DELETE RESULT (before locking only)
+   🗑 DELETE RESULT (Only before locking)
 ======================================================= */
 exports.deleteTeamResult = async (req, res) => {
   try {
@@ -102,7 +123,10 @@ exports.deleteTeamResult = async (req, res) => {
     const { resultId } = req.params;
 
     const result = await Result.findOne({ _id: resultId, adminId });
-    if (!result) return res.status(404).json({ message: "Result not found" });
+
+    if (!result) {
+      return res.status(404).json({ message: "Result not found" });
+    }
 
     if (result.isLocked) {
       return res.status(400).json({ message: "Locked results cannot be deleted" });
