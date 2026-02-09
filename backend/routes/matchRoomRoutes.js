@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const MatchRoom = require("../models/MatchRoom");
 const Tournament = require("../models/Tournament");
+const Lobby = require("../models/Lobby");
+const Team = require("../models/Team");
 const auth = require("../middleware/authMiddleware");
 const apiLimiter = require("../middleware/rateLimiter");
 const { body, param, validationResult } = require("express-validator");
@@ -10,7 +12,7 @@ const { body, param, validationResult } = require("express-validator");
    HELPERS
 ========================= */
 const adminOnly = (req, res, next) => {
-  if (req.role !== "admin" && !req.isSuperAdmin) {
+  if (req.role !== "admin" && !req.isSuperAdmin") {
     return res.status(403).json({ success: false, msg: "Admin only" });
   }
   next();
@@ -43,7 +45,6 @@ router.post(
 
       const { tournamentId, roomId, roomPassword, round = 1 } = req.body;
 
-      // Ensure tournament belongs to this admin
       const filter = req.isSuperAdmin
         ? { _id: tournamentId }
         : { _id: tournamentId, adminId: req.adminId };
@@ -58,7 +59,7 @@ router.post(
         roomId,
         roomPassword,
         round,
-        adminId: req.adminId,
+        adminId: tournament.adminId,
       });
 
       res.status(201).json({ success: true, msg: "Room created", room });
@@ -102,6 +103,7 @@ router.patch(
       }
 
       room.isPublished = true;
+      room.publishedAt = new Date();
       await room.save();
 
       res.json({ success: true, msg: "Room published", publishedAt: room.publishedAt });
@@ -113,7 +115,7 @@ router.patch(
 );
 
 /* =========================
-   UNPUBLISH / DISABLE ROOM (ADMIN SAFE CONTROL)
+   DISABLE ROOM (ADMIN)
 ========================= */
 router.patch(
   "/disable/:id",
@@ -168,13 +170,14 @@ router.get(
 
       res.json({ success: true, rooms });
     } catch (err) {
+      console.error("Admin room fetch error:", err);
       res.status(500).json({ success: false, msg: "Server error" });
     }
   }
 );
 
 /* =========================
-   PLAYER VIEW ROOM (ONLY AFTER PUBLISH)
+   PLAYER VIEW ROOM (TEAM BASED ACCESS)
 ========================= */
 router.get(
   "/tournament/:tournamentId",
@@ -189,13 +192,15 @@ router.get(
 
       if (validate(req, res)) return;
 
-      // Ensure user actually joined this tournament
-      const tournament = await Tournament.findOne({
-        _id: req.params.tournamentId,
-        players: req.user.email,
-      });
+      // 🔐 Check user is part of a team that joined this tournament
+      const lobbyEntries = await Lobby.find({ tournamentId: req.params.tournamentId })
+        .populate("teamId", "members");
 
-      if (!tournament) {
+      const isParticipant = lobbyEntries.some(entry =>
+        entry.teamId?.members?.includes(req.user.email)
+      );
+
+      if (!isParticipant) {
         return res.status(403).json({
           success: false,
           msg: "You are not a participant of this tournament",
