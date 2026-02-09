@@ -29,9 +29,11 @@ const resultSchema = new mongoose.Schema(
     /* =========================
        MATCH PERFORMANCE DATA
     ========================= */
+
     position: {
       type: Number,
       required: true, // 1st, 2nd, 3rd...
+      min: 1,
     },
 
     kills: {
@@ -40,19 +42,52 @@ const resultSchema = new mongoose.Schema(
       min: 0,
     },
 
-    points: {
+    // Points earned only from placement
+    placementPoints: {
       type: Number,
       default: 0,
       min: 0,
     },
 
+    // Points earned only from kills
+    killPoints: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    // Final calculated total (placement + kills)
+    points: {
+      type: Number,
+      default: 0,
+      min: 0,
+      index: true,
+    },
+
     /* =========================
-       STATUS CONTROL
+       VERIFICATION & LOCKING
     ========================= */
+
     isLocked: {
       type: Boolean,
       default: false, // Once locked, result can't be edited
       index: true,
+    },
+
+    lockedAt: {
+      type: Date,
+      default: null,
+    },
+
+    verifiedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Admin",
+      default: null, // Admin/staff who locked the result
+    },
+
+    notes: {
+      type: String,
+      maxlength: 500,
     },
 
     /* =========================
@@ -73,7 +108,7 @@ const resultSchema = new mongoose.Schema(
    INDEXES (PERFORMANCE)
 ========================= */
 
-// One result per team per match
+// One result per team per match (prevents duplicates)
 resultSchema.index({ matchRoomId: 1, teamId: 1 }, { unique: true });
 
 // Admin filtering
@@ -81,5 +116,8 @@ resultSchema.index({ adminId: 1, tournamentId: 1 });
 
 // Leaderboard sorting
 resultSchema.index({ matchRoomId: 1, points: -1 });
+
+// Fast tournament leaderboard aggregation
+resultSchema.index({ tournamentId: 1, teamId: 1 });
 
 module.exports = mongoose.model("Result", resultSchema);
