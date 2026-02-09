@@ -13,6 +13,23 @@ const matchRoomSchema = new mongoose.Schema(
     },
 
     /* =========================
+       🏆 STAGE SYSTEM (NEW)
+       Enables multi-match per stage tournaments
+    ========================= */
+    stageNumber: {
+      type: Number,
+      required: true, // Stage 1, Stage 2, Stage 3...
+      min: 1,
+      index: true,
+    },
+
+    matchNumber: {
+      type: Number,
+      required: true, // Match 1 of Stage, Match 2 of Stage...
+      min: 1,
+    },
+
+    /* =========================
        ROOM DETAILS
     ========================= */
     roomId: {
@@ -29,7 +46,8 @@ const matchRoomSchema = new mongoose.Schema(
     },
 
     /* =========================
-       ROUND SUPPORT
+       LEGACY ROUND SUPPORT
+       (kept for backward compatibility)
     ========================= */
     round: {
       type: Number,
@@ -53,7 +71,6 @@ const matchRoomSchema = new mongoose.Schema(
 
     /* =========================
        ACTIVE FLAG
-       Admin can disable a room without deleting
     ========================= */
     isActive: {
       type: Boolean,
@@ -63,7 +80,6 @@ const matchRoomSchema = new mongoose.Schema(
 
     /* =========================
        🔐 ADMIN DATA BOUNDARY
-       Must ALWAYS match tournament.adminId
     ========================= */
     adminId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -82,11 +98,14 @@ const matchRoomSchema = new mongoose.Schema(
    INDEXES
 ========================= */
 
-// One room per round per tournament (core rule)
+// One match per stage slot inside a tournament
 matchRoomSchema.index(
-  { tournamentId: 1, round: 1 },
+  { tournamentId: 1, stageNumber: 1, matchNumber: 1 },
   { unique: true }
 );
+
+// Fast stage leaderboard lookups
+matchRoomSchema.index({ tournamentId: 1, stageNumber: 1 });
 
 // Fast lookup for visible player room
 matchRoomSchema.index({ tournamentId: 1, isPublished: 1, isActive: 1 });
