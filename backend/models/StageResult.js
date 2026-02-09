@@ -31,6 +31,7 @@ const stageResultSchema = new mongoose.Schema(
 
     /* =========================
        AGGREGATED PERFORMANCE
+       (Across multiple matches in this stage)
     ========================= */
     matchesPlayed: {
       type: Number,
@@ -44,6 +45,18 @@ const stageResultSchema = new mongoose.Schema(
       min: 0,
     },
 
+    totalPlacementPoints: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    totalKillPoints: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
     totalPoints: {
       type: Number,
       default: 0,
@@ -51,9 +64,17 @@ const stageResultSchema = new mongoose.Schema(
       index: true,
     },
 
+    /* =========================
+       LEADERBOARD META
+    ========================= */
     rank: {
       type: Number, // Calculated after sorting
       index: true,
+    },
+
+    lastMatchRoomId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "MatchRoom",
     },
 
     /* =========================
@@ -90,7 +111,7 @@ stageResultSchema.index(
 );
 
 // Fast leaderboard sorting
-stageResultSchema.index({ tournamentId: 1, stageNumber: 1, totalPoints: -1 });
+stageResultSchema.index({ tournamentId: 1, stageNumber: 1, totalPoints: -1, totalKills: -1 });
 
 // Admin filtering
 stageResultSchema.index({ adminId: 1, tournamentId: 1, stageNumber: 1 });
