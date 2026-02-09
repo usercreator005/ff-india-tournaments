@@ -8,11 +8,14 @@ const auth = require("../middleware/authMiddleware");
 const apiLimiter = require("../middleware/rateLimiter");
 const { body, param, validationResult } = require("express-validator");
 
+/* 🔔 PHASE 7 REMINDER SERVICE */
+const { sendRoomPublishedNotification } = require("../services/reminderService");
+
 /* =========================
    HELPERS
 ========================= */
 const adminOnly = (req, res, next) => {
-  if (req.role !== "admin" && !req.isSuperAdmin") {
+  if (req.role !== "admin" && !req.isSuperAdmin) {
     return res.status(403).json({ success: false, msg: "Admin only" });
   }
   next();
@@ -106,6 +109,9 @@ router.patch(
       room.publishedAt = new Date();
       await room.save();
 
+      /* 🔔 PHASE 7 — Notify all joined teams that room is live */
+      await sendRoomPublishedNotification(room);
+
       res.json({ success: true, msg: "Room published", publishedAt: room.publishedAt });
     } catch (err) {
       console.error("Publish room error:", err);
@@ -192,7 +198,6 @@ router.get(
 
       if (validate(req, res)) return;
 
-      // 🔐 Check user is part of a team that joined this tournament
       const lobbyEntries = await Lobby.find({ tournamentId: req.params.tournamentId })
         .populate("teamId", "members");
 
