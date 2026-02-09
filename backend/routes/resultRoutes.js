@@ -5,31 +5,39 @@ const {
   upsertTeamResult,
   lockMatchResults,
   getMatchLeaderboard,
+  getStageLeaderboard, // 🆕 Stage totals
   deleteTeamResult,
 } = require("../controllers/resultController");
 
 const adminAuth = require("../middleware/adminAuth");
 
 /* =======================================================
-   🎯 PHASE 8 — MATCH RESULT MANAGEMENT (ADMIN)
+   🎯 PHASE 8 — RESULT MANAGEMENT SYSTEM
    Base Path: /api/v1/results
    🔐 Admin data boundary enforced via adminAuth
 ======================================================= */
 
-/* 📌 Upload or Update a Team Result
-   Body: { matchRoomId, teamId, position, kills, placementPoints, killPoints, notes }
+/* 📌 Upload or Update a Team Result (Per Match)
+   Body: { matchRoomId, teamId, position, kills, notes }
 */
 router.post("/team", adminAuth, upsertTeamResult);
 
-/* 🔒 Lock All Results for a Match (finalize leaderboard)
-   Prevents any further edits
-*/
+/* 🔒 Lock All Results for a Match (Finalize Match Leaderboard) */
 router.patch("/lock/:matchRoomId", adminAuth, lockMatchResults);
 
-/* 📊 Get Match Leaderboard (sorted by points > kills) */
-router.get("/leaderboard/:matchRoomId", adminAuth, getMatchLeaderboard);
+/* 📊 Get Match Leaderboard (Single Match) */
+router.get("/leaderboard/match/:matchRoomId", adminAuth, getMatchLeaderboard);
 
-/* 🗑 Delete a Team Result (only before locking) */
+/* 🏆 Get Stage Leaderboard (Total of All Matches in Stage)
+   Params: tournamentId, stageNumber
+*/
+router.get(
+  "/leaderboard/stage/:tournamentId/:stageNumber",
+  adminAuth,
+  getStageLeaderboard
+);
+
+/* 🗑 Delete a Team Result (Only Before Lock) */
 router.delete("/team/:resultId", adminAuth, deleteTeamResult);
 
 module.exports = router;
