@@ -13,22 +13,25 @@ const { verifyStaff } = require("../middleware/staffAuth");
 ======================================================= */
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password required" });
+    }
+
+    // Normalize email
+    email = email.toLowerCase().trim();
 
     const staff = await Staff.findOne({ email }).select("+password");
 
-    if (!staff) {
-      return res.status(400).json({ message: "Invalid credentials" });
-    }
-
-    if (!staff.isActive) {
-      return res.status(403).json({ message: "Staff account disabled" });
+    // Generic message to prevent account probing
+    if (!staff || !staff.isActive) {
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     const isMatch = await bcrypt.compare(password, staff.password);
-
     if (!isMatch) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     const token = jwt.sign(
@@ -49,7 +52,7 @@ router.post("/login", async (req, res) => {
         name: staff.name,
         email: staff.email,
         role: staff.role,
-        permissions: staff.permissions || [],
+        permissions: staff.permissions,
       },
     });
   } catch (err) {
@@ -64,6 +67,10 @@ router.post("/login", async (req, res) => {
 router.get("/me", verifyStaff, async (req, res) => {
   try {
     const staff = await Staff.findById(req.staff._id).select("-password");
+
+    if (!staff) {
+      return res.status(404).json({ message: "Staff not found" });
+    }
 
     res.json({ success: true, staff });
   } catch (err) {
