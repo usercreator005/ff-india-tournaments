@@ -6,6 +6,12 @@ const auth = require("../middleware/authMiddleware");
 const apiLimiter = require("../middleware/rateLimiter");
 const { body, param, validationResult } = require("express-validator");
 
+/* 🔔 PHASE 7 REMINDER SERVICE */
+const {
+  scheduleMatchStartReminder,
+  rescheduleMatchStartReminder,
+} = require("../services/reminderService");
+
 /* =========================
    HELPERS
 ========================= */
@@ -108,8 +114,11 @@ router.post(
         upiId: entryType === "paid" ? upiId : null,
         qrImage: entryType === "paid" ? qrImage || null : null,
         status: "upcoming",
-        adminId: req.adminId, // 🔐 PHASE 1 ISOLATION
+        adminId: req.adminId,
       });
+
+      /* 🔔 PHASE 7 — Schedule Match Start Reminder */
+      await scheduleMatchStartReminder(tournament);
 
       res.status(201).json({ success: true, msg: "Tournament created", tournament });
     } catch (err) {
@@ -141,25 +150,7 @@ router.patch(
         return res.status(404).json({ success: false, msg: "Tournament not found" });
       }
 
-      // Fields that become locked once users join
-      const lockedAfterJoin = [
-        "entryFee",
-        "prizePool",
-        "slots",
-        "entryType",
-        "startTime",
-      ];
-
-      if (tournament.players.length > 0) {
-        for (const field of lockedAfterJoin) {
-          if (req.body[field] !== undefined && req.body[field] !== tournament[field]) {
-            return res.status(403).json({
-              success: false,
-              msg: `Cannot change ${field} after players have joined`,
-            });
-          }
-        }
-      }
+      const oldStartTime = tournament.startTime;
 
       // Never allow changing core system fields
       delete req.body.adminId;
@@ -169,6 +160,11 @@ router.patch(
 
       Object.assign(tournament, req.body);
       await tournament.save();
+
+      /* 🔔 PHASE 7 — If start time changed, reschedule reminder */
+      if (req.body.startTime && new Date(req.body.startTime).getTime() !== new Date(oldStartTime).getTime()) {
+        await rescheduleMatchStartReminder(tournament);
+      }
 
       res.json({ success: true, msg: "Tournament updated", tournament });
     } catch (err) {
@@ -253,6 +249,7 @@ router.post(
     }
   }
 );
+
 
 /* =========================
    UPDATE STATUS (ADMIN)
