@@ -8,30 +8,43 @@ const {
 } = require("../controllers/stageResultController");
 
 const adminAuth = require("../middleware/adminAuth");
+const { verifyStaff } = require("../middleware/staffAuth");
 
 /* =======================================================
-   🎯 PHASE 9 — STAGE RESULT MANAGEMENT (ADMIN)
+   🔐 ADMIN OR STAFF (RESULT MANAGER) ACCESS
+======================================================= */
+const adminOrResultStaff = async (req, res, next) => {
+  adminAuth(req, res, async (adminErr) => {
+    if (!adminErr && req.admin) {
+      return next(); // Admin allowed
+    }
+
+    verifyStaff(req, res, () => {
+      if (req.staff?.permissions?.canManageResults) {
+        return next(); // Staff with result permission allowed
+      }
+      return res.status(403).json({ message: "Access denied" });
+    });
+  });
+};
+
+/* =======================================================
+   🎯 PHASE 9 — STAGE RESULT MANAGEMENT
    Base Path: /api/v1/stage-results
-   🔐 Admin data boundary enforced via adminAuth
+   Admin + Result Staff access
 ======================================================= */
 
-/* 📊 Generate Stage Leaderboard from multiple matches
-   Body: { tournamentId, stageNumber, matchRoomIds[] }
-*/
-router.post("/generate", adminAuth, generateStageResults);
+/* 📊 Generate Stage Leaderboard from multiple matches */
+router.post("/generate", adminOrResultStaff, generateStageResults);
 
-/* 🏆 Get Stage Leaderboard for a Stage
-   Params: tournamentId, stageNumber
-*/
+/* 🏆 Get Stage Leaderboard for a Stage */
 router.get(
   "/:tournamentId/stage/:stageNumber",
-  adminAuth,
+  adminOrResultStaff,
   getStageLeaderboard
 );
 
-/* 🎯 Mark Qualified Teams
-   Body: { tournamentId, stageNumber, qualifyCount }
-*/
-router.patch("/qualify", adminAuth, markStageQualified);
+/* 🎯 Mark Qualified Teams */
+router.patch("/qualify", adminOrResultStaff, markStageQualified);
 
 module.exports = router;
