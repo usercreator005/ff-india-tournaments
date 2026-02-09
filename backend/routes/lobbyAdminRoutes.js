@@ -125,7 +125,7 @@ router.post(
 );
 
 /* =======================================================
-   VIEW LOBBY FOR A TOURNAMENT (ADMIN)
+   VIEW LOBBY FOR A TOURNAMENT (ADMIN DASHBOARD)
 ======================================================= */
 router.get(
   "/tournament/:tournamentId",
@@ -137,15 +137,35 @@ router.get(
     try {
       if (validate(req, res)) return;
 
+      const tournamentFilter = req.isSuperAdmin
+        ? { _id: req.params.tournamentId }
+        : { _id: req.params.tournamentId, adminId: req.adminId };
+
+      const tournament = await Tournament.findOne(tournamentFilter);
+      if (!tournament) {
+        return res.status(404).json({ success: false, msg: "Tournament not found" });
+      }
+
       const filter = req.isSuperAdmin
-        ? { tournamentId: req.params.tournamentId }
-        : { tournamentId: req.params.tournamentId, adminId: req.adminId };
+        ? { tournamentId: tournament._id }
+        : { tournamentId: tournament._id, adminId: req.adminId };
 
       const lobby = await Lobby.find(filter)
         .populate("teamId", "name players")
         .sort({ slotNumber: 1 });
 
-      res.json({ success: true, count: lobby.length, lobby });
+      res.json({
+        success: true,
+        tournament: {
+          id: tournament._id,
+          name: tournament.name,
+          totalSlots: tournament.slots,
+          filledSlots: tournament.filledSlots,
+          slotsLeft: tournament.slots - tournament.filledSlots,
+        },
+        count: lobby.length,
+        lobby,
+      });
     } catch (err) {
       console.error("Fetch lobby error:", err);
       res.status(500).json({ success: false, msg: "Server error" });
