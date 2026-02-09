@@ -16,22 +16,23 @@ exports.generateStageResults = async (req, res) => {
       return res.status(400).json({ message: "tournamentId, stageNumber and matchRoomIds required" });
     }
 
-    /* 🔐 Validate match rooms belong to admin & tournament */
+    /* 🔐 Validate match rooms */
     const rooms = await MatchRoom.find({
       _id: { $in: matchRoomIds },
       tournamentId,
       adminId,
-    });
+      isActive: true,
+    }).select("_id");
 
     if (rooms.length !== matchRoomIds.length) {
-      return res.status(400).json({ message: "Invalid match rooms provided" });
+      return res.status(400).json({ message: "Invalid or inactive match rooms provided" });
     }
 
-    /* 📥 Fetch all results from these matches */
+    /* 📥 Fetch locked match results only */
     const matchResults = await Result.find({
       matchRoomId: { $in: matchRoomIds },
       adminId,
-      isLocked: true, // Only locked matches allowed
+      isLocked: true,
     });
 
     if (!matchResults.length) {
@@ -54,39 +55,43 @@ exports.generateStageResults = async (req, res) => {
       }
 
       teamStats[key].matchesPlayed += 1;
-      teamStats[key].totalKills += r.kills;
-      teamStats[key].totalPoints += r.points;
+      teamStats[key].totalKills += r.kills || 0;
+      teamStats[key].totalPoints += r.points || 0;
     }
 
-    /* 🏆 Convert to array & sort */
+    /* 🏆 Sort leaderboard */
     const leaderboard = Object.values(teamStats).sort(
       (a, b) => b.totalPoints - a.totalPoints || b.totalKills - a.totalKills
     );
 
-    /* 💾 Save / Update Stage Results */
-    for (let i = 0; i < leaderboard.length; i++) {
-      const team = leaderboard[i];
-
-      await StageResult.findOneAndUpdate(
-        {
+    /* 💾 Bulk save/update for performance */
+    const bulkOps = leaderboard.map((team, index) => ({
+      updateOne: {
+        filter: {
           tournamentId,
           stageNumber,
           teamId: team.teamId,
           adminId,
         },
-        {
+        update: {
           ...team,
-          rank: i + 1,
+          rank: index + 1,
+          tournamentId,
+          stageNumber,
           adminId,
         },
-        { upsert: true, new: true }
-      );
+        upsert: true,
+      },
+    }));
+
+    if (bulkOps.length) {
+      await StageResult.bulkWrite(bulkOps);
     }
 
     res.json({
       success: true,
-      message: "Stage results generated",
-      teams: leaderboard.length,
+      message: "Stage results generated successfully",
+      teamsProcessed: leaderboard.length,
     });
   } catch (err) {
     console.error("Stage result generation error:", err);
@@ -119,15 +124,15 @@ exports.getStageLeaderboard = async (req, res) => {
 
 /* =======================================================
    🎯 MARK QUALIFIED TEAMS
-   Admin selects top N teams
+   Marks top N teams as qualified
 ======================================================= */
 exports.markStageQualified = async (req, res) => {
   try {
     const adminId = req.admin._id;
     const { tournamentId, stageNumber, qualifyCount } = req.body;
 
-    if (!qualifyCount || qualifyCount < 1) {
-      return res.status(400).json({ message: "qualifyCount required" });
+    if (!tournamentId || !stageNumber || !qualifyCount || qualifyCount < 1) {
+      return res.status(400).json({ message: "tournamentId, stageNumber and valid qualifyCount required" });
     }
 
     const topTeams = await StageResult.find({
@@ -136,9 +141,10 @@ exports.markStageQualified = async (req, res) => {
       adminId,
     })
       .sort({ rank: 1 })
-      .limit(qualifyCount);
+      .limit(qualifyCount)
+      .select("teamId");
 
-    const teamIds = topTeams.map(t => t.teamId);
+    const teamIds = topTeams.map((t) => t.teamId);
 
     await StageResult.updateMany(
       { tournamentId, stageNumber, adminId },
@@ -150,7 +156,10 @@ exports.markStageQualified = async (req, res) => {
       { $set: { qualified: true } }
     );
 
-    res.json({ success: true, qualifiedTeams: teamIds.length });
+    res.json({
+      success: true,
+      qualifiedTeams: teamIds.length,
+    });
   } catch (err) {
     console.error("Qualification marking error:", err);
     res.status(500).json({ message: "Server error" });
