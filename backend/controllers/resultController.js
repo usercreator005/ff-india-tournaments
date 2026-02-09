@@ -2,25 +2,45 @@ const Result = require("../models/Result");
 const MatchRoom = require("../models/MatchRoom");
 
 /* =======================================================
+   🎯 SCORING SYSTEM (OFFICIAL)
+   1 Kill = 1 Point
+   Placement Points Map
+======================================================= */
+const placementPointsTable = {
+  1: 12,
+  2: 9,
+  3: 8,
+  4: 7,
+  5: 6,
+  6: 5,
+  7: 4,
+  8: 3,
+  9: 2,
+  10: 1,
+  11: 0,
+  12: 0,
+};
+
+const getPlacementPoints = (position) => {
+  return placementPointsTable[position] ?? 0;
+};
+
+/* =======================================================
    📌 UPSERT TEAM RESULT
-   Admin enters position & kills
-   Points auto-calculated (placement + kills)
+   Admin enters ONLY position & kills
+   Points auto-calculated
 ======================================================= */
 exports.upsertTeamResult = async (req, res) => {
   try {
     const adminId = req.admin._id;
-    const {
-      matchRoomId,
-      teamId,
-      position,
-      kills = 0,
-      placementPoints = 0,
-      killPoints = 0,
-      notes = ""
-    } = req.body;
+    const { matchRoomId, teamId, position, kills = 0, notes = "" } = req.body;
 
     if (!matchRoomId || !teamId || position == null) {
       return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    if (position < 1) {
+      return res.status(400).json({ message: "Invalid position value" });
     }
 
     const matchRoom = await MatchRoom.findOne({ _id: matchRoomId, adminId });
@@ -34,8 +54,10 @@ exports.upsertTeamResult = async (req, res) => {
       return res.status(400).json({ message: "Result already locked" });
     }
 
-    // Auto-calc total points
-    const totalPoints = Number(placementPoints) + Number(killPoints);
+    /* 🎯 AUTO CALCULATE POINTS */
+    const placementPoints = getPlacementPoints(position);
+    const killPoints = Number(kills);
+    const totalPoints = placementPoints + killPoints;
 
     const result = await Result.findOneAndUpdate(
       { matchRoomId, teamId, adminId },
@@ -44,17 +66,23 @@ exports.upsertTeamResult = async (req, res) => {
         matchRoomId,
         teamId,
         position,
-        kills,
-        placementPoints,
-        killPoints,
+        kills: killPoints,
         points: totalPoints,
         notes,
-        adminId
+        adminId,
       },
       { new: true, upsert: true, setDefaultsOnInsert: true }
     );
 
-    res.json({ success: true, result });
+    res.json({
+      success: true,
+      result,
+      breakdown: {
+        placementPoints,
+        killPoints,
+        totalPoints,
+      },
+    });
   } catch (err) {
     console.error("Result upload error:", err);
     res.status(500).json({ message: "Server error" });
@@ -63,7 +91,6 @@ exports.upsertTeamResult = async (req, res) => {
 
 /* =======================================================
    🔒 LOCK RESULTS FOR A MATCH
-   Prevents further edits + adds audit info
 ======================================================= */
 exports.lockMatchResults = async (req, res) => {
   try {
@@ -82,8 +109,8 @@ exports.lockMatchResults = async (req, res) => {
         $set: {
           isLocked: true,
           lockedAt: new Date(),
-          verifiedBy: adminId
-        }
+          verifiedBy: adminId,
+        },
       }
     );
 
@@ -96,7 +123,6 @@ exports.lockMatchResults = async (req, res) => {
 
 /* =======================================================
    📊 GET MATCH LEADERBOARD
-   Sorted by total points, then kills
 ======================================================= */
 exports.getMatchLeaderboard = async (req, res) => {
   try {
@@ -115,7 +141,7 @@ exports.getMatchLeaderboard = async (req, res) => {
 };
 
 /* =======================================================
-   🗑 DELETE RESULT (Only before locking)
+   🗑 DELETE RESULT (Before Lock Only)
 ======================================================= */
 exports.deleteTeamResult = async (req, res) => {
   try {
