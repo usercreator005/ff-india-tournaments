@@ -48,6 +48,16 @@ const reminderSchema = new mongoose.Schema(
       index: true,
     },
 
+    sentAt: {
+      type: Date,
+      default: null,
+    },
+
+    error: {
+      type: String,
+      default: null,
+    },
+
     /* =========================
        🔐 ADMIN DATA BOUNDARY
     ========================= */
@@ -63,13 +73,19 @@ const reminderSchema = new mongoose.Schema(
 );
 
 /* =========================
-   INDEXES (PERFORMANCE)
+   INDEXES (CRITICAL)
 ========================= */
 
-// Fast scheduler lookup
+// Scheduler fast lookup
 reminderSchema.index({ status: 1, scheduledFor: 1 });
 
-// Admin dashboard filtering
-reminderSchema.index({ adminId: 1, type: 1 });
+// Prevent duplicate reminders for same event
+reminderSchema.index(
+  { tournamentId: 1, matchRoomId: 1, type: 1, scheduledFor: 1 },
+  { unique: true }
+);
+
+// Admin filtering
+reminderSchema.index({ adminId: 1, type: 1, status: 1 });
 
 module.exports = mongoose.model("Reminder", reminderSchema);
