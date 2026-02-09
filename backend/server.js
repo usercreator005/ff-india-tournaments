@@ -83,6 +83,7 @@ app.use("/api/v1/hot-slots", require("./routes/hotSlotRoutes"));
 app.use("/api/v1/notifications", require("./routes/notificationRoutes"));
 app.use("/api/v1/results", require("./routes/resultRoutes"));
 app.use("/api/v1/scoring", require("./routes/tournamentScoringRoutes"));
+app.use("/api/v1/stage-results", require("./routes/stageResultRoutes"));
 /* 🆕 PHASE 3 — MATCH ROOM SYSTEM */
 app.use("/api/v1/rooms", require("./routes/matchRoomRoutes"));
 
