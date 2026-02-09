@@ -8,34 +8,34 @@ const tournamentSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
 
     game: {
       type: String,
       required: true,
       trim: true,
-      default: "Free Fire"
+      default: "Free Fire",
     },
 
-    // 🔒 Platform supports ONLY Squad
+    // Platform supports ONLY Squad
     mode: {
       type: String,
       enum: ["Squad"],
       default: "Squad",
-      immutable: true
+      immutable: true,
     },
 
     map: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
 
     startTime: {
       type: Date,
       required: true,
-      index: true
+      index: true,
     },
 
     /* =========================
@@ -45,10 +45,10 @@ const tournamentSchema = new mongoose.Schema(
       type: Number,
       required: true,
       min: 1,
-      max: 100 // Max number of teams allowed
+      max: 100,
     },
 
-    // Now represents number of TEAMS joined
+    // Number of teams joined
     filledSlots: {
       type: Number,
       default: 0,
@@ -57,8 +57,8 @@ const tournamentSchema = new mongoose.Schema(
         validator: function (v) {
           return v <= this.slots;
         },
-        message: "Filled slots cannot exceed total slots"
-      }
+        message: "Filled slots cannot exceed total slots",
+      },
     },
 
     /* =========================
@@ -67,19 +67,20 @@ const tournamentSchema = new mongoose.Schema(
     prizePool: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
 
     entryType: {
       type: String,
       enum: ["free", "paid"],
-      default: "free"
+      default: "free",
+      index: true,
     },
 
     entryFee: {
       type: Number,
       default: 0,
-      min: 0
+      min: 0,
     },
 
     /* =========================
@@ -88,16 +89,18 @@ const tournamentSchema = new mongoose.Schema(
     upiId: {
       type: String,
       default: null,
-      trim: true
+      trim: true,
     },
 
     qrImage: {
       type: String,
-      default: null
+      default: null,
     },
 
     /* =========================
-       TEAM JOIN SYSTEM (PHASE 5 READY)
+       TEAM JOIN SYSTEM (PHASE 5)
+       Source of truth = Lobby
+       This array is SUPPORTIVE cache only
     ========================= */
     teams: {
       type: [mongoose.Schema.Types.ObjectId],
@@ -107,8 +110,8 @@ const tournamentSchema = new mongoose.Schema(
         validator: function (arr) {
           return arr.length === new Set(arr.map(String)).size;
         },
-        message: "Duplicate teams not allowed"
-      }
+        message: "Duplicate teams not allowed",
+      },
     },
 
     /* =========================
@@ -118,7 +121,7 @@ const tournamentSchema = new mongoose.Schema(
       type: String,
       enum: ["upcoming", "ongoing", "past", "cancelled"],
       default: "upcoming",
-      index: true
+      index: true,
     },
 
     /* =================================================
@@ -129,11 +132,11 @@ const tournamentSchema = new mongoose.Schema(
       ref: "Admin",
       required: true,
       immutable: true,
-      index: true
-    }
+      index: true,
+    },
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 );
 
@@ -141,11 +144,14 @@ const tournamentSchema = new mongoose.Schema(
    INDEXES
 ========================= */
 
-// Fast admin filtering
+// Admin dashboard speed
 tournamentSchema.index({ adminId: 1, status: 1, startTime: 1 });
 
-// Prevent duplicate tournaments at same time for same admin
+// Prevent duplicate tournaments for same admin & time
 tournamentSchema.index({ adminId: 1, name: 1, startTime: 1 });
+
+// Fast join checks
+tournamentSchema.index({ teams: 1 });
 
 /* =========================
    VIRTUALS
@@ -157,5 +163,23 @@ tournamentSchema.virtual("slotsLeft").get(function () {
 
 tournamentSchema.set("toJSON", { virtuals: true });
 tournamentSchema.set("toObject", { virtuals: true });
+
+/* =========================
+   AUTO DATA GUARDS
+========================= */
+
+// Ensure paid tournaments must have entry fee
+tournamentSchema.pre("validate", function (next) {
+  if (this.entryType === "paid" && (!this.entryFee || this.entryFee <= 0)) {
+    return next(new Error("Paid tournaments must have an entry fee"));
+  }
+  next();
+});
+
+// Prevent filledSlots from ever going negative
+tournamentSchema.pre("save", function (next) {
+  if (this.filledSlots < 0) this.filledSlots = 0;
+  next();
+});
 
 module.exports = mongoose.model("Tournament", tournamentSchema);
