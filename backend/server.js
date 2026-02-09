@@ -1,5 +1,5 @@
 // backend/server.js
-// PHASE 1–3 – HARDENED & CLEAN SERVER ENTRY (PRODUCTION SAFE)
+// PHASE 1–7 – HARDENED & CLEAN SERVER ENTRY (PRODUCTION SAFE)
 
 const express = require("express");
 const cors = require("cors");
@@ -12,6 +12,9 @@ const errorHandler = require("./middleware/errorHandler");
 
 const HotSlot = require("./models/HotSlot");
 const axios = require("axios");
+
+/* 🆕 PHASE 7 — REMINDER SCHEDULER */
+const { startReminderScheduler } = require("./services/reminderScheduler");
 
 const app = express();
 
@@ -82,6 +85,9 @@ app.use("/api/v1/notifications", require("./routes/notificationRoutes"));
 /* 🆕 PHASE 3 — MATCH ROOM SYSTEM */
 app.use("/api/v1/rooms", require("./routes/matchRoomRoutes"));
 
+/* 🆕 PHASE 7 — REMINDER BUTTON SYSTEM */
+app.use("/api/v1/reminders", require("./routes/reminderRoutes"));
+
 /* =====================================================
    🔁 BACKWARD COMPATIBILITY (DO NOT REMOVE)
 ===================================================== */
@@ -94,7 +100,7 @@ app.get("/", (req, res) => {
   res.status(200).json({
     status: "OK",
     service: "FF India Tournaments Backend",
-    version: "1.2.0"
+    version: "1.3.0"
   });
 });
 
@@ -159,6 +165,10 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`🔥 Server running on port ${PORT}`);
+
   startHotSlotCleanup();
   startSelfPing();
+
+  /* 🆕 Start Reminder Scheduler */
+  startReminderScheduler();
 });
