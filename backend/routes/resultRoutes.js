@@ -19,20 +19,37 @@ const { verifyStaff } = require("../middleware/staffAuth");
    ✅ Staff with canManageResults = true
 ======================================================= */
 const adminOrResultStaff = async (req, res, next) => {
-  // First try admin auth
-  adminAuth(req, res, async (adminErr) => {
-    if (!adminErr && req.admin) {
-      return next(); // Admin allowed
+  try {
+    /* ---------- Try Admin Auth First ---------- */
+    await new Promise((resolve, reject) => {
+      adminAuth(req, res, (err) => {
+        if (err) return reject(err);
+        resolve();
+      });
+    });
+
+    if (req.admin) return next();
+  } catch (e) {
+    // Not admin, continue to staff check
+  }
+
+  /* ---------- Try Staff Auth ---------- */
+  try {
+    await new Promise((resolve, reject) => {
+      verifyStaff(req, res, (err) => {
+        if (err) return reject(err);
+        resolve();
+      });
+    });
+
+    if (req.staff?.permissions?.canManageResults) {
+      return next();
     }
 
-    // If not admin, try staff auth
-    verifyStaff(req, res, () => {
-      if (req.staff?.permissions?.canManageResults) {
-        return next(); // Staff with permission allowed
-      }
-      return res.status(403).json({ message: "Access denied" });
-    });
-  });
+    return res.status(403).json({ message: "Access denied" });
+  } catch (err) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
 };
 
 /* =======================================================
