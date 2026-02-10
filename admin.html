@@ -8,6 +8,7 @@
 </head>
 <body>
 
+<!-- ================= HEADER ================= -->
 <header class="header">
   <div class="logo">FF INDIA TOURNAMENTS</div>
   <div class="icons">
@@ -16,47 +17,131 @@
   </div>
 </header>
 
-<aside id="sidebar">
-  <div class="side-item">Admin Info</div>
-  <div class="side-item">Tournament History</div>
-  <div class="side-item logout" id="logout">Logout</div>
+<!-- ================= SIDEBAR ================= -->
+<aside id="sidebar" class="closed">
+
+  <div class="side-title">ADMIN PANEL</div>
+
+  <div class="side-item" data-page="adminInfo">👤 Admin Info</div>
+  <div class="side-item" data-page="history">🏆 Tournament History</div>
+  <div class="side-item" data-page="wallet">💰 Wallet</div>
+  <div class="side-item" data-page="support">📞 Contact Support</div>
+
+  <div class="side-divider"></div>
+
+  <div class="side-item logout" id="logout">🚪 Logout</div>
+
 </aside>
 
-<main class="main">
-  <div class="actions">
-    <button id="btnCreate">➕ Create Tournament</button>
-    <button id="btnManage">🛠 Manage Tournaments</button>
-  </div>
+<!-- ================= MAIN CONTENT ================= -->
+<main class="main" id="mainContent">
 
-  <!-- CREATE FORM -->
-  <form id="createForm" class="card hidden">
-    <h3>Create Tournament</h3>
+  <!-- DASHBOARD HOME (DEFAULT VIEW) -->
+  <section id="dashboardHome">
 
-    <input type="text" id="tournamentName" placeholder="Tournament Name" required>
-    <input type="number" id="slots" placeholder="Slots" required>
-    <input type="text" id="prizePool" placeholder="Prize Pool" required>
-
-    <select id="entryType" required>
-      <option value="">Select Entry Type</option>
-      <option value="free">Free</option>
-      <option value="paid">Paid</option>
-    </select>
-
-    <div id="paidBox" class="hidden">
-      <input type="number" id="entryFee" placeholder="Entry Fee (₹)">
-      <input type="text" id="upiId" placeholder="UPI ID">
+    <div class="actions">
+      <button id="btnCreate">➕ Create Tournament</button>
+      <button id="btnManage">🛠 Manage Tournaments</button>
+      <button id="btnStaff">👥 Manage Staff</button>
+      <button id="btnTickets">🎫 Support Tickets</button>
     </div>
 
-    <button type="submit" class="submit">Create Tournament</button>
-  </form>
+  </section>
 
-  <!-- MANAGE -->
+
+  <!-- ================= CREATE TOURNAMENT ================= -->
+  <section id="createSection" class="card hidden">
+    <h3>Create Tournament</h3>
+
+    <form id="createForm">
+      <input type="text" id="tournamentName" placeholder="Tournament Name" required>
+      <input type="number" id="slots" placeholder="Total Slots" required>
+      <input type="text" id="prizePool" placeholder="Prize Pool" required>
+
+      <label>Registration Start Date & Time</label>
+      <input type="datetime-local" id="regStart" required>
+
+      <label>Tournament Banner</label>
+      <input type="file" id="bannerUpload" accept="image/*">
+
+      <select id="entryType" required>
+        <option value="">Select Entry Type</option>
+        <option value="free">Free</option>
+        <option value="paid">Paid</option>
+      </select>
+
+      <!-- PAID OPTIONS -->
+      <div id="paidBox" class="hidden">
+        <input type="number" id="entryFee" placeholder="Entry Fee (₹)">
+        <input type="file" id="qrUpload" accept="image/*">
+        <input type="text" id="upiId" placeholder="UPI ID (Users can copy)">
+        
+        <label class="checkbox">
+          <input type="checkbox" id="walletPayToggle">
+          Allow Wallet to Wallet Payment
+        </label>
+      </div>
+
+      <button type="submit" class="submit">Create Tournament</button>
+    </form>
+  </section>
+
+
+  <!-- ================= MANAGE TOURNAMENTS ================= -->
   <section id="manageSection" class="card hidden">
     <h3>Manage Tournaments</h3>
-    <div id="tournamentList">Loading...</div>
+    <div id="tournamentList">Loading tournaments...</div>
   </section>
+
+
+  <!-- ================= ADMIN INFO DASHBOARD ================= -->
+  <section id="adminInfoSection" class="card hidden">
+    <h3>Admin Info Dashboard</h3>
+    <div id="adminStats">Loading admin data...</div>
+  </section>
+
+
+  <!-- ================= TOURNAMENT HISTORY ================= -->
+  <section id="historySection" class="card hidden">
+    <h3>Past Tournament History</h3>
+    <div id="historyList">Loading history...</div>
+  </section>
+
+
+  <!-- ================= WALLET ================= -->
+  <section id="walletSection" class="card hidden">
+    <h3>Admin Wallet</h3>
+    <div id="walletData">Loading wallet...</div>
+  </section>
+
+
+  <!-- ================= STAFF MANAGEMENT ================= -->
+  <section id="staffSection" class="card hidden">
+    <h3>Manage Staff</h3>
+    <div id="staffPanel">Loading staff...</div>
+  </section>
+
+
+  <!-- ================= SUPPORT TICKETS ================= -->
+  <section id="ticketsSection" class="card hidden">
+    <h3>Support Tickets</h3>
+    <div id="ticketsPanel">Loading tickets...</div>
+  </section>
+
+
+  <!-- ================= CONTACT SUPPORT ================= -->
+  <section id="supportSection" class="card hidden">
+    <h3>Contact Support</h3>
+
+    <div class="support-box">
+      <button id="emailSupport">📧 Email Support</button>
+      <button id="wpSupport">💬 WhatsApp Support</button>
+    </div>
+  </section>
+
 </main>
 
+<!-- ================= FOOTER ================= -->
 <footer class="footer">
   Admin Terms & Policy
 </footer>
@@ -64,4 +149,4 @@
 <script type="module" src="js/firebase.js"></script>
 <script type="module" src="js/admin.js"></script>
 </body>
-</html>
+    </html>
