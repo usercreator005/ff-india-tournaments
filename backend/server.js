@@ -1,5 +1,5 @@
 // backend/server.js
-// PHASE 1–7 – HARDENED & CLEAN SERVER ENTRY (PRODUCTION SAFE)
+// PHASE 1–12 – HARDENED & CLEAN SERVER ENTRY (PRODUCTION SAFE)
 
 const express = require("express");
 const cors = require("cors");
@@ -84,11 +84,14 @@ app.use("/api/v1/notifications", require("./routes/notificationRoutes"));
 app.use("/api/v1/results", require("./routes/resultRoutes"));
 app.use("/api/v1/scoring", require("./routes/tournamentScoringRoutes"));
 app.use("/api/v1/stage-results", require("./routes/stageResultRoutes"));
-/* 🆕 PHASE 3 — MATCH ROOM SYSTEM */
 app.use("/api/v1/rooms", require("./routes/matchRoomRoutes"));
-
-/* 🆕 PHASE 7 — REMINDER BUTTON SYSTEM */
 app.use("/api/v1/reminders", require("./routes/reminderRoutes"));
+
+/* 🆕 PHASE 10 — STAFF MANAGEMENT */
+app.use("/api/v1/admin/staff", require("./routes/staffManagementRoutes"));
+
+/* 🆕 PHASE 12 — ADMIN PROFILE DASHBOARD */
+app.use("/api/v1/admin/dashboard", require("./routes/adminDashboardRoutes"));
 
 /* =====================================================
    🔁 BACKWARD COMPATIBILITY (DO NOT REMOVE)
@@ -102,7 +105,7 @@ app.get("/", (req, res) => {
   res.status(200).json({
     status: "OK",
     service: "FF India Tournaments Backend",
-    version: "1.3.0"
+    version: "1.4.0"
   });
 });
 
@@ -170,7 +173,5 @@ app.listen(PORT, () => {
 
   startHotSlotCleanup();
   startSelfPing();
-
-  /* 🆕 Start Reminder Scheduler */
   startReminderScheduler();
 });
