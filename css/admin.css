@@ -1,3 +1,4 @@
+/* ================= GLOBAL ================= */
 *{
   margin:0;
   padding:0;
@@ -8,6 +9,7 @@
 body{
   background:#0b0b0b;
   color:#fff;
+  overflow-x:hidden;
 }
 
 /* ================= HEADER ================= */
@@ -19,9 +21,16 @@ body{
   align-items:center;
   padding:0 15px;
   border-bottom:1px solid #222;
+  position:sticky;
+  top:0;
+  z-index:50;
 }
 
-.logo{font-weight:700}
+.logo{
+  font-weight:700;
+  font-size:14px;
+  letter-spacing:.5px;
+}
 
 .icons{
   display:flex;
@@ -34,39 +43,47 @@ body{
   height:34px;
   border-radius:50%;
   cursor:pointer;
+  border:1px solid #333;
 }
 
 /* ================= SIDEBAR ================= */
 #sidebar{
   position:fixed;
   top:55px;
-  left:-250px;
-  width:230px;
+  left:-260px;
+  width:240px;
   height:calc(100% - 55px);
   background:#111;
-  transition:.3s;
-  z-index:20;
-  padding-top:10px;
+  transition:.3s ease;
+  z-index:40;
+  overflow-y:auto;
+  padding-bottom:20px;
 }
 
-#sidebar.active{left:0}
+#sidebar.active{ left:0; }
 
 .side-title{
-  padding:12px 14px;
-  font-size:12px;
-  color:#888;
+  padding:14px;
+  font-size:11px;
+  color:#777;
   letter-spacing:1px;
 }
 
 .side-item{
-  padding:14px;
+  padding:13px 16px;
   border-bottom:1px solid #1c1c1c;
   cursor:pointer;
   font-size:14px;
+  transition:.2s;
 }
 
 .side-item:hover{
   background:#1a1a1a;
+}
+
+.side-item.active{
+  background:#222;
+  border-left:3px solid #ffb300;
 }
 
 .side-divider{
@@ -85,6 +102,7 @@ body{
   transition:.3s;
 }
 
+/* ================= ACTION BUTTONS ================= */
 .actions{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -100,28 +118,39 @@ body{
   font-weight:600;
   cursor:pointer;
   font-size:14px;
+  transition:.2s;
 }
 
 .actions button:hover{
   opacity:.9;
+  transform:translateY(-1px);
 }
 
-/* ================= CARDS ================= */
+/* ================= CARD SYSTEM ================= */
 .card{
   background:#111;
   padding:16px;
   border-radius:12px;
   margin-bottom:15px;
   border:1px solid #1c1c1c;
+  box-shadow:0 0 0 transparent;
+  transition:.2s;
+}
+
+.card:hover{
+  border-color:#2a2a2a;
 }
 
 .card h3{
   margin-bottom:12px;
   font-size:16px;
+  font-weight:600;
 }
 
+/* ================= FORM ELEMENTS ================= */
 .card input,
-.card select{
+.card select,
+.card textarea{
   width:100%;
   margin:6px 0 10px;
   padding:10px;
@@ -132,9 +161,11 @@ body{
   font-size:14px;
 }
 
-.card input[type="file"]{
-  border:none;
-  padding:4px;
+.card input:focus,
+.card select:focus,
+.card textarea:focus{
+  outline:none;
+  border-color:#ffb300;
 }
 
 .card label{
@@ -152,6 +183,7 @@ body{
   margin:8px 0;
 }
 
+/* ================= BUTTON TYPES ================= */
 .submit{
   width:100%;
   padding:11px;
@@ -162,14 +194,27 @@ body{
   font-weight:700;
   cursor:pointer;
   font-size:15px;
+  transition:.2s;
 }
 
-.hidden{display:none}
+.submit:hover{ opacity:.9; }
 
-/* ================= LIST CARDS ================= */
+.btn-danger{
+  background:#ff5252;
+  color:#fff;
+}
+
+.btn-secondary{
+  background:#333;
+  color:#fff;
+}
+
+/* ================= LIST CARDS (Reusable) ================= */
 .tournament-card,
 .staff-card,
-.ticket-card{
+.ticket-card,
+.stage-card,
+.match-card{
   background:#0b0b0b;
   padding:12px;
   border-radius:8px;
@@ -177,10 +222,12 @@ body{
   border:1px solid #222;
 }
 
-.tournament-card h4{
+.tournament-card h4,
+.staff-card h4{
   margin-bottom:6px;
 }
 
+/* ================= BADGES ================= */
 .badge{
   display:inline-block;
   padding:3px 7px;
@@ -192,8 +239,38 @@ body{
 .badge.live{background:#4caf50}
 .badge.upcoming{background:#ff9800}
 .badge.past{background:#9e9e9e}
+.badge.closed{background:#f44336}
+.badge.pending{background:#ffc107;color:#000}
+.badge.approved{background:#4caf50}
+.badge.rejected{background:#f44336}
 
-/* ================= SUPPORT BOX ================= */
+/* ================= WALLET (PHASE 2) ================= */
+.wallet-card{
+  background:#0b0b0b;
+  padding:12px;
+  border-radius:8px;
+  border:1px solid #222;
+  margin-bottom:10px;
+}
+
+/* ================= SCHEDULE / STAGE (PHASE 6–9) ================= */
+.stage-box{
+  background:#0f0f0f;
+  padding:10px;
+  border-radius:6px;
+  border:1px solid #222;
+  margin-bottom:8px;
+}
+
+/* ================= STAFF (PHASE 10) ================= */
+.permission-grid{
+  display:grid;
+  grid-template-columns:repeat(2, 1fr);
+  gap:6px;
+  font-size:12px;
+}
+
+/* ================= SUPPORT (PHASE 11) ================= */
 .support-box{
   display:flex;
   flex-direction:column;
@@ -212,14 +289,25 @@ body{
 #emailSupport{background:#2196f3}
 #wpSupport{background:#25d366}
 
-/* ================= WALLET ================= */
-.wallet-card{
-  background:#0b0b0b;
-  padding:12px;
-  border-radius:8px;
-  border:1px solid #222;
-  margin-bottom:10px;
+/* ================= TABLE STYLE (Future Use) ================= */
+.table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
 }
+
+.table th,
+.table td{
+  padding:8px;
+  border-bottom:1px solid #222;
+  text-align:left;
+}
+
+/* ================= UTILITIES ================= */
+.hidden{display:none}
+.center{text-align:center}
+.mt10{margin-top:10px}
+.mb10{margin-bottom:10px}
 
 /* ================= FOOTER ================= */
 .footer{
@@ -228,4 +316,4 @@ body{
   color:#aaa;
   padding:12px;
   margin-top:20px;
-}
+  }
