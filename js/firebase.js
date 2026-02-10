@@ -1,16 +1,15 @@
 // js/firebase.js
-// Firebase v9 (MODULAR) – FINAL, SAFE & PRODUCTION READY
+// FIREBASE CORE – STABLE AUTH FOUNDATION (PHASE 1 READY)
 
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import {
   getAuth,
   setPersistence,
-  browserLocalPersistence
+  browserLocalPersistence,
+  onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-/* =========================
-   FIREBASE CONFIG
-========================= */
+/* ================= FIREBASE CONFIG ================= */
 const firebaseConfig = Object.freeze({
   apiKey: "AIzaSyBqr60ogeNe3jVXEDsLK-LlwWNk-AOuKfo",
   authDomain: "ff-india-tournaments-dfdde.firebaseapp.com",
@@ -20,24 +19,26 @@ const firebaseConfig = Object.freeze({
   appId: "1:299074643361:web:2522e682e06ad8f2b797e0"
 });
 
-/* =========================
-   INIT FIREBASE (SAFE)
-========================= */
-const app = getApps().length === 0
-  ? initializeApp(firebaseConfig)
-  : getApps()[0];
+/* ================= INIT APP (SAFE RELOAD SUPPORT) ================= */
+const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 
-/* =========================
-   AUTH SETUP
-========================= */
+/* ================= AUTH SETUP ================= */
 const auth = getAuth(app);
 
-// Persist login even after refresh / app background
+// Keep admin logged in after refresh / tab close
 setPersistence(auth, browserLocalPersistence).catch(() => {
-  // Silent fail (Safari private / restricted browsers)
+  console.warn("Auth persistence not available in this browser");
 });
 
-/* =========================
-   EXPORTS
-========================= */
+/* ================= AUTH STATE DEBUG (DEV HELPER) ================= */
+// Helps detect silent logout issues during admin panel usage
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    console.log("Auth restored:", user.uid);
+  } else {
+    console.log("No active auth session");
+  }
+});
+
+/* ================= EXPORTS ================= */
 export { app, auth };
