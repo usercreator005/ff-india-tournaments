@@ -6,6 +6,7 @@ const auth = require("../middleware/authMiddleware");
 const apiLimiter = require("../middleware/rateLimiter");
 const { body, param, validationResult } = require("express-validator");
 
+const adminAuth = require("../middleware/adminAuth");
 const { verifyStaff } = require("../middleware/staffAuth");
 
 /* 🔔 PHASE 7 REMINDER SERVICE */
@@ -14,16 +15,35 @@ const {
   rescheduleMatchStartReminder,
 } = require("../services/reminderService");
 
-/* =========================
-   🔐 ADMIN OR TOURNAMENT STAFF
-========================= */
-const adminOrTournamentStaff = (req, res, next) => {
-  if (req.role === "admin" || req.isSuperAdmin) return next();
+/* =======================================================
+   🔐 ADMIN OR TOURNAMENT STAFF ACCESS
+   ✅ Admin (full)
+   ✅ Staff with canManageTournaments
+======================================================= */
+const adminOrTournamentStaff = async (req, res, next) => {
+  try {
+    // Try Admin first
+    await new Promise((resolve, reject) => {
+      adminAuth(req, res, (err) => (err ? reject(err) : resolve()));
+    });
 
-  verifyStaff(req, res, () => {
+    if (req.admin) return next();
+  } catch (e) {
+    // Not admin, continue
+  }
+
+  try {
+    // Try Staff
+    await new Promise((resolve, reject) => {
+      verifyStaff(req, res, (err) => (err ? reject(err) : resolve()));
+    });
+
     if (req.staff?.permissions?.canManageTournaments) return next();
+
     return res.status(403).json({ success: false, msg: "Access denied" });
-  });
+  } catch (err) {
+    return res.status(401).json({ success: false, msg: "Unauthorized" });
+  }
 };
 
 /* =========================
@@ -99,6 +119,8 @@ router.post(
         });
       }
 
+      const adminId = req.admin?._id || req.staff?.adminId;
+
       const tournament = await Tournament.create({
         name,
         game,
@@ -112,7 +134,7 @@ router.post(
         upiId: entryType === "paid" ? upiId : null,
         qrImage: entryType === "paid" ? qrImage || null : null,
         status: "upcoming",
-        adminId: req.adminId || req.staff.adminId,
+        adminId,
       });
 
       await scheduleMatchStartReminder(tournament);
@@ -138,7 +160,7 @@ router.patch(
     try {
       if (validate(req, res)) return;
 
-      const adminId = req.adminId || req.staff.adminId;
+      const adminId = req.admin?._id || req.staff?.adminId;
 
       const tournament = await Tournament.findOne({ _id: req.params.id, adminId });
       if (!tournament) {
@@ -181,12 +203,10 @@ router.patch(
     try {
       if (validate(req, res)) return;
 
-      const adminId = req.adminId || req.staff.adminId;
+      const adminId = req.admin?._id || req.staff?.adminId;
 
       const tournament = await Tournament.findOne({ _id: req.params.id, adminId });
-      if (!tournament) {
-        return res.status(404).json({ success: false, msg: "Not found" });
-      }
+      if (!tournament) return res.status(404).json({ success: false, msg: "Not found" });
 
       tournament.status = req.body.status;
       await tournament.save();
@@ -200,19 +220,16 @@ router.patch(
 );
 
 /* =========================
-   JOIN TOURNAMENT (USER)
-   ❌ Staff/Admin not allowed
+   JOIN TOURNAMENT (USER ONLY)
 ========================= */
 router.post("/join/:id", apiLimiter, auth, param("id").isMongoId(), async (req, res) => {
   try {
     if (validate(req, res)) return;
-    if (req.role !== "user") {
-      return res.status(403).json({ success: false, msg: "Only users can join tournaments" });
-    }
+    if (req.role !== "user") return res.status(403).json({ success: false, msg: "Only users allowed" });
 
     const tournament = await Tournament.findById(req.params.id);
     if (!tournament) return res.status(404).json({ success: false, msg: "Tournament not found" });
-    if (tournament.status !== "upcoming") return res.status(400).json({ success: false, msg: "Tournament is not open" });
+    if (tournament.status !== "upcoming") return res.status(400).json({ success: false, msg: "Not open" });
     if (tournament.players.includes(req.user.email)) return res.status(400).json({ success: false, msg: "Already joined" });
     if (tournament.filledSlots >= tournament.slots) return res.status(400).json({ success: false, msg: "Slots full" });
 
@@ -237,9 +254,8 @@ router.post("/join/:id", apiLimiter, auth, param("id").isMongoId(), async (req, 
 });
 
 /* =========================
-   USER + PUBLIC ROUTES (UNCHANGED)
+   USER + PUBLIC ROUTES
 ========================= */
-
 router.get("/my", apiLimiter, auth, async (req, res) => {
   if (req.role !== "user") return res.status(403).json({ success: false });
   const tournaments = await Tournament.find({ players: req.user.email }).sort({ startTime: 1 });
@@ -252,7 +268,7 @@ router.get("/public/:status", apiLimiter, async (req, res) => {
 });
 
 router.get("/admin/:status", apiLimiter, auth, adminOrTournamentStaff, async (req, res) => {
-  const adminId = req.adminId || req.staff.adminId;
+  const adminId = req.admin?._id || req.staff?.adminId;
   const tournaments = await Tournament.find({ status: req.params.status, adminId }).sort({ startTime: 1 });
   res.json({ success: true, tournaments });
 });
