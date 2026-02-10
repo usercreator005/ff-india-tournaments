@@ -17,42 +17,52 @@
   </div>
 </header>
 
-<!-- ================= SIDEBAR ================= -->
-<aside id="sidebar" class="closed">
+<!-- ================= SIDEBAR (12 PHASE NAV) ================= -->
+<aside id="sidebar">
 
-  <div class="side-title">ADMIN PANEL</div>
-
-  <div class="side-item" data-page="adminInfo">👤 Admin Info</div>
-  <div class="side-item" data-page="history">🏆 Tournament History</div>
-  <div class="side-item" data-page="wallet">💰 Wallet</div>
-  <div class="side-item" data-page="support">📞 Contact Support</div>
+  <div class="side-title">DASHBOARD</div>
+  <div class="side-item" data-section="dashboardHome">🏠 Home</div>
+  <div class="side-item" data-section="adminInfoSection">👤 Admin Info</div>
+  <div class="side-item" data-section="walletSection">💰 Wallet</div>
 
   <div class="side-divider"></div>
+  <div class="side-title">TOURNAMENT CONTROL</div>
+  <div class="side-item" data-section="createSection">➕ Create Tournament</div>
+  <div class="side-item" data-section="manageSection">🛠 Manage Tournaments</div>
+  <div class="side-item" data-section="lobbySection">🎮 Lobby Management</div>
+  <div class="side-item" data-section="scheduleSection">📅 Schedule Upload</div>
+  <div class="side-item" data-section="reminderSection">⏰ Reminder System</div>
+  <div class="side-item" data-section="resultsSection">📊 Result Upload</div>
+  <div class="side-item" data-section="qualificationSection">🏆 Next Stage Qualification</div>
 
+  <div class="side-divider"></div>
+  <div class="side-title">MANAGEMENT</div>
+  <div class="side-item" data-section="staffSection">👥 Staff Management</div>
+  <div class="side-item" data-section="ticketsSection">🎫 Support Tickets</div>
+  <div class="side-item" data-section="historySection">📜 Tournament History</div>
+  <div class="side-item" data-section="supportSection">📞 Contact Support</div>
+
+  <div class="side-divider"></div>
   <div class="side-item logout" id="logout">🚪 Logout</div>
 
 </aside>
 
 <!-- ================= MAIN CONTENT ================= -->
-<main class="main" id="mainContent">
+<main class="main">
 
-  <!-- DASHBOARD HOME (DEFAULT VIEW) -->
+  <!-- HOME DASHBOARD -->
   <section id="dashboardHome">
-
     <div class="actions">
       <button id="btnCreate">➕ Create Tournament</button>
       <button id="btnManage">🛠 Manage Tournaments</button>
       <button id="btnStaff">👥 Manage Staff</button>
       <button id="btnTickets">🎫 Support Tickets</button>
     </div>
-
   </section>
 
-
-  <!-- ================= CREATE TOURNAMENT ================= -->
+  <!-- PHASE 3 CREATE TOURNAMENT -->
   <section id="createSection" class="card hidden">
     <h3>Create Tournament</h3>
-
     <form id="createForm">
       <input type="text" id="tournamentName" placeholder="Tournament Name" required>
       <input type="number" id="slots" placeholder="Total Slots" required>
@@ -70,12 +80,10 @@
         <option value="paid">Paid</option>
       </select>
 
-      <!-- PAID OPTIONS -->
       <div id="paidBox" class="hidden">
         <input type="number" id="entryFee" placeholder="Entry Fee (₹)">
         <input type="file" id="qrUpload" accept="image/*">
-        <input type="text" id="upiId" placeholder="UPI ID (Users can copy)">
-        
+        <input type="text" id="upiId" placeholder="UPI ID">
         <label class="checkbox">
           <input type="checkbox" id="walletPayToggle">
           Allow Wallet to Wallet Payment
@@ -86,53 +94,75 @@
     </form>
   </section>
 
-
-  <!-- ================= MANAGE TOURNAMENTS ================= -->
+  <!-- PHASE 4 MANAGE TOURNAMENT -->
   <section id="manageSection" class="card hidden">
     <h3>Manage Tournaments</h3>
     <div id="tournamentList">Loading tournaments...</div>
   </section>
 
+  <!-- PHASE 5 LOBBY -->
+  <section id="lobbySection" class="card hidden">
+    <h3>Lobby Management</h3>
+    <div id="lobbyPanel">Select a tournament to manage lobbies</div>
+  </section>
 
-  <!-- ================= ADMIN INFO DASHBOARD ================= -->
+  <!-- PHASE 6 SCHEDULE -->
+  <section id="scheduleSection" class="card hidden">
+    <h3>Schedule & Roadmap Upload</h3>
+    <div id="schedulePanel">Upload match schedule here</div>
+  </section>
+
+  <!-- PHASE 7 REMINDER -->
+  <section id="reminderSection" class="card hidden">
+    <h3>Reminder System</h3>
+    <div id="reminderPanel">Automated reminders will be managed here</div>
+  </section>
+
+  <!-- PHASE 8 RESULTS -->
+  <section id="resultsSection" class="card hidden">
+    <h3>Result Upload</h3>
+    <div id="resultsPanel">Upload match results here</div>
+  </section>
+
+  <!-- PHASE 9 QUALIFICATION -->
+  <section id="qualificationSection" class="card hidden">
+    <h3>Next Stage Qualification</h3>
+    <div id="qualificationPanel">Manage stage progression</div>
+  </section>
+
+  <!-- PHASE 1 ADMIN INFO -->
   <section id="adminInfoSection" class="card hidden">
     <h3>Admin Info Dashboard</h3>
     <div id="adminStats">Loading admin data...</div>
   </section>
 
-
-  <!-- ================= TOURNAMENT HISTORY ================= -->
-  <section id="historySection" class="card hidden">
-    <h3>Past Tournament History</h3>
-    <div id="historyList">Loading history...</div>
-  </section>
-
-
-  <!-- ================= WALLET ================= -->
+  <!-- PHASE 2 WALLET -->
   <section id="walletSection" class="card hidden">
     <h3>Admin Wallet</h3>
     <div id="walletData">Loading wallet...</div>
   </section>
 
-
-  <!-- ================= STAFF MANAGEMENT ================= -->
+  <!-- PHASE 10 STAFF -->
   <section id="staffSection" class="card hidden">
-    <h3>Manage Staff</h3>
+    <h3>Staff Management</h3>
     <div id="staffPanel">Loading staff...</div>
   </section>
 
-
-  <!-- ================= SUPPORT TICKETS ================= -->
+  <!-- PHASE 11 SUPPORT TICKETS -->
   <section id="ticketsSection" class="card hidden">
     <h3>Support Tickets</h3>
     <div id="ticketsPanel">Loading tickets...</div>
   </section>
 
+  <!-- HISTORY -->
+  <section id="historySection" class="card hidden">
+    <h3>Tournament History</h3>
+    <div id="historyList">Loading history...</div>
+  </section>
 
-  <!-- ================= CONTACT SUPPORT ================= -->
+  <!-- CONTACT SUPPORT -->
   <section id="supportSection" class="card hidden">
     <h3>Contact Support</h3>
-
     <div class="support-box">
       <button id="emailSupport">📧 Email Support</button>
       <button id="wpSupport">💬 WhatsApp Support</button>
@@ -141,7 +171,6 @@
 
 </main>
 
-<!-- ================= FOOTER ================= -->
 <footer class="footer">
   Admin Terms & Policy
 </footer>
@@ -149,4 +178,4 @@
 <script type="module" src="js/firebase.js"></script>
 <script type="module" src="js/admin.js"></script>
 </body>
-    </html>
+  </html>
