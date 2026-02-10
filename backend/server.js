@@ -14,7 +14,7 @@ const HotSlot = require("./models/HotSlot");
 const axios = require("axios");
 
 /* 🆕 PHASE 7 — REMINDER SCHEDULER */
-const { startReminderScheduler } = require("./services/reminderScheduler");
+const startReminderScheduler = require("./services/reminderScheduler"); // ✅ FIXED IMPORT
 
 const app = express();
 
@@ -93,9 +93,7 @@ app.use("/api/v1/admin/staff", require("./routes/staffManagementRoutes"));
 /* 🆕 PHASE 12 — ADMIN PROFILE DASHBOARD */
 app.use("/api/v1/admin/dashboard", require("./routes/adminDashboardRoutes"));
 
-/* =====================================================
-   🔁 BACKWARD COMPATIBILITY (DO NOT REMOVE)
-===================================================== */
+/* 🔁 BACKWARD COMPATIBILITY */
 app.use("/auth", authRoutes);
 
 /* =======================
@@ -173,5 +171,5 @@ app.listen(PORT, () => {
 
   startHotSlotCleanup();
   startSelfPing();
-  startReminderScheduler();
+  startReminderScheduler(); // ✅ WILL WORK NOW
 });
