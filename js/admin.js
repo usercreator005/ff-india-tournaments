@@ -1,5 +1,5 @@
 // js/admin.js
-// ADMIN PANEL – PHASE STRUCTURE READY
+// ADMIN PANEL – FULL 12 PHASE CONTROLLER
 // Auth Guard • Role Check • Section Router • Central API
 
 import { auth } from "./firebase.js";
@@ -18,26 +18,36 @@ const avatar = document.getElementById("avatar");
 const sidebar = document.getElementById("sidebar");
 const logoutBtn = document.getElementById("logout");
 
+// Sidebar navigation items
+const navItems = document.querySelectorAll(".side-item[data-section]");
+
+// Dashboard quick buttons
 const btnCreate = document.getElementById("btnCreate");
 const btnManage = document.getElementById("btnManage");
+const btnStaff = document.getElementById("btnStaff");
+const btnTickets = document.getElementById("btnTickets");
 
+// Sections
+const allSections = document.querySelectorAll("main section");
+
+// Create Tournament عناصر
 const createForm = document.getElementById("createForm");
-const manageSection = document.getElementById("manageSection");
-
 const entryType = document.getElementById("entryType");
 const paidBox = document.getElementById("paidBox");
+
+// Manage Tournament
 const tournamentList = document.getElementById("tournamentList");
 
 /* ================= UI HELPERS ================= */
-function showSection(section) {
-  createForm.classList.add("hidden");
-  manageSection.classList.add("hidden");
-
-  section.classList.remove("hidden");
+function showSectionById(id) {
+  allSections.forEach(sec => sec.classList.add("hidden"));
+  const target = document.getElementById(id);
+  if (target) target.classList.remove("hidden");
+  sidebar.classList.remove("active");
 }
 
 function showLoading(el, msg = "Loading...") {
-  el.innerHTML = `<p>${msg}</p>`;
+  if (el) el.innerHTML = `<p>${msg}</p>`;
 }
 
 /* ================= SIDEBAR ================= */
@@ -50,6 +60,16 @@ logoutBtn?.addEventListener("click", async () => {
   window.location.replace("index.html");
 });
 
+navItems.forEach(item => {
+  item.addEventListener("click", () => {
+    const sectionId = item.dataset.section;
+    showSectionById(sectionId);
+
+    // Auto-load data for certain sections
+    if (sectionId === "manageSection") fetchTournaments();
+  });
+});
+
 /* ================= AUTH GUARD ================= */
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
@@ -60,8 +80,7 @@ onAuthStateChanged(auth, async (user) => {
   try {
     sessionToken = await getIdToken(user, true);
     const role = await verifyAdmin(sessionToken);
-
-    if (role !== "admin") throw new Error("Not an admin");
+    if (role !== "admin") throw new Error("Not admin");
 
     initAdminPanel();
 
@@ -101,23 +120,26 @@ async function api(path, options = {}) {
 
 /* ================= INIT PANEL ================= */
 function initAdminPanel() {
-  // Phase 3 – Create Tournament
-  btnCreate.onclick = () => showSection(createForm);
+  // Default Home
+  showSectionById("dashboardHome");
 
-  // Phase 4 – Manage Tournaments
+  // Dashboard Quick Buttons
+  btnCreate.onclick = () => showSectionById("createSection");
   btnManage.onclick = () => {
-    showSection(manageSection);
+    showSectionById("manageSection");
     fetchTournaments();
   };
+  btnStaff.onclick = () => showSectionById("staffSection");
+  btnTickets.onclick = () => showSectionById("ticketsSection");
 
   // Entry Type Toggle
-  entryType.onchange = () => {
+  entryType?.addEventListener("change", () => {
     paidBox.classList.toggle("hidden", entryType.value !== "paid");
-  };
+  });
 }
 
-/* ================= CREATE TOURNAMENT ================= */
-createForm.onsubmit = async (e) => {
+/* ================= PHASE 3 – CREATE TOURNAMENT ================= */
+createForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const body = {
@@ -150,9 +172,9 @@ createForm.onsubmit = async (e) => {
   } catch (err) {
     alert(err.message);
   }
-};
+});
 
-/* ================= FETCH TOURNAMENTS ================= */
+/* ================= PHASE 4 – FETCH TOURNAMENTS ================= */
 async function fetchTournaments() {
   showLoading(tournamentList);
 
@@ -179,4 +201,4 @@ async function fetchTournaments() {
     console.error(err);
     tournamentList.innerHTML = "<p>Error loading tournaments</p>";
   }
-    }
+}
