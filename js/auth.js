@@ -1,6 +1,5 @@
 // js/auth.js
-// Google Login + Backend Role Verification
-// FIXED • PAGE-AWARE • NO REDIRECT LOOPS
+// GOOGLE LOGIN + BACKEND ROLE VERIFICATION (STABLE BUILD)
 
 import { auth } from "./firebase.js";
 import {
@@ -10,20 +9,14 @@ import {
   signOut
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-/* =========================
-   CONFIG
-========================= */
+/* ================= CONFIG ================= */
 const BACKEND_URL = "https://ff-india-tournaments.onrender.com";
 let isRedirecting = false;
 
-/* =========================
-   PAGE DETECTION
-========================= */
+/* ================= PAGE DETECTION ================= */
 const CURRENT_PAGE = window.location.pathname.split("/").pop();
 
-/* =========================
-   GOOGLE LOGIN BUTTON
-========================= */
+/* ================= GOOGLE LOGIN ================= */
 const googleBtn = document.getElementById("googleLoginBtn");
 
 if (googleBtn) {
@@ -31,23 +24,21 @@ if (googleBtn) {
     if (googleBtn.disabled) return;
 
     googleBtn.disabled = true;
-    googleBtn.innerText = "Connecting to Google...";
+    googleBtn.innerText = "Connecting...";
 
     try {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: "select_account" });
 
       const result = await signInWithPopup(auth, provider);
-      const user = result.user;
+      const token = await result.user.getIdToken(true);
 
-      const token = await user.getIdToken(true);
       const role = await fetchUserRole(token);
-
       redirectUser(role);
 
     } catch (err) {
-      console.error("Google login failed:", err);
-      alert("Login failed. Please try again.");
+      console.error("Login failed:", err);
+      alert("Login failed. Try again.");
 
       googleBtn.disabled = false;
       googleBtn.innerText = "Continue with Google";
@@ -55,17 +46,11 @@ if (googleBtn) {
   });
 }
 
-/* =========================
-   AUTO SESSION LOGIN
-   (ONLY ON INDEX PAGE)
-========================= */
+/* ================= AUTO SESSION RESTORE ================= */
+// Only runs on landing page to avoid dashboard loops
 onAuthStateChanged(auth, async (user) => {
   if (!user || isRedirecting) return;
-
-  // 🚫 Prevent redirect on dashboards
-  if (CURRENT_PAGE !== "" && CURRENT_PAGE !== "index.html") {
-    return;
-  }
+  if (CURRENT_PAGE && CURRENT_PAGE !== "index.html") return;
 
   try {
     const token = await user.getIdToken();
@@ -78,47 +63,30 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-/* =========================
-   BACKEND ROLE FETCH
-========================= */
+/* ================= FETCH ROLE ================= */
 async function fetchUserRole(idToken) {
   const res = await fetch(`${BACKEND_URL}/auth/role`, {
-    headers: {
-      Authorization: `Bearer ${idToken}`
-    }
+    headers: { Authorization: `Bearer ${idToken}` }
   });
 
-  if (!res.ok) {
-    throw new Error("Role fetch failed");
-  }
+  if (!res.ok) throw new Error("Role fetch failed");
 
   const data = await res.json();
-
-  if (!data.role) {
-    throw new Error("Invalid role response");
-  }
+  if (!data.role) throw new Error("Invalid role response");
 
   return data.role;
 }
 
-/* =========================
-   REDIRECT HANDLER
-========================= */
+/* ================= REDIRECT ================= */
 function redirectUser(role) {
   if (isRedirecting) return;
   isRedirecting = true;
 
-  switch (role) {
-    case "creator":
-      window.location.replace("creator.html");
-      break;
-
-    case "admin":
-      window.location.replace("admin.html");
-      break;
-
-    default:
-      window.location.replace("user.html");
-      break;
+  if (role === "admin") {
+    window.location.replace("admin.html");
+  } else if (role === "creator") {
+    window.location.replace("creator.html");
+  } else {
+    window.location.replace("user.html");
   }
-}
+      }
