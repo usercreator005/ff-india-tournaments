@@ -9,7 +9,7 @@ const apiLimiter = require("../middleware/rateLimiter");
 const { body, param, validationResult } = require("express-validator");
 
 /* 🔔 PHASE 7 REMINDER SERVICE */
-const { sendRoomPublishedNotification } = require("../services/reminderService");
+const { sendRoomPublishedNotification } = require("../services/reminderScheduler");
 
 /* =========================
    HELPERS
