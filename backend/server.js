@@ -13,9 +13,6 @@ const errorHandler = require("./middleware/errorHandler");
 const HotSlot = require("./models/HotSlot");
 const axios = require("axios");
 
-/* 🆕 PHASE 7 — REMINDER SCHEDULER */
-const startReminderScheduler = require("./services/reminderScheduler"); // ✅ FIXED IMPORT
-
 const app = express();
 
 /* =======================
@@ -85,6 +82,8 @@ app.use("/api/v1/results", require("./routes/resultRoutes"));
 app.use("/api/v1/scoring", require("./routes/tournamentScoringRoutes"));
 app.use("/api/v1/stage-results", require("./routes/stageResultRoutes"));
 app.use("/api/v1/rooms", require("./routes/matchRoomRoutes"));
+
+/* 🔔 PHASE 7 — MANUAL REMINDERS */
 app.use("/api/v1/reminders", require("./routes/reminderRoutes"));
 
 /* 🆕 PHASE 10 — STAFF MANAGEMENT */
@@ -103,7 +102,7 @@ app.get("/", (req, res) => {
   res.status(200).json({
     status: "OK",
     service: "FF India Tournaments Backend",
-    version: "1.4.0"
+    version: "1.4.1"
   });
 });
 
@@ -171,5 +170,4 @@ app.listen(PORT, () => {
 
   startHotSlotCleanup();
   startSelfPing();
-  startReminderScheduler(); // ✅ WILL WORK NOW
 });
