@@ -13,7 +13,7 @@ const { verifyStaff } = require("../middleware/staffAuth");
 const {
   scheduleMatchStartReminder,
   rescheduleMatchStartReminder,
-} = require("../services/reminderService");
+} = require("../services/reminderScheduler");
 
 /* =======================================================
    🔐 ADMIN OR TOURNAMENT STAFF ACCESS
