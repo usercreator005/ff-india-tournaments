@@ -10,6 +10,7 @@ body{
   color:#fff;
 }
 
+/* ================= HEADER ================= */
 .header{
   height:55px;
   background:#000;
@@ -35,79 +36,100 @@ body{
   cursor:pointer;
 }
 
-/* Sidebar */
+/* ================= SIDEBAR ================= */
 #sidebar{
   position:fixed;
   top:55px;
-  left:-240px;
-  width:220px;
+  left:-250px;
+  width:230px;
   height:calc(100% - 55px);
   background:#111;
   transition:.3s;
-  z-index:10;
+  z-index:20;
+  padding-top:10px;
 }
 
 #sidebar.active{left:0}
 
-.side-item{
-  padding:14px;
-  border-bottom:1px solid #222;
-  cursor:pointer;
+.side-title{
+  padding:12px 14px;
+  font-size:12px;
+  color:#888;
+  letter-spacing:1px;
 }
 
-.side-item.logout{color:#ff5252}
+.side-item{
+  padding:14px;
+  border-bottom:1px solid #1c1c1c;
+  cursor:pointer;
+  font-size:14px;
+}
 
-/* Notification */
-#notificationPanel{
-  position:fixed;
-  top:55px;
-  right:-260px;
-  width:240px;
-  height:calc(100% - 55px);
-  background:#111;
+.side-item:hover{
+  background:#1a1a1a;
+}
+
+.side-divider{
+  height:1px;
+  background:#222;
+  margin:8px 0;
+}
+
+.side-item.logout{
+  color:#ff5252;
+}
+
+/* ================= MAIN ================= */
+.main{
   padding:15px;
   transition:.3s;
 }
 
-#notificationPanel.active{right:0}
-
-/* Main */
-.main{padding:15px}
-
 .actions{
-  display:flex;
+  display:grid;
+  grid-template-columns:1fr 1fr;
   gap:10px;
   margin-bottom:15px;
 }
 
 .actions button{
-  flex:1;
-  padding:10px;
+  padding:12px;
   background:#ffb300;
   border:none;
-  border-radius:6px;
+  border-radius:8px;
   font-weight:600;
   cursor:pointer;
+  font-size:14px;
 }
 
-/* Cards */
+.actions button:hover{
+  opacity:.9;
+}
+
+/* ================= CARDS ================= */
 .card{
   background:#111;
-  padding:15px;
-  border-radius:10px;
+  padding:16px;
+  border-radius:12px;
+  margin-bottom:15px;
+  border:1px solid #1c1c1c;
 }
 
-.card h3{margin-bottom:10px}
+.card h3{
+  margin-bottom:12px;
+  font-size:16px;
+}
 
 .card input,
 .card select{
   width:100%;
-  margin:6px 0;
-  padding:8px;
+  margin:6px 0 10px;
+  padding:10px;
   background:#000;
   border:1px solid #222;
   color:#fff;
   border-radius:6px;
+  font-size:14px;
 }
 
 .card input[type="file"]{
@@ -118,23 +140,36 @@ body{
 .card label{
   font-size:12px;
   color:#aaa;
+  display:block;
+  margin-top:6px;
+}
+
+.checkbox{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:13px;
+  margin:8px 0;
 }
 
 .submit{
   width:100%;
-  padding:10px;
+  padding:11px;
   margin-top:10px;
   background:#00e676;
   border:none;
   border-radius:6px;
   font-weight:700;
   cursor:pointer;
+  font-size:15px;
 }
 
 .hidden{display:none}
 
-/* Tournament list */
-.tournament-card{
+/* ================= LIST CARDS ================= */
+.tournament-card,
+.staff-card,
+.ticket-card{
   background:#0b0b0b;
   padding:12px;
   border-radius:8px;
@@ -148,19 +183,49 @@ body{
 
 .badge{
   display:inline-block;
-  padding:2px 6px;
+  padding:3px 7px;
   font-size:11px;
   border-radius:4px;
+  margin-left:5px;
 }
 
-.badge.pending{background:#ff9800}
-.badge.approved{background:#4caf50}
-.badge.rejected{background:#f44336}
+.badge.live{background:#4caf50}
+.badge.upcoming{background:#ff9800}
+.badge.past{background:#9e9e9e}
 
-/* Footer */
+/* ================= SUPPORT BOX ================= */
+.support-box{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.support-box button{
+  padding:10px;
+  border:none;
+  border-radius:6px;
+  font-weight:600;
+  cursor:pointer;
+  font-size:14px;
+}
+
+#emailSupport{background:#2196f3}
+#wpSupport{background:#25d366}
+
+/* ================= WALLET ================= */
+.wallet-card{
+  background:#0b0b0b;
+  padding:12px;
+  border-radius:8px;
+  border:1px solid #222;
+  margin-bottom:10px;
+}
+
+/* ================= FOOTER ================= */
 .footer{
   text-align:center;
   font-size:12px;
   color:#aaa;
-  padding:10px;
-  }
+  padding:12px;
+  margin-top:20px;
+}
